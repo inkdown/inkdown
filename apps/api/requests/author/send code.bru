@@ -1,0 +1,17 @@
+meta {
+  name: send code
+  type: http
+  seq: 6
+}
+
+post {
+  url: http://localhost:3333/authors/code
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "furquimmsw@gmail.com"
+  }
+}

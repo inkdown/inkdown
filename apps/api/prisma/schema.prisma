@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Author {
+  id        String   @id @default(uuid())
+  alias     String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  accountType String
+  status      String
+  imageUrl    String
+  notes       Note[]
+  reactions   Reaction[]
+  shares      Share[]
+  directories Directory[]
+  Tag         Tag[]
+
+  @@map("authors")
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  type      String
+  icon      String   @default("")
+  archived  Boolean  @default(false)
+
+  author    Author @relation(fields: [author_id], references: [id])
+  author_id String
+
+  reactions   Reaction[]
+  Share       Share[]
+  Directory   Directory? @relation(fields: [directoryId], references: [id], onDelete: Cascade)
+  directoryId Int?
+
+  @@map("notes")
+}
+
+model Directory {
+  id       Int    @id @default(autoincrement())
+  title    String
+  notes    Note[]
+  parentId Int?
+
+  parent    Directory?  @relation("DirectoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  childrens Directory[] @relation("DirectoryHierarchy")
+  Author    Author      @relation(fields: [authorId], references: [id])
+  authorId  String
+
+  @@map("directories")
+}
+
+model Tag {
+  id       Int    @id @default(autoincrement())
+  name     String
+  color    String
+  authorId String
+  Author   Author @relation(fields: [authorId], references: [id])
+
+  @@map("tags")
+}
+
+model Reaction {
+  id        Int      @id @default(autoincrement())
+  type      String
+  reactedAt DateTime @default(now()) @map("reacted_at")
+
+  author    Author @relation(fields: [author_id], references: [id])
+  author_id String
+
+  note    Note   @relation(fields: [note_id], references: [id])
+  note_id String
+
+  @@map("reactions")
+}
+
+model Share {
+  id       Int      @id @default(autoincrement())
+  sharedAt DateTime @default(now()) @map("shared_at")
+
+  author    Author @relation(fields: [author_id], references: [id])
+  author_id String
+
+  note    Note   @relation(fields: [note_id], references: [id])
+  note_id String
+
+  @@map("shares")
+}

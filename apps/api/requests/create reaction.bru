@@ -1,0 +1,22 @@
+meta {
+  name: create reaction
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:3333/reactions/create
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiVVNFUiIsInN1YiI6Ijg2NjUzZWUxLTdlNWQtNDdkZS05MTkyLTZhMDllYmY5YTI0OCIsImlhdCI6MTczNzk4MDc2OSwiZXhwIjoxNzM3OTgxMzY5fQ.91DSRAp4Jc0QIBPVp_yPvFi848iD-WbhliRymQ8Y9AE
+}
+
+body:json {
+  {
+    "type": "LOVED",
+    "noteId": "9b6a9d12-aafa-4987-b1e1-1bcc9554f3e3"
+  }
+}

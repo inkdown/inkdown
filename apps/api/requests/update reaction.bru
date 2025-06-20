@@ -1,0 +1,22 @@
+meta {
+  name: update reaction
+  type: http
+  seq: 3
+}
+
+put {
+  url: http://localhost:3333/reactions/update
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiVVNFUiIsInN1YiI6Ijg2NjUzZWUxLTdlNWQtNDdkZS05MTkyLTZhMDllYmY5YTI0OCIsImlhdCI6MTczNzk4MTQ4NSwiZXhwIjoxNzM3OTgyMDg1fQ.d16Vct_N2DwXyNZJie46h-escPRafjgc3dRYAU4hlYQ
+}
+
+body:json {
+  {
+    "reactionId": 1,
+    "type": "LIKED"
+  }
+}

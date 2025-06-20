@@ -1,0 +1,25 @@
+meta {
+  name: create note
+  type: http
+  seq: 12
+}
+
+post {
+  url: http://localhost:3333/notes/create
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjliZjU2OC0zOTc0LTQ5ZDktOTE4MS1jNGI3MDIwMGNmMzUiLCJpYXQiOjE3NDg1MTgyODMsImV4cCI6MTc0ODUyNTQ4M30.DRed3MW5FuoDW0vPYmPD3X10cF__GfXwMe1A33ep1AU
+}
+
+body:json {
+  {
+    "title":"Como implementar o spring security",
+    "content": "qeqweqweqweqw",
+    "type": "PUBLIC",
+    "icon": "",
+    "dirId": 6
+  }
+}

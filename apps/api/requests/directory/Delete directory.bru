@@ -1,0 +1,22 @@
+meta {
+  name: Delete directory
+  type: http
+  seq: 2
+}
+
+delete {
+  url: http://localhost:3333/directories/delete
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjliZjU2OC0zOTc0LTQ5ZDktOTE4MS1jNGI3MDIwMGNmMzUiLCJpYXQiOjE3NDg1Mjg0ODcsImV4cCI6MTc0ODUzNTY4N30.3LeqYK5oSd2atBcL_zjHpGDN6DZOsdY2h9UEH8CGNyU
+}
+
+body:json {
+  {
+    "directoryId": 5,
+    "authorId": "qoiejqwioejqwe"
+  }
+}

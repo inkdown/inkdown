@@ -1,0 +1,21 @@
+meta {
+  name: create share
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:3333/shares/create
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiVVNFUiIsInN1YiI6Ijg2NjUzZWUxLTdlNWQtNDdkZS05MTkyLTZhMDllYmY5YTI0OCIsImlhdCI6MTczNzk4NTQ4MCwiZXhwIjoxNzM3OTg2MDgwfQ.m4-VEkD4sde0Mc1fCIxANgsPcqGtcbYxhbcwOpz7MRk
+}
+
+body:json {
+  {
+    "noteId": "9b6a9d12-aafa-4987-b1e1-1bcc9554f3e3"
+  }
+}

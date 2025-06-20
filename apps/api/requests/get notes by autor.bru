@@ -1,0 +1,15 @@
+meta {
+  name: get notes by autor
+  type: http
+  seq: 5
+}
+
+get {
+  url: http://localhost:3333/notes/get
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNTNmZGU0MC1lYjdlLTQxNDQtYmE0Zi00N2MwNDVlNGY5MGIiLCJpYXQiOjE3MzgzMjk0MjEsImV4cCI6MTczODMzNjYyMX0.rfNIQfmKjR1SR1du41Yu7Bj2d5XSZpDWhFxSmpPSRik
+}
