@@ -8,77 +8,23 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Notifications } from "./notifications";
-import { useQuery } from "@tanstack/react-query";
-import { createDirectory, getAuthorDirectoriesWithChildrenNotes, updateDirectoryTitle } from "@/features/notes/services/note-service";
 import { notifications } from "@/data";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DirectoryTree } from "./directories/directory-tree";
-import type { DirectoryWithChildren } from "@/features/notes/types/directory-types";
 import type { NotificationDataType } from "@/features/notification/types/notification-types";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { renameDirectory } from "@/features/notes/services/note-service";
-import type { NoteDataType } from "@/features/notes/types/note-types";
 import { SearchButton } from "@/components/search-button";
 import { ArchivedNotes } from "./archived/archived-notes";
 import { FilePlus, FolderPlus, Settings } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { NewNoteDirectoryContext } from "./new-note-directory-context";
+import { useCreateDirectoryMutation, useDirectoriesWithChildrenQuery, useRenameDirectoryMutation } from "@/features/directories/queries/directory-query";
 
 export const AppSidebar = () => {
-  const queryClient = useQueryClient();
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["get-author-directories"],
-    queryFn: getAuthorDirectoriesWithChildrenNotes,
-    retry: true
-  });
-
-  const renameMutation = useMutation({
-    mutationFn: ({ id, newName }: { id: number; newName: string }) =>
-      renameDirectory(newName, id),
-    onSuccess: (_, variables) => {
-      queryClient.setQueryData(["get-author-directories"],
-        (oldData: { directories: DirectoryWithChildren[]; notes: NoteDataType[] } | undefined) => {
-          if (!oldData) return oldData;
-
-          return {
-            ...oldData,
-            directories: updateDirectoryTitle(oldData.directories, variables.id, variables.newName),
-          };
-        }
-      );
-    },
-    onError: (error) => {
-      console.error("Failed to rename directory:", error);
-      queryClient.invalidateQueries({ queryKey: ["get-author-directories"] });
-    }
-  });
-
-  const createDirectoryMutation = useMutation({
-    mutationFn: createDirectory,
-    mutationKey: ["get-author-directories"],
-    onSuccess: (data, variables) => {
-      queryClient.setQueryData(["get-author-directories"],
-        (oldData: { directories: DirectoryWithChildren[]; notes: NoteDataType[] } | undefined) => {
-          if (!oldData) return oldData;
-
-          const newDir = {
-            childrens: [],
-            id: data.id,
-            notes: [],
-            title: data.title,
-            parentId: data.parentId
-          };
-
-          return {
-            ...oldData,
-            directories: [...oldData.directories, newDir],
-          };
-        }
-      );
-    }
-  });
+  const { data, isLoading } = useDirectoriesWithChildrenQuery();
+  
+  const createDirectoryMutation = useCreateDirectoryMutation();
+  const renameMutation = useRenameDirectoryMutation();
 
   const notesForSearch = useMemo(() => {
     if (!data) return [];

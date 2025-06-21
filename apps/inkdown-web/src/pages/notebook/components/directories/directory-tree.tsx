@@ -2,7 +2,7 @@ import { useTree } from "@headless-tree/react";
 import { FileIcon, FolderIcon, FolderOpenIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tree, TreeItem, TreeItemLabel } from "@/components/tree";
-import type { DirectoryDataType } from "@/features/notes/types/directory-types";
+import type { DirectoryDataType } from "@/features/directories/types/directory-types";
 import { DirectoryContext } from "./directory-context";
 import { hotkeysCoreFeature, renamingFeature, selectionFeature, syncDataLoaderFeature } from "@headless-tree/core";
 import type { NoteDataType } from "@/features/notes/types/note-types";

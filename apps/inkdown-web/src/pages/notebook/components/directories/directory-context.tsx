@@ -5,10 +5,7 @@ import {
 	ContextMenuShortcut,
 	ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { deleteDirectory } from "@/features/notes/services/note-service";
-import type { DirectoryWithChildren } from "@/features/notes/types/directory-types";
-import type { NoteDataType } from "@/features/notes/types/note-types";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useDeleteDirectoryMutation } from "@/features/directories/queries/directory-query";
 import { ArchiveX, PenBox } from "lucide-react";
 
 interface DirectoryContextProps {
@@ -22,30 +19,8 @@ export const DirectoryContext = ({
 	onRenameDirectory,
 	id,
 }: DirectoryContextProps) => {
-	const queryClient = useQueryClient();
-
-	console.log(id);
-
-	const deleteMutation = useMutation({
-		mutationFn: deleteDirectory,
-		mutationKey: ["get-author-directories"],
-		onSuccess: (_, variables) => {
-			queryClient.setQueryData(["get-author-directories"],
-				(oldData: { directories: DirectoryWithChildren[]; notes: NoteDataType[] } | undefined) => {
-					if (!oldData) return oldData;
-
-					const updatedDirectories = oldData.directories.filter(
-						(dir) => dir.id !== variables
-					);
-
-					return {
-						...oldData,
-						directories: updatedDirectories,
-					};
-				}
-			)
-		}
-	})
+	
+	const deleteDirectoryMutation = useDeleteDirectoryMutation();
 
 	return (
 		<ContextMenu>
@@ -62,7 +37,7 @@ export const DirectoryContext = ({
 					<span>Renomear</span>
 					<ContextMenuShortcut>⌘[</ContextMenuShortcut>
 				</ContextMenuItem>
-				<ContextMenuItem inset className="group " onClick={() => deleteMutation.mutate(id)}>
+				<ContextMenuItem inset className="group " onClick={() => deleteDirectoryMutation.mutate(id)}>
 					<ArchiveX className="group-hover:text-red-700" />
 					<span>Excluir</span>
 					<ContextMenuShortcut>⌘]</ContextMenuShortcut>
