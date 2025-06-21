@@ -1,6 +1,5 @@
 import {
   createBrowserRouter,
-  Outlet,
 } from "react-router-dom"
 import NotebookPage from "./pages/notebook/page"
 import SettingsPage from "./pages/settings/page";
@@ -8,11 +7,9 @@ import SignUpPage from "./pages/signup/page";
 import App from "./App";
 import LoginPage from "./pages/login/page";
 import SettingsLayout from "./pages/settings/layout";
-import { ThemeProvider } from "./providers/theme-provider";
+import AuthPage from "./pages/auth/page";
 import NotebookLayout from "./pages/notebook/layout";
 import NotFoundPage from "./pages/notefound-page";
-import TextAreaWithLineCount from "./pages/teste/page";
-
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -51,7 +48,7 @@ export const router = createBrowserRouter([
     element: <NotFoundPage/>
   },
   {
-    path: "/test",
-    element: <TextAreaWithLineCount/>
+    path: "/auth-callback",
+    element: <AuthPage/>
   }
 ]);

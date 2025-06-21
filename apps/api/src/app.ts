@@ -42,10 +42,10 @@ const publicRoutes = [
 appRoutes(app);
 
 app.addHook('preHandler', async (request: FastifyRequest, reply: FastifyReply) => {
-  console.log(request.originalUrl);
 
-
-  if (publicRoutes.includes(request.originalUrl ?? request.url)) {
+  if (publicRoutes.includes(request.originalUrl ?? request.url) || 
+      request.originalUrl.includes("/auth/github/callback") || 
+      request.originalUrl.includes("/auth/google/callback")) {
     return;
   };
 

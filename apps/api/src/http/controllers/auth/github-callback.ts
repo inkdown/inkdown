@@ -40,14 +40,14 @@ export async function githubCallback(req: FastifyRequest, reply: FastifyReply) {
 
   const { id, name, login, avatar_url } = userResponse.data;
 
-  
+
   const token = await reply.jwtSign({
     sub: String(id),
     email: primaryEmail,
     name: name || login,
     picture: avatar_url,
   });
-  
+
   const useCase = makeCreateAuthorUseCase();
 
   await useCase.create({
@@ -58,13 +58,5 @@ export async function githubCallback(req: FastifyRequest, reply: FastifyReply) {
     password: String(id)
   });
 
-  reply.setCookie("token", token, {
-    httpOnly: true,
-    // secure: true,
-    maxAge: 60 * 60 * 24 * 7 // 7d
-  });
-
-  return reply.status(200).send({
-    message: "success",
-  });
+  return reply.redirect(`${env.CONSUMER_URL}/auth-callback?token=${token}`);
 }

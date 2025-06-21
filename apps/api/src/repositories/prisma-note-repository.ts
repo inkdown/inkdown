@@ -55,7 +55,7 @@ export class PrismaNoteRepository implements NoteRepository{
         } */
       },
       where: {
-        userId: authorId,
+        author_id: authorId,
         directoryId: null
       }
       
@@ -63,7 +63,7 @@ export class PrismaNoteRepository implements NoteRepository{
     console.log(notes);
     const note = await prisma.note.findMany({
         where: {
-          userId: authorId
+          author_id: authorId
         },
       });
 
@@ -80,7 +80,7 @@ export class PrismaNoteRepository implements NoteRepository{
   async findAuthorsWithoutDir(authorId: string): Promise<Note[]> {
     return await prisma.note.findMany({
       where: {
-        userId: authorId,
+        author_id: authorId,
         directoryId: null,
       },
     });

@@ -2,6 +2,7 @@ import { api } from "@/lib/api";
 import type { DirectoryWithChildren, GetAuthorDirectoriesResponse } from "../types/directory-types";
 import type { AxiosError } from "axios";
 import { type GetNoteContentResponse } from "../types/note-types";
+import Cookies from "js-cookie";
 
 export async function updateNoteData(id: string, title: string, content: string) {
   console.log(id, title, content);
@@ -43,19 +44,24 @@ export async function getNoteContent(noteId: string) {
 
 export async function getAuthorDirectoriesWithChildrenNotes() {
   try {
+    const token = Cookies.get("inkdown-auth");
+
+    if(!token) {
+      return;
+    }
 
     const response = await api.get<GetAuthorDirectoriesResponse>("directories/author", {
-      withCredentials: true,
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
     });
 
 
     const { directories, notes } = response.data;
 
-    console.log(directories);
-
     return {
-      directories,
-      notes,
+      directories: directories ?? [],
+      notes: notes ?? [],
     };
   } catch (err) {
     const axiosError = err as AxiosError;

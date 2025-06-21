@@ -3,8 +3,8 @@ import { Icon } from "@/components/icon";
 import { Link, useNavigate } from "react-router-dom";
 import { SignUpForm } from "./compoenents/signup-form";
 import { Button } from "@/components/ui/button";
-import { authClient } from "@/lib/better-auth";
 import { Github } from "lucide-react";
+import { authAuthorSocial } from "@/features/author/services/author-service";
 
 export default function SignUpPage() {
 	const router = useNavigate();
@@ -21,36 +21,14 @@ export default function SignUpPage() {
 				<p className="pt-4">Entre com sua conta do google ou crie uma nova</p>
 				<span className="flex space-x-5 items-center w-full justify-center pt-3">
 					<Button
-						onClick={() => authClient.signIn.social({
-							provider: "github",
-							errorCallbackURL: "/error",
-						}, {
-							onSuccess: () => {
-								router("/notebook");
-							},
-							onError: () => {
-								router("/error");
-							}
-						})}
-						variant={"outline"}
+						onClick={() => authAuthorSocial({ type: "github" })} variant={"outline"}						
 						className="text-lg hover:cursor-pointer hover:opacity-80 bg-transparent border-[1px] border-muted-foreground p-3 w-43 h-12 flex items-center space-x-3"
 					>
 						<Github size={40} />
 						Github
 					</Button>
 					<Button
-						onClick={() => authClient.signIn.social({
-							provider: "google",
-							errorCallbackURL: "/error",
-						}, {
-							onSuccess: () => {
-								router("/notebook");
-							},
-							onError: () => {
-								router("/error");
-							}
-						})}
-						variant={"outline"}
+						onClick={() => authAuthorSocial({ type: "google" })} variant={"outline"}
 						className="text-lg hover:cursor-pointer hover:opacity-80 bg-transparent border-[1px] border-muted-foreground p-3 w-43 h-12 flex items-center space-x-3"
 					>
 						<svg

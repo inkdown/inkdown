@@ -8,7 +8,6 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Notifications } from "./notifications";
-import { UserNav } from "./user-nav";
 import { useQuery } from "@tanstack/react-query";
 import { getAuthorDirectoriesWithChildrenNotes, updateDirectoryTitle } from "@/features/notes/services/note-service";
 import { notifications } from "@/data";
@@ -22,8 +21,8 @@ import { renameDirectory } from "@/features/notes/services/note-service";
 import type { NoteDataType } from "@/features/notes/types/note-types";
 import { SearchButton } from "@/components/search-button";
 import { ArchivedNotes } from "./archived/archived-notes";
-import { Settings } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { FilePlus, FolderPlus, Settings } from "lucide-react";
+import { useMemo } from "react";
 
 export const AppSidebar = () => {
   const queryClient = useQueryClient();
@@ -63,14 +62,6 @@ export const AppSidebar = () => {
     ];
   }, [data]);
 
-  useEffect( () => {
-
-    getAuthorDirectoriesWithChildrenNotes().then((response) => {
-      console.log(response);
-    })
-
-  }, [])
-
   return (
     <Sidebar>
       {isLoading && (
@@ -105,8 +96,16 @@ export const AppSidebar = () => {
           </SidebarHeader>
           <SidebarGroup>
             <SidebarGroupContent>
-
-              {data && (
+              {data.notes.length === 0 ? (
+                <div className="w-full h-full flex-col pt-20 flex items-center space-y-3">
+                  <span>
+                    clique com o <span className="text-indigo-500">botão direito</span>
+                  </span>
+                  <span className="flex items-center space-x-2">
+                    <FolderPlus size={20} /> <span>/</span> <FilePlus size={20}/>
+                  </span>
+                </div>
+              ) : (
                 <DirectoryTree
                   directories={data.directories}
                   aloneNotes={data.notes}
@@ -117,9 +116,9 @@ export const AppSidebar = () => {
           </SidebarGroup>
         </>
       )}
-      <SidebarFooter>
-        <UserNav/>
-      </SidebarFooter>
+{/*       <SidebarFooter>
+        <p>footer</p>
+      </SidebarFooter> */}
       <SidebarRail />
     </Sidebar >
   );

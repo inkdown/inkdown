@@ -2,7 +2,7 @@ import { Icon } from "@/components/icon";
 import { Link, useNavigate } from "react-router-dom";
 import { LoginForm } from "./components/login-form";
 import { Button } from "@/components/ui/button";
-import { authClient } from "@/lib/better-auth";
+import { authAuthorSocial } from "@/features/author/services/author-service";
 
 export default function LoginPage() {
   const router = useNavigate();
@@ -23,18 +23,7 @@ export default function LoginPage() {
         </p>
         <span className="flex space-x-5 items-center pt-12">
           <Button
-            onClick={() => authClient.signIn.social({
-              provider: "github",
-              errorCallbackURL: "/error",
-              callbackURL: location.origin + "/notebook"
-            }, {
-              onSuccess: () => {
-                router("/notebook");
-              },
-              onError: () => {
-                router("/error");
-              }
-            })}
+            onClick={() => authAuthorSocial({ type: "github" })}
             variant={"outline"}
             className="text-lg hover:cursor-pointer hover:opacity-80 bg-transparent border-[1px] border-muted-foreground p-3 w-38 h-12 flex items-center space-x-3"
           >
@@ -47,18 +36,7 @@ export default function LoginPage() {
             Github
           </Button>
           <Button
-            onClick={() => authClient.signIn.social({
-              provider: "google",
-              errorCallbackURL: "/error",
-              callbackURL: location.origin + "/notebook"
-            }, {
-              onSuccess: () => {
-                router("/notebook");
-              },
-              onError: () => {
-                router("/error");
-              }
-            })}
+            onClick={() => authAuthorSocial({ type: "github" })}
             variant={"outline"}
             className="text-lg hover:cursor-pointer hover:opacity-80 bg-transparent border-[1px] border-muted-foreground p-3 w-38 h-12 flex items-center space-x-3"
           >

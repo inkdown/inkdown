@@ -35,3 +35,7 @@ export interface SendCodeResponse {
 export interface ErrorMessage {
 	message: string;
 }
+
+export interface AuthAuthorSocial {
+	type: "google" | "github";
+}

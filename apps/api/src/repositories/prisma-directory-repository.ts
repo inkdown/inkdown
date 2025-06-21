@@ -24,7 +24,7 @@ export class PrismaDirectoryRepository implements DirectoryRepository {
         notes: true
       },
       where: {
-        userId: authorId,
+        authorId,
         // parentId: null
       },
     })

@@ -1,4 +1,13 @@
 import { z } from "zod";
+import { config } from "dotenv"
+import { resolve } from "path"
+import { fileURLToPath } from "url";
+
+const __dirname = resolve(fileURLToPath(import.meta.url), "..");
+
+config({
+  path: resolve(__dirname, "../../.env"),
+});
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["dev", "test", "production"]).default("dev"),
@@ -14,7 +23,7 @@ const envSchema = z.object({
 
 const _env = envSchema.safeParse(process.env);
 
-if(_env.success === false){
+if (_env.success === false) {
   console.log("Error invalid enviroment variables ", _env.error.format());
 
   throw new Error("Invalid enviroment variables");
