@@ -7,22 +7,16 @@ import z from "zod";
 export async function createNote(request: FastifyRequest, reply: FastifyReply) {
   const createNoteSchema = z.object({
     title: z.string(),
-    content: z.string(),
-    type: z.enum(["PRIVATE", "PUBLIC"]).default("PRIVATE"),
-    icon: z.string(),
-    dirId: z.number().int().optional()
+    dirId: z.number().int().nullable()
   });
 
-  const { title, content, type, icon, dirId } = createNoteSchema.parse(request.body);
+  const { title, dirId } = createNoteSchema.parse(request.body);
 
   try {
     const useCase = makeCreateNoteUseCase();
 
     const note = await useCase.create({
       title,
-      content,
-      type,
-      icon,
       authorId: request.user.sub,
       dirId
     });

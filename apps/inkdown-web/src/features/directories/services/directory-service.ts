@@ -3,7 +3,17 @@ import type { AxiosError } from "axios";
 import Cookies from "js-cookie";
 import type { CreateDirectoryRequest, CreateDirectoryResponse, DirectoryWithChildren, GetAuthorDirectoriesResponse } from "../types/directory-types";
 
-
+export const findDirectory = (
+  directories: DirectoryWithChildren[],
+  targetId: number
+): DirectoryWithChildren | null => {
+  for (const dir of directories) {
+    if (dir.id === targetId) return dir;
+    const found = findDirectory(dir.childrens, targetId);
+    if (found) return found;
+  }
+  return null;
+};
 
 export async function getAuthorDirectoriesWithChildrenNotes() {
   try {

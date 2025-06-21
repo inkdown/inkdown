@@ -30,7 +30,7 @@ export const NewNoteDirectoryContext = ({
           onClick={handleNewDirectory}
         >
           <FolderPlus />
-          <span>Novo</span>
+          <span>Novo diretório</span>
           <ContextMenuShortcut>⌘d</ContextMenuShortcut>
         </ContextMenuItem>
         <ContextMenuItem 
@@ -38,7 +38,7 @@ export const NewNoteDirectoryContext = ({
           onClick={handleNewNote}
           >
           <FilePlus />
-          <span>Novo</span>
+          <span>Nova nota</span>
           <ContextMenuShortcut>⌘f</ContextMenuShortcut>
         </ContextMenuItem>
       </ContextMenuContent>

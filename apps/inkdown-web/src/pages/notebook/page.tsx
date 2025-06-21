@@ -1,65 +1,18 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { getNoteContent, updateNoteData } from "@/features/notes/services/note-service";
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CircleDotIcon } from "lucide-react";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { TitleEditor } from "./components/title-editor";
-import { queryClient } from "@/lib/react-query";
-import type { NoteDataType } from "@/features/notes/types/note-types";
-import type { DirectoryWithChildren } from "@/features/notes/types/directory-types";
+import { useNoteContentQuery, useUpdateNotaMutation } from "@/features/notes/queries/note-query";
 
 export default function NotebookPage() {
  	const [searchParams] = useSearchParams();
 	const id = searchParams.get("id") ?? "";
 	const { state } = useSidebar();
-
-	const { data, isLoading } = useQuery({
-		queryFn: () => getNoteContent(id),
-		queryKey: ["get-note-content", id],
-		enabled: Boolean(id)
-	});
-
-	const updateNoteMutation = useMutation({
-		mutationFn: ({ id, title, content }: { id: string; title: string; content: string }) =>
-			updateNoteData(id, title, content),
-		onSuccess: (_, variables) => {
-			queryClient.setQueryData(["get-note-content", variables.id], (old: any) => ({
-				...old,
-				title: variables.title,
-				content: variables.content,
-			}));
-
-			queryClient.setQueryData(["get-author-directories"], (oldData: any) => {
-				if (!oldData) return oldData;
-
-				const updateNote = (noteList: NoteDataType[]) =>
-					noteList.map((note) =>
-						note.id === variables.id
-							? { ...note, title: variables.title, content: variables.content }
-							: note
-					);
-
-				const updateDirectories = (dirs: DirectoryWithChildren[]): DirectoryWithChildren[] =>
-					dirs.map((dir) => ({
-						...dir,
-						notes: updateNote(dir.notes),
-						childrens: dir.childrens ? updateDirectories(dir.childrens) : [],
-					}));
-
-				return {
-					...oldData,
-					notes: updateNote(oldData.notes),
-					directories: updateDirectories(oldData.directories),
-				};
-			});
-		},
-		onError: (error) => {
-			console.error("Erro ao atualizar nota:", error);
-		},
-	});
 	
+	const { data, isLoading } = useNoteContentQuery(id);
+	const updateNoteMutation = useUpdateNotaMutation();
 
 	const [editingNote, setEditingNote] = useState(false);
 	const [noteTitle, setNoteTitle] = useState("");

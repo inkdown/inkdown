@@ -1,13 +1,19 @@
 export interface NoteDataType {
-	title: string;
-	id: string;
-	content: string;
-	createdAt: string;
-	type: string;
-	archived: boolean;
-	directoryId: number | null;
+  id: string;
+  title: string;
+  content: string;
+  directoryId: number | null;
+  createdAt: string;
+  updatedAt: string;
+  archived: boolean;
+  type: string,
 }
 
 export interface GetNoteContentResponse {
 	note: NoteDataType
+}
+
+export interface CreateNoteRequest {
+	title: string,
+	dirId: number | null
 }

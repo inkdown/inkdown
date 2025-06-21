@@ -1,6 +1,5 @@
-import type { PrismaDirectoryRepository } from "@/repositories/prisma-directory-repository";
+import type { DirectoryWithRelations, PrismaDirectoryRepository } from "@/repositories/prisma-directory-repository";
 import type { DirectoryWithChildren } from "@/types/directory-types";
-import type { Directory } from "@prisma/client";
 
 interface GetAuthorDirectoriesRequest {
   authorId: string
@@ -17,27 +16,28 @@ export class GetAuthorDirectories {
     return tree;
   }
 
-  buildDirectoryTree(flatList: DirectoryWithChildren[]): DirectoryWithChildren[] {
-    const idToDirMap: { [id: number]: DirectoryWithChildren } = {};
+  buildDirectoryTree(flatList: DirectoryWithRelations[]): DirectoryWithChildren[] {
+    const idToDirMap: Record<number, DirectoryWithChildren> = {};
     const roots: DirectoryWithChildren[] = [];
 
-    for (const dir of flatList) {
+    flatList.forEach(dir => {
       idToDirMap[dir.id] = {
         ...dir,
         childrens: [],
+        notes: dir.notes || []
       };
-    }
+    });
 
-    for (const dir of flatList) {
+    flatList.forEach(dir => {
       if (dir.parentId === null) {
         roots.push(idToDirMap[dir.id]);
       } else {
         const parent = idToDirMap[dir.parentId];
         if (parent) {
-          parent.childrens!.push(idToDirMap[dir.id]);
+          parent.childrens.push(idToDirMap[dir.id]);
         }
       }
-    }
+    });
 
     return roots;
   }

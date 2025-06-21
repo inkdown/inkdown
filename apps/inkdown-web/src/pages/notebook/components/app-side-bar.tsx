@@ -19,10 +19,12 @@ import { FilePlus, FolderPlus, Settings } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { NewNoteDirectoryContext } from "./new-note-directory-context";
 import { useCreateDirectoryMutation, useDirectoriesWithChildrenQuery, useRenameDirectoryMutation } from "@/features/directories/queries/directory-query";
+import { useCreateNoteMutation } from "@/features/notes/queries/note-query";
 
 export const AppSidebar = () => {
   const { data, isLoading } = useDirectoriesWithChildrenQuery();
   
+  const createNoteMutation = useCreateNoteMutation();
   const createDirectoryMutation = useCreateDirectoryMutation();
   const renameMutation = useRenameDirectoryMutation();
 
@@ -73,21 +75,10 @@ export const AppSidebar = () => {
           <SidebarGroup className="h-full">
             <SidebarGroupContent className="h-full">
               <NewNoteDirectoryContext
-                handleNewNote={() => {
-                  data.notes.push({
-                    title: "Sem titulo",
-                    archived: false,
-                    content: "",
-                    createdAt: new Date().toString(),
-                    directoryId: null,
-                    type: "public",
-                    id: ""
-                  });
-                }}
+                handleNewNote={() => createNoteMutation.mutate(null)}
                 handleNewDirectory={() => createDirectoryMutation.mutate({ title: "Sem titulo", parentId: null })}
               >
                 {data.notes.length === 0 && data.directories.length === 0 ? (
-
                   <div className="w-full h-full flex-col pt-20 flex items-center space-y-3">
                     <span>
                       clique com o <span className="text-indigo-500">botão direito</span>
@@ -99,8 +90,10 @@ export const AppSidebar = () => {
                 ) : (
                   <DirectoryTree
                     directories={data.directories}
-                    aloneNotes={data.notes}
-                    onRenameDirectory={renameMutation.mutate}
+                    aloneNotes={data.notes.filter(note => !note.directoryId)}
+                    onCreateNote={(parentId: number | null) => createNoteMutation.mutate(parentId)}
+                    onCreateDirectory={(parentId: number | null) => createDirectoryMutation.mutate({ parentId, title: "Sem titulo" })}
+                    onRenameDirectory={() => console.log("A")}
                   />
                 )}
               </NewNoteDirectoryContext>

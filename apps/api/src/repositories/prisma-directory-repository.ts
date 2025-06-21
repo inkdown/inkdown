@@ -1,7 +1,15 @@
-import type { Directory, Prisma } from "@prisma/client";
+import { Directory, Prisma } from "@prisma/client";
 import type { DirectoryRepository } from "./directory-repository";
 
 import { prisma } from "@/lib/prisma";
+
+const directoryWithRelations = Prisma.validator<Prisma.DirectoryDefaultArgs>()({
+  include: {
+    childrens: true,
+    notes: true
+  }
+});
+export type DirectoryWithRelations = Prisma.DirectoryGetPayload<typeof directoryWithRelations>;
 
 export class PrismaDirectoryRepository implements DirectoryRepository {
   
@@ -16,11 +24,11 @@ export class PrismaDirectoryRepository implements DirectoryRepository {
     });
   }
   
-  async getByAuthor(authorId: string): Promise<Directory[]> {
+  async getByAuthor(authorId: string): Promise<DirectoryWithRelations[]> {
   
     return prisma.directory.findMany({      
       include: {
-        //childrens: true,
+        childrens: true,
         notes: true
       },
       where: {

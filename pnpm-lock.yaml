@@ -95,12 +95,6 @@ importers:
       '@codemirror/view':
         specifier: ^6.37.2
         version: 6.37.2
-      '@headless-tree/core':
-        specifier: ^1.2.0
-        version: 1.2.0
-      '@headless-tree/react':
-        specifier: ^1.2.0
-        version: 1.2.0(@headless-tree/core@1.2.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@hookform/resolvers':
         specifier: ^5.1.1
         version: 5.1.1(react-hook-form@7.58.1(react@19.1.0))
@@ -134,9 +128,6 @@ importers:
       '@radix-ui/react-separator':
         specifier: ^1.1.7
         version: 1.1.7(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@radix-ui/react-slot':
-        specifier: ^1.2.3
-        version: 1.2.3(@types/react@19.1.8)(react@19.1.0)
       '@radix-ui/react-tooltip':
         specifier: ^1.2.7
         version: 1.2.7(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -657,16 +648,6 @@ packages:
 
   '@floating-ui/utils@0.2.9':
     resolution: {integrity: sha512-MDWhGtE+eHw5JW7lq4qhc5yRLS11ERl1c7Z6Xd0a58DozHES6EnNNwUWbMiG4J9Cgj053Bhk8zvlhFYKVhULwg==}
-
-  '@headless-tree/core@1.2.0':
-    resolution: {integrity: sha512-Exqb4TlbcZoUbE9FXQ6Wox5wltP4ztCrOUvCYEMJdNRMaqZ9wtFgSPHkG9YZf6O0Nnl2f/Mb6lEj4pBuekKG7w==}
-
-  '@headless-tree/react@1.2.0':
-    resolution: {integrity: sha512-+ip7UhTdhhnAEqPgrCLptlDnn51yipFDaKXVpwzed4NEPjBBuGWueveNn23D9nOJEWDlhIw2z9lkBrOw8em+/w==}
-    peerDependencies:
-      '@headless-tree/core': '*'
-      react: '*'
-      react-dom: '*'
 
   '@hookform/resolvers@5.1.1':
     resolution: {integrity: sha512-J/NVING3LMAEvexJkyTLjruSm7aOFx7QX21pzkiJfMoNG0wl5aFEjLTl7ay7IQb9EWY6AkrBy7tHL2Alijpdcg==}
@@ -3548,14 +3529,6 @@ snapshots:
       react-dom: 19.1.0(react@19.1.0)
 
   '@floating-ui/utils@0.2.9': {}
-
-  '@headless-tree/core@1.2.0': {}
-
-  '@headless-tree/react@1.2.0(@headless-tree/core@1.2.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
-    dependencies:
-      '@headless-tree/core': 1.2.0
-      react: 19.1.0
-      react-dom: 19.1.0(react@19.1.0)
 
   '@hookform/resolvers@5.1.1(react-hook-form@7.58.1(react@19.1.0))':
     dependencies:

@@ -1,17 +1,18 @@
-import type { NoteDataType } from "./note-types";
+import type { NoteDataType } from "../../notes/types/note-types";
+
 
 export interface DirectoryDataType {
-	title: string;
-	id: number;
-	parentId: number | null;
-	childrens: DirectoryDataType[] | null;
-	notes: NoteDataType[];
+  id: number;
+  title: string;
+  parentId: number | null;
+  authorId: string;
+  createdAt: string; // Ou Date se converter
+  updatedAt: string; // Ou Date se converter
+  notes: NoteDataType[];
+  childrens: DirectoryWithChildren[];
 }
 
-export type DirectoryWithChildren = DirectoryDataType & {
-	notes: NoteDataType[];
-	childrens: DirectoryWithChildren[];
-};
+export type DirectoryWithChildren = DirectoryDataType;
 
 export type GetAuthorDirectoriesResponse = {
 	directories: DirectoryWithChildren[],

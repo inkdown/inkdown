@@ -4,11 +4,8 @@ import { AccountNotFoundEror } from "../errors/account-not-found-error";
 
 interface CreateNoteUseCaseRequest {
   title: string,
-  content: string,
-  type: string,
   authorId: string,
-  icon: string,
-  dirId: number | undefined
+  dirId: number | null
 };
 
 
@@ -16,7 +13,7 @@ export class CreateNoteUseCase {
   constructor(private repository: NoteRepository, private authorRepository: AuthorsRepository) { }
 
   async create({
-    title, content, type, authorId, icon, dirId
+    title, authorId, dirId
   }: CreateNoteUseCaseRequest) {
 
     const author = await this.authorRepository.findById(authorId);
@@ -29,9 +26,8 @@ export class CreateNoteUseCase {
 
     const note = await this.repository.create({
       title,
-      content,
-      type,
-      icon,
+      content: "",
+      type: "PRIVATE",
       author_id: authorId,
       directoryId: dirId
     });
