@@ -4,7 +4,7 @@ import { InvalidDirectoryError } from "../errors/invalid-directory-data-error";
 interface CreateDirectoryRequest {
   title: string,
   authorId: string,
-  parentId: number | undefined
+  parentId: number | null
 };
 
 export class CreateDirectory {
@@ -25,7 +25,7 @@ export class CreateDirectory {
       };
     }
 
-    await this.repository.create({
+    return await this.repository.create({
       title,
       Author: {
         connect: {

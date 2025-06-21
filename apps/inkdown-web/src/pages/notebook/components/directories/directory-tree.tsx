@@ -7,7 +7,7 @@ import { DirectoryContext } from "./directory-context";
 import { hotkeysCoreFeature, renamingFeature, selectionFeature, syncDataLoaderFeature } from "@headless-tree/core";
 import type { NoteDataType } from "@/features/notes/types/note-types";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 
 export interface DirectoryItem {
@@ -37,6 +37,7 @@ export function DirectoryTree({
     indent,
     rootItemId: "root",
     getItemName: (item) => item.getItemData().name,
+    
     isItemFolder: (item) =>
       item.getItemData().type === 'directory' &&
       (item.getItemData().children?.length ?? 0) > 0,
@@ -65,6 +66,7 @@ export function DirectoryTree({
       selectionFeature,
     ],
   });
+
   // Rebuida a arvore do zero, porem quando o estado inteiro muda.
   /* useEffect(() => {
     tree.rebuildTree();

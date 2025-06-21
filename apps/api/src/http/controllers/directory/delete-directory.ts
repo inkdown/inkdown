@@ -7,17 +7,22 @@ import { z } from "zod";
 export default async function deleteDirectoryController(req: FastifyRequest, reply: FastifyReply){
 
   const deleteDirSchema = z.object({
-    directoryId: z.number().int(),
+    directoryId: z.string(),
   });
+  console.log("?");
 
-  const { directoryId } = deleteDirSchema.parse(req.body);
+  console.log(req.params);
+
+  const { directoryId } = deleteDirSchema.parse(req.params);
+
+  console.log(directoryId)
 
   const authorId = req.user.sub;
 
   const useCase = makeDeleteDirectoryUseCase();
 
   try {
-    await useCase.delete({
+    await useCase.delete({  
       dirId: directoryId,
       authorId,
     });

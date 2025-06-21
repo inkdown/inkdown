@@ -11,7 +11,7 @@ export const app = fastify();
 
 app.register(cors, {
   origin: env.CONSUMER_URL,
-  methods: ['GET', 'POST', 'OPTIONS', 'PUT'],
+  methods: ['GET', 'POST', 'OPTIONS', 'PUT', "DELETE"],
   credentials: true,
 });
 
@@ -42,6 +42,8 @@ const publicRoutes = [
 appRoutes(app);
 
 app.addHook('preHandler', async (request: FastifyRequest, reply: FastifyReply) => {
+
+  console.log(request.originalUrl);
 
   if (publicRoutes.includes(request.originalUrl ?? request.url) || 
       request.originalUrl.includes("/auth/github/callback") || 

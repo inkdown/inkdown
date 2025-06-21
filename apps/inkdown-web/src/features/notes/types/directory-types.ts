@@ -9,11 +9,23 @@ export interface DirectoryDataType {
 }
 
 export type DirectoryWithChildren = DirectoryDataType & {
-  notes: NoteDataType[];
-  childrens: DirectoryWithChildren[];
+	notes: NoteDataType[];
+	childrens: DirectoryWithChildren[];
 };
 
 export type GetAuthorDirectoriesResponse = {
 	directories: DirectoryWithChildren[],
 	notes: NoteDataType[],
+}
+
+export type CreateDirectoryRequest = {
+	title: string,
+	parentId: number | null
+}
+
+export type CreateDirectoryResponse = {
+	title: string;
+	parentId: number | null;
+	id: number;
+	authorId: string;
 }

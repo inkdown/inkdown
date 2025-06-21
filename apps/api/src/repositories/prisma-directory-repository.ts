@@ -55,8 +55,8 @@ export class PrismaDirectoryRepository implements DirectoryRepository {
     });
   };
   
-  async create(data: Prisma.DirectoryCreateInput): Promise<void> {
-    await prisma.directory.create({
+  async create(data: Prisma.DirectoryCreateInput): Promise<Directory> {
+    return await prisma.directory.create({
       data
     });
   };

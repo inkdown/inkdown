@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { DirectoryWithChildren, GetAuthorDirectoriesResponse } from "../types/directory-types";
+import type { CreateDirectoryRequest, CreateDirectoryResponse, DirectoryWithChildren, GetAuthorDirectoriesResponse } from "../types/directory-types";
 import type { AxiosError } from "axios";
 import { type GetNoteContentResponse } from "../types/note-types";
 import Cookies from "js-cookie";
@@ -46,10 +46,6 @@ export async function getAuthorDirectoriesWithChildrenNotes() {
   try {
     const token = Cookies.get("inkdown-auth");
 
-    if(!token) {
-      return;
-    }
-
     const response = await api.get<GetAuthorDirectoriesResponse>("directories/author", {
       headers: {
         "Authorization": `Bearer ${token}`,
@@ -80,7 +76,52 @@ export async function renameDirectory(newName: string, id: number) {
     }, {
       withCredentials: true,
     });
+
+
     console.log(response)
+  } catch (err) {
+    const axiosError = err as AxiosError;
+
+    console.log(axiosError);
+
+    throw new Error(axiosError.response?.data as string);
+  }
+}
+
+export async function createDirectory(data: CreateDirectoryRequest) {
+  try {
+    const cookie = Cookies.get("inkdown-auth");
+
+    const response = await api.post<CreateDirectoryResponse>("/directories/create", {
+      title: data.title,
+      parentId: data.parentId
+    }, {
+      headers: {
+        "Authorization": `Bearer ${cookie}`
+      }
+    });
+
+    console.log(response);
+
+    return response.data;
+  } catch (err) {
+    const axiosError = err as AxiosError;
+
+    console.log(axiosError);
+
+    throw new Error(axiosError.response?.data as string);
+  }
+}
+
+export async function deleteDirectory(id: number) {
+  try {
+    const token = Cookies.get("inkdown-auth");
+
+    await api.delete(`/directories/delete/${id}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    });
   } catch (err) {
     const axiosError = err as AxiosError;
 

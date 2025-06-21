@@ -6,20 +6,24 @@ import { z } from "zod";
 export async function creeateDirectory(request: FastifyRequest, reply: FastifyReply) {
   const creeateDirectorySchema = z.object({
     title: z.string().min(1),
-    parentId: z.number().int().optional()
+    parentId: z.number().int().nullable()
   });
 
   const { title, parentId } = creeateDirectorySchema.parse(request.body);
   const authorId = request.user.sub;
+  console.log(authorId);
 
   const useCase = makeCreateDirectory();
 
   try {
-    await useCase.create({
+     const data = await useCase.create({
       title,
       authorId,
       parentId
     });
+    console.log(data);
+    return data;
+
   } catch(err) {
     if(err instanceof InvalidDirectoryError) {
       return reply.status(400).send({

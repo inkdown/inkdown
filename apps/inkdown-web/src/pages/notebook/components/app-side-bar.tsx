@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Notifications } from "./notifications";
 import { useQuery } from "@tanstack/react-query";
-import { getAuthorDirectoriesWithChildrenNotes, updateDirectoryTitle } from "@/features/notes/services/note-service";
+import { createDirectory, getAuthorDirectoriesWithChildrenNotes, updateDirectoryTitle } from "@/features/notes/services/note-service";
 import { notifications } from "@/data";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,7 +22,8 @@ import type { NoteDataType } from "@/features/notes/types/note-types";
 import { SearchButton } from "@/components/search-button";
 import { ArchivedNotes } from "./archived/archived-notes";
 import { FilePlus, FolderPlus, Settings } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { NewNoteDirectoryContext } from "./new-note-directory-context";
 
 export const AppSidebar = () => {
   const queryClient = useQueryClient();
@@ -54,6 +55,31 @@ export const AppSidebar = () => {
     }
   });
 
+  const createDirectoryMutation = useMutation({
+    mutationFn: createDirectory,
+    mutationKey: ["get-author-directories"],
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(["get-author-directories"],
+        (oldData: { directories: DirectoryWithChildren[]; notes: NoteDataType[] } | undefined) => {
+          if (!oldData) return oldData;
+
+          const newDir = {
+            childrens: [],
+            id: data.id,
+            notes: [],
+            title: data.title,
+            parentId: data.parentId
+          };
+
+          return {
+            ...oldData,
+            directories: [...oldData.directories, newDir],
+          };
+        }
+      );
+    }
+  });
+
   const notesForSearch = useMemo(() => {
     if (!data) return [];
     return [
@@ -61,6 +87,10 @@ export const AppSidebar = () => {
       ...data.directories.flatMap((dir) => dir.notes)
     ];
   }, [data]);
+
+  useEffect(() => {
+    console.log(data);
+  }, [data])
 
   return (
     <Sidebar>
@@ -94,29 +124,45 @@ export const AppSidebar = () => {
               <ArchivedNotes data={data.notes.filter((n) => n.archived)} />
             </span>
           </SidebarHeader>
-          <SidebarGroup>
-            <SidebarGroupContent>
-              {data.notes.length === 0 ? (
-                <div className="w-full h-full flex-col pt-20 flex items-center space-y-3">
-                  <span>
-                    clique com o <span className="text-indigo-500">botão direito</span>
-                  </span>
-                  <span className="flex items-center space-x-2">
-                    <FolderPlus size={20} /> <span>/</span> <FilePlus size={20}/>
-                  </span>
-                </div>
-              ) : (
-                <DirectoryTree
-                  directories={data.directories}
-                  aloneNotes={data.notes}
-                  onRenameDirectory={renameMutation.mutate}
-                />
-              )}
+          <SidebarGroup className="h-full">
+            <SidebarGroupContent className="h-full">
+              <NewNoteDirectoryContext
+                handleNewNote={() => {
+                  data.notes.push({
+                    title: "Sem titulo",
+                    archived: false,
+                    content: "",
+                    createdAt: new Date().toString(),
+                    directoryId: null,
+                    type: "public",
+                    id: ""
+                  });
+                }}
+                handleNewDirectory={() => createDirectoryMutation.mutate({ title: "Sem titulo", parentId: null })}
+              >
+                {data.notes.length === 0 && data.directories.length === 0 ? (
+
+                  <div className="w-full h-full flex-col pt-20 flex items-center space-y-3">
+                    <span>
+                      clique com o <span className="text-indigo-500">botão direito</span>
+                    </span>
+                    <span className="flex items-center space-x-2">
+                      <FolderPlus size={20} /> <span>/</span> <FilePlus size={20} />
+                    </span>
+                  </div>
+                ) : (
+                  <DirectoryTree
+                    directories={data.directories}
+                    aloneNotes={data.notes}
+                    onRenameDirectory={renameMutation.mutate}
+                  />
+                )}
+              </NewNoteDirectoryContext>
             </SidebarGroupContent>
           </SidebarGroup>
         </>
       )}
-{/*       <SidebarFooter>
+      {/*       <SidebarFooter>
         <p>footer</p>
       </SidebarFooter> */}
       <SidebarRail />

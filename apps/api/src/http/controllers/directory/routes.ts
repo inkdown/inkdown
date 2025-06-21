@@ -8,7 +8,7 @@ import moveDirectory from "./move-directory";
 
 export async function directoryRoutes(instance: FastifyInstance) {
   instance.post("/create", creeateDirectory);
-  instance.delete("/delete", deleteDirectoryController);
+  instance.delete("/delete/:directoryId", deleteDirectoryController);
   instance.put("/rename", renameDirectory);
   instance.get("/author", getAuthorDirectories);
   instance.put("/move/:directoryId/:parentId", moveDirectory);

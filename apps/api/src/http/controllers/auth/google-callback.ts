@@ -36,6 +36,7 @@ export async function googleCallBack(req: FastifyRequest, reply: FastifyReply) {
 
 
   await useCase.create({
+    id: sub,
     accountType: "GOOGLE",
     alias: name,
     email,

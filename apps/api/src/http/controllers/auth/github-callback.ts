@@ -51,6 +51,7 @@ export async function githubCallback(req: FastifyRequest, reply: FastifyReply) {
   const useCase = makeCreateAuthorUseCase();
 
   await useCase.create({
+    id: String(id),
     accountType: "GITHUB",
     alias: name,
     email: primaryEmail,
