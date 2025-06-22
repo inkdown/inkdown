@@ -1,30 +1,39 @@
-import { useCallback, useEffect } from 'react'
-import useCodeMirror from './use-codemirror'
-import './editor.css'
+import CodeMirror, { type ViewUpdate } from "@uiw/react-codemirror";
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+import { solarizedLight } from "@uiw/codemirror-theme-solarized"
+import { vim } from "@replit/codemirror-vim"
+import { markdownLineStyler } from "./editor-style-liner.ts"
+import "./editor.css"
 
-interface Props {
-  initialDoc: string,
-  onChange: (doc: string) => void
+interface EditorProps {
+  content: string,
+  onChange: (content: string, view: ViewUpdate) => void;
 }
 
-export const Editor: React.FC<Props> = (props) => {
-  const { onChange, initialDoc } = props
-  const handleChange = useCallback(
-    (    state: { doc: { toString: () => string } }) => onChange(state.doc.toString()),
-    [onChange]
-  )
-  const [refContainer, setVimMode] = useCodeMirror<HTMLDivElement>({
-    initialDoc: initialDoc,
-    onChange: handleChange
-  })
-
-
+export function Editor({ content, onChange }: EditorProps) {
   return (
-    <div className="w-full h-full flex flex-col">
-      <button onClick={() => setVimMode}>
-        toggle vim mode
-      </button>
-      <div className='h-full w-full flex' ref={refContainer}></div>
+     <div className='w-full h-full prose'> {/* Removido height fixo */}
+      <CodeMirror
+        value={content}
+        height="100%" 
+        theme={solarizedLight}
+        extensions={[
+          markdown({
+            base: markdownLanguage,
+          }),
+          markdownLineStyler(),
+          vim()
+        ]}
+        onChange={onChange}
+        basicSetup={{
+          syntaxHighlighting: true,
+          lineNumbers: true,
+          highlightActiveLine: true,
+          bracketMatching: true,
+          autocompletion: true,
+          highlightSelectionMatches: true,
+        }}
+      />
     </div>
-  )
+  );
 }

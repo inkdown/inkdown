@@ -10,24 +10,25 @@ import SettingsLayout from "./pages/settings/layout";
 import AuthPage from "./pages/auth/page";
 import NotebookLayout from "./pages/notebook/layout";
 import NotFoundPage from "./pages/notefound-page";
+
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <App/>
+    element: <App />
   },
   {
     path: "/notebook",
-    element: <NotebookLayout/>,
+    element: <NotebookLayout />,
     children: [
       {
         index: true,
-        element: <NotebookPage/>
+        element: <NotebookPage />
       }
     ]
   },
   {
     path: "/settings",
-    element: <SettingsLayout/>,
+    element: <SettingsLayout />,
     children: [
       {
         index: true,
@@ -37,18 +38,18 @@ export const router = createBrowserRouter([
   },
   {
     path: "/signup",
-    element: <SignUpPage/>
+    element: <SignUpPage />
   },
   {
     path: "/login",
-    element: <LoginPage/>
+    element: <LoginPage />
   },
   {
     path: "/notfound",
-    element: <NotFoundPage/>
+    element: <NotFoundPage />
   },
   {
     path: "/auth-callback",
-    element: <AuthPage/>
-  }
+    element: <AuthPage />
+  },
 ]);

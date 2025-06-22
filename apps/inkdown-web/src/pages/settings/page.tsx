@@ -10,6 +10,7 @@ import { SettingsSidebar } from "./components/settings-side-bar";
 import { useSearchParams } from "react-router-dom";
 import { ModeToggle } from "@/components/theme-toggle";
 import { ExploreDialog } from "./components/explore-theme-dialog";
+import { EditorPage } from "./components/editor-page";
 
 
 export default function SettingsPage() {
@@ -57,6 +58,9 @@ export default function SettingsPage() {
                 </span>
               </div>
             </div>
+          )}
+          {option === "Editor" && (
+            <EditorPage />
           )}
 
         </div>
