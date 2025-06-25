@@ -5,8 +5,9 @@ import { reactionRotes } from "./controllers/reaction/routes";
 import { shareRoutes } from "./controllers/share/routes";
 import { directoryRoutes } from "./controllers/directory/routes";
 import { authRoutes } from "./controllers/auth/routes";
+import { settingRoute } from "./controllers/setting/route";
 
-export async function appRoutes(instance: FastifyInstance){
+export async function appRoutes(instance: FastifyInstance) {
   instance.register(authorRoutes, { prefix: "/authors" });
   instance.register(notesRoutes, { prefix: "/notes" });
   instance.register(reactionRotes, { prefix: "/reactions" });
@@ -14,4 +15,8 @@ export async function appRoutes(instance: FastifyInstance){
   instance.register(directoryRoutes, { prefix: "/directories" });
   // instance.register(authRoutes, { prefix: "/api/auth" });
   instance.register(authRoutes, { prefix: "/auth" });
-}
+  instance.register(settingRoute, {
+    prefix: "/settings"
+  }
+  )
+}  

@@ -12,10 +12,10 @@ interface EditorProps {
 
 export function Editor({ content, onChange }: EditorProps) {
   return (
-     <div className='w-full h-full prose'> {/* Removido height fixo */}
+    <div className='w-full h-full prose'> {/* Removido height fixo */}
       <CodeMirror
         value={content}
-        height="100%" 
+        height="100%"
         theme={solarizedLight}
         extensions={[
           markdown({
