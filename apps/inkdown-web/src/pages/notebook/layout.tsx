@@ -4,12 +4,14 @@ import { Outlet } from "react-router-dom";
 import { ThemeProvider } from "@/providers/theme-provider";
 
 export default function NotebookLayout() {
+  
+
   return (
     <ThemeProvider>
       <SidebarProvider>
         <AppSidebar />
         <main className="w-full ">
-          <Outlet />
+          <Outlet  />
         </main>
       </SidebarProvider>
     </ThemeProvider>

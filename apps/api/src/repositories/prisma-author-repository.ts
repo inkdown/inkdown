@@ -1,7 +1,6 @@
-import type { Author, Prisma } from "@prisma/client";
+import type { Author, Prisma, Settings } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { AuthorsRepository } from "./author-repository";
-
 
 export class PrismaAuthorRepository implements AuthorsRepository {
   findById(id: string): Promise<Author | null> {
@@ -42,12 +41,29 @@ export class PrismaAuthorRepository implements AuthorsRepository {
   }
 
   async findByEmail(email: string): Promise<Author | null> {
-    const author = await prisma.author.findUnique({
+    const data = await prisma.author.findUnique({
       where: {
         email,
-      }
+      },
     });
-    return author;
+    return data;
+  }
+
+  async getUserData(authorId: string):  Promise<Prisma.AuthorGetPayload<{ include: { settings: true } }> | null>{
+    return await prisma.author.findUnique({
+      where: {
+        id: authorId,
+      },
+      include: {
+        settings: {
+          where: {
+            author: {
+              id: authorId
+            }
+          }
+        }
+      }
+    })
   }
 
 }

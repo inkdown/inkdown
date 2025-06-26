@@ -12,7 +12,6 @@ import { ModeToggle } from "@/components/theme-toggle";
 import { ExploreDialog } from "./components/explore-theme-dialog";
 import { EditorPage } from "./components/editor-page";
 
-
 export default function SettingsPage() {
 
   const [searchParams] = useSearchParams();
@@ -21,7 +20,7 @@ export default function SettingsPage() {
   return (
     <>
       <SettingsSidebar option={option !== null ? option : "Editor"} />
-      <main className="flex h-[480px] flex-1 flex-col overflow-hidden">
+      <main className="flex h-full flex-1 flex-col overflow-hidden">
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <Breadcrumb>
@@ -37,7 +36,7 @@ export default function SettingsPage() {
             </Breadcrumb>
           </div>
         </header>
-        <div className="w-full pt-10 px-4 space-y-5">
+        <div className="w-full h-full pt-10 px-8 py-10 space-y-5">
           <h1 className="text-3xl text-indigo-700 font-bold">{option}</h1>
           <hr className="h-2 w-full" />
           {option === "Temas" && (
@@ -60,7 +59,8 @@ export default function SettingsPage() {
             </div>
           )}
           {option === "Editor" && (
-            <EditorPage />
+            <EditorPage
+            />
           )}
 
         </div>

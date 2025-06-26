@@ -116,6 +116,86 @@
 	--sidebar-ring: oklch(0.552 0.016 285.938);
 }
 
+/* Gruvbox Dark */
+.gruvbox-dark {
+  --color-background: #282828;
+  --color-foreground: #ebdbb2;
+  --color-primary:   #98971a;
+  --color-secondary: #458588;
+  --color-accent:    #689d6a;
+  --color-muted:     #504945;
+  --color-destructive: #cc241d;
+  --color-border:    #3c3836;
+  --color-input:     #3c3836;
+  --color-ring:      #504945;
+  --color-popover:   #3c3836;
+  --color-card:      #3c3836;
+}
+
+/* Dracula */
+.dracula {
+  --color-background: #282a36;
+  --color-foreground: #f8f8f2;
+  --color-primary:   #6272a4;
+  --color-secondary: #ff79c6;
+  --color-accent:    #8be9fd;
+  --color-muted:     #44475a;
+  --color-destructive: #ff5555;
+  --color-border:    #44475a;
+  --color-input:     #44475a;
+  --color-ring:      #6272a4;
+  --color-popover:   #44475a;
+  --color-card:      #44475a;
+}
+
+/* Solarized Dark */
+.solarized-dark {
+  --color-background: #002b36;
+  --color-foreground: #839496;
+  --color-primary:   #b58900;
+  --color-secondary: #268bd2;
+  --color-accent:    #2aa198;
+  --color-muted:     #073642;
+  --color-destructive: #dc322f;
+  --color-border:    #073642;
+  --color-input:     #073642;
+  --color-ring:      #586e75;
+  --color-popover:   #073642;
+  --color-card:      #073642;
+}
+
+/* Nord */
+.nord {
+  --color-background: #2e3440;
+  --color-foreground: #d8dee9;
+  --color-primary:   #5e81ac;
+  --color-secondary: #b48ead;
+  --color-accent:    #88c0d0;
+  --color-muted:     #3b4252;
+  --color-destructive: #bf616a;
+  --color-border:    #3b4252;
+  --color-input:     #3b4252;
+  --color-ring:      #5e81ac;
+  --color-popover:   #3b4252;
+  --color-card:      #3b4252;
+}
+
+/* One Dark (Atom) */
+.one-dark {
+  --color-background: #282c34;
+  --color-foreground: #abb2bf;
+  --color-primary:   #61afef;
+  --color-secondary: #c678dd;
+  --color-accent:    #56b6c2;
+  --color-muted:     #21252b;
+  --color-destructive: #e06c75;
+  --color-border:    #21252b;
+  --color-input:     #21252b;
+  --color-ring:      #61afef;
+  --color-popover:   #21252b;
+  --color-card:      #21252b;
+}
+
 @layer base {
 	* {
 		@apply border-border outline-ring/50;

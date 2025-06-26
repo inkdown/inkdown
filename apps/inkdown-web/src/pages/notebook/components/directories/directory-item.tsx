@@ -41,7 +41,7 @@ export const DirectoryItem = ({
       <ContextMenu>
         <ContextMenuTrigger>
           <div
-            className="flex items-center py-1 px-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded hover:cursor-pointer"
+            className="flex items-center py-1 px-2 hover:bg-zinc-200  rounded hover:cursor-pointer"
             style={{ paddingLeft: `${depth * 20 + 8}px` }}
           >
             <button

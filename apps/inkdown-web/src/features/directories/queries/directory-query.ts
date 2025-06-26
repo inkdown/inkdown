@@ -7,7 +7,6 @@ export function useDirectoriesWithChildrenQuery(): UseQueryResult<GetAuthorDirec
   return useQuery({
     queryKey: ["get-author-directories"],
     queryFn: getAuthorDirectoriesWithChildrenNotes,
-    retry: true
   });
 }
 

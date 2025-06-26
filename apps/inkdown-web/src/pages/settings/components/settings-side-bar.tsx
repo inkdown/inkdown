@@ -23,9 +23,9 @@ import { Link } from "react-router-dom";
 const data = {
 	nav: [
 		{ name: "Editor", icon: Menu },
-		{ name: "Privacidade", icon: Paintbrush },
-		{ name: "Idiomas", icon: Globe },
-		{ name: "Documentação", icon: Paperclip },
+		// { name: "Privacidade", icon: Paintbrush },
+		// { name: "Idiomas", icon: Globe },
+		//{ name: "Documentação", icon: Paperclip },
 		{ name: "Temas", icon: Palette }
 	],
 };

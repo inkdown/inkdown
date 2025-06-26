@@ -57,11 +57,11 @@ export default function NotebookPage() {
 
 
   return (
-    <div className="flex-1 flex flex-col h-full"> {/* Alterado */}
+    <div className="flex-1 flex flex-col h-full">
       <span className="w-full flex justify-end">
         {editingNote && <CircleDotIcon size={15} />}
       </span>
-      <div className="flex-1 flex flex-col pt-6 space-y-5"> {/* Alterado */}
+      <div className="flex-1 flex flex-col pt-6 space-y-5">
         <TitleEditor
           sidebarState={state}
           handleChangeTitle={setNoteTitle}
@@ -69,7 +69,7 @@ export default function NotebookPage() {
           handleFocusEditor={() => contentRef.current?.focus()}
           handleSaveNote={() => setEditingNote(true)}
         />
-        <div className="flex-1 flex flex-col md:flex-row"> {/* Alterado */}
+        <div className="flex-1 flex flex-col md:flex-row">
           <div className={`${state === 'expanded' ? 'md:w-1/2' : 'md:w-1/2'} h-1/2 md:h-full border-r border-gray-200`}>
             <Editor
               content={data.content}
@@ -86,7 +86,7 @@ export default function NotebookPage() {
         </div>
       </div>
 
-      {isLoading && <Skeleton className="flex-1" />} {/* Alterado */}
+      {isLoading && <Skeleton className="flex-1" />}
     </div>
   );
 }

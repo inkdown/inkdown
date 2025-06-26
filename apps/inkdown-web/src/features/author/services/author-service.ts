@@ -2,6 +2,7 @@ import { api, type ApiResponse } from "@/lib/api";
 import type { AxiosError } from "axios";
 import type { AuthAuthorSocial, ConfirmCode, ErrorMessage, LoginData, SendCodeResponse, SignUpData } from "../types/user-types";
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 export async function signUp({
   name,
@@ -84,17 +85,36 @@ export async function login(data: LoginData): Promise<ApiResponse | void> {
 }
 
 export async function getAuthorData() {
-  console.log("oiqwjjowqejqwoeqw");
-/* const data
+  try {
 
-  const { image, email, name, id, } = data.user as UserDataType;
+    const token = Cookies.get("inkdown-auth");
 
-  return {
-    image,
-    email,
-    name,
-    id
-  }; */
+    const response = await api.get("/authors/data", {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    const data = response.data;
+
+    localStorage.setItem("autocompletion", data.settings.autocompletion);
+    localStorage.setItem("bracketMathing", data.settings.bracketMathing);
+    localStorage.setItem("hightlightActiveLine", data.settings.hightlightActiveLine);
+    localStorage.setItem("hightlightSelectionMatches", data.settings.hightlightSelectionMatches);
+    localStorage.setItem("lineNumbers", data.settings.lineNumbers);
+    localStorage.setItem("markdownLineStyler", data.settings.markdownLineStyler);
+    localStorage.setItem("syntaxHighlighting", data.settings.syntaxHighlighting);
+    localStorage.setItem("theme", data.settings.theme);
+    localStorage.setItem("vimMode", data.settings.vimMode);
+
+    return data;
+  } catch (err) {
+    const axiosError = err as AxiosError;
+
+    console.log(axiosError);
+
+    throw new Error(axiosError.response?.data as string);
+  }
 };
 
 
