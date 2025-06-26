@@ -14,16 +14,15 @@ model Author {
   password  String
   createdAt DateTime @default(now())
 
-  settings         Settings?   @relation("AuthorSettings")
-  accountType      String
-  status           String
-  imageUrl         String
-  notes            Note[]
-  reactions        Reaction[]
-  shares           Share[]
-  directories      Directory[]
-  Tag              Tag[]
-  settingsAuthorId String
+  settings    Settings?   @relation("AuthorSettings")
+  accountType String
+  status      String
+  imageUrl    String
+  notes       Note[]
+  reactions   Reaction[]
+  shares      Share[]
+  directories Directory[]
+  Tag         Tag[]
 
   @@map("authors")
 }

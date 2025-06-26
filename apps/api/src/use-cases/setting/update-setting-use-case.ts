@@ -1,22 +1,27 @@
 import { PrismaSettingRepository } from "@/repositories/prisma-setting-repository";
 
 interface UpdateSettingRequest {
-  theme: String | undefined;
-  markdownLineStyler: Boolean | undefined;
-  vimMode: Boolean | undefined;
-  syntaxHighlighting: Boolean | undefined;
-  bracketMathing: Boolean | undefined;
-  autocompletion: Boolean | undefined;
-  hightlightSelectionMatches: Boolean | undefined;
-  hightlightActiveLine: Boolean | undefined;
-  lineNumbers: Boolean | undefined;
+  theme?: string;
+  markdownLineStyler?: boolean;
+  vimMode?: boolean;
+  syntaxHighlighting?: boolean;
+  bracketMathing?: boolean;
+  autocompletion?: boolean;
+  hightlightSelectionMatches?: boolean;
+  hightlightActiveLine?: boolean;
+  lineNumbers?: boolean;
+  authorId: string
 }
 
 export class UpdateSettingUseCase {
 
   constructor(private repo: PrismaSettingRepository) { };
 
-  async update(data: UpdateSettingRequest) {
-
+  async update({
+    authorId, autocompletion, bracketMathing,  hightlightActiveLine, hightlightSelectionMatches, lineNumbers, markdownLineStyler, syntaxHighlighting, theme, vimMode
+  }: UpdateSettingRequest) {
+    await this.repo.update({
+      autocompletion, bracketMathing,  hightlightActiveLine, hightlightSelectionMatches, lineNumbers, markdownLineStyler, syntaxHighlighting, theme, vimMode
+    }, authorId)
   }
 }

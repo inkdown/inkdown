@@ -31,7 +31,7 @@ export class CreateAuthorUseCase{
       alias,
       accountType,
       imageUrl,
-      status: "pending"
+      status: "pending",
     });
     return author;
   }
