@@ -36,7 +36,7 @@ const createDecorations = (state: EditorState): DecorationSet => {
           widgets.push(createLineDecoration(line.from, "cm-h3"));
         }
         
-        else if (node.name === "FencedCode") {
+        /* else if (node.name === "FencedCode") {
           const startLine = state.doc.lineAt(node.from);
           widgets.push(createLineDecoration(startLine.from, "cm-code-start"));
           
@@ -46,7 +46,7 @@ const createDecorations = (state: EditorState): DecorationSet => {
 
         else if (node.name === "ListItem") {
           widgets.push(createLineDecoration(line.from, "cm-list-item"));
-        }
+        } */
       } catch (e) {
         console.warn("Error processing node:", e);
       }

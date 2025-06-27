@@ -1,20 +1,21 @@
 import CodeMirror, { type Extension, type ViewUpdate } from "@uiw/react-codemirror";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { solarizedLight } from "@uiw/codemirror-theme-solarized"
 import { vim } from "@replit/codemirror-vim"
 import { markdownLineStyler } from "./editor-style-liner.ts"
 import "./editor.css"
 import { getEditorSettings } from "@/features/settings/services/settings-service.ts";
+import React from "react";
+import { EditorView } from "@codemirror/view";
 
 interface EditorProps {
   content: string,
   onChange: (content: string, view: ViewUpdate) => void;
 }
 
-export function Editor({ content, onChange }: EditorProps) {
+export const Editor = React.forwardRef<any, EditorProps>(({ content, onChange }, ref) => {
   const userEditor = getEditorSettings();
 
-  const extensions: Extension[] = [markdown({base: markdownLanguage})];
+  const extensions: Extension[] = [markdown({base: markdownLanguage}), EditorView.lineWrapping];
 
   if (userEditor.markdownLineStyler) {
     extensions.push(markdownLineStyler());
@@ -34,15 +35,15 @@ export function Editor({ content, onChange }: EditorProps) {
   }
 
   return (
-    <div className='w-full h-full prose'>
+    <div className='w-full h-full border-none prose outline-none'>
       <CodeMirror
+        ref={ref}
         value={content}
         height="100%"
-        theme={solarizedLight}
         extensions={extensions}
         onChange={onChange}
         basicSetup={basicSetup}
       />
     </div>
   );
-}
+});

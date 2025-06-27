@@ -1,5 +1,3 @@
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { LucidePilcrowSquare } from "lucide-react";
 import { useState } from "react";
 
 interface TitleEditorProps {
@@ -21,9 +19,9 @@ export const TitleEditor = ({ initialTitle, handleSaveNote, handleFocusEditor, h
   };
 
   return (
-     <div className={`w-full flex flex-col items-center h-min ${sidebarState === 'expanded' ? 'px-4' : ''}`}>
+     <div className={`w-full flex flex-col ml-4 items-center h-min`}>
       <input
-        className="font-bold h-fit w-full caret-accent-foreground text-3xl text-indigo-700 border-none outline-none focus:outline-none focus:ring-0 ring-0 resize-none"
+        className="font-bold h-fit w-full caret-accent-foreground text-3xl text-theme-accent border-none outline-none focus:outline-none focus:ring-0 ring-0 resize-none"
         defaultValue={initialTitle}
         readOnly={!editingTitle}
         onClick={() => setEditingTitle(true)}
@@ -43,12 +41,6 @@ export const TitleEditor = ({ initialTitle, handleSaveNote, handleFocusEditor, h
           }
         }}
       />
-      <span className="w-full flex justify-end mr-3">
-        {sidebarState === "collapsed" && <SidebarTrigger />}
-        <button>
-          <LucidePilcrowSquare />
-        </button>
-      </span>
     </div>
   )
 }

@@ -17,6 +17,18 @@ export class PrismaNoteRepository implements NoteRepository{
       where: {
         id,
       },
+      include: {
+        Directory: {
+          select: {
+            title: true,
+            parent: {
+              select: {
+                title: true,
+              }
+            }
+          },
+        } 
+      }
     });
     return note;
   }

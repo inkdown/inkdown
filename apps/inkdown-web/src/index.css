@@ -8,6 +8,7 @@
 @customzvariant dark (&:is(.dark *));
 
 @theme inline {
+  --radius: 0.625rem;
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--font-sans: var(--font-geist-sans);
@@ -123,31 +124,36 @@
 }
 [data-theme='gruvbox-light']{
   --radius: 0.625rem;
-  --background: oklch(0.98 0.01 82.03);
-  --foreground: oklch(0.29 0 0);
-  --muted: oklch(0.95 0.01 82.03);
-  --muted-foreground: oklch(0.59 0.03 46.88);
-  --popover: oklch(0.99 0.01 82.03);
-  --popover-foreground: oklch(0.25 0.01 276.39);
+  --background: oklch(0.97 0.01 82.03);
+  --foreground: oklch(0.17 0.005 270.37);
+  --muted: oklch(0.92 0.01 82.03);
+  --muted-foreground: oklch(0.41 0.005 270.37);
+  --popover: oklch(0.98 0.01 82.03);
+  --popover-foreground: oklch(0.17 0.005 270.37);
   --card: oklch(0.98 0.01 82.03);
-  --card-foreground: oklch(0.29 0 0);
-  --border: oklch(0.92 0.01 82.03);
-  --input: oklch(0.9 0.01 82.03);
-  --primary: oklch(0.29 0 0);
-  --primary-foreground: oklch(0.98 0.01 82.03);
-  --secondary: oklch(0.95 0.01 82.03);
-  --secondary-foreground: oklch(0.29 0 0);
-  --accent: oklch(0.92 0.01 82.03);
-  --accent-foreground: oklch(0.29 0 0);
-  --destructive: oklch(0.62 0.18 25.78);
-  --destructive-foreground: oklch(0.98 0.01 82.03);
-  --ring: oklch(0.29 0 0);
-  --chart-1: oklch(0.8 0.14 88.13);
-  --chart-2: oklch(0.75 0.15 109.69);
-  --chart-3: oklch(0.69 0.06 163.13);
-  --chart-4: oklch(0.71 0.15 55.78);
-  --chart-5: oklch(0.76 0.1 140.63);
-  --radius: 0.5rem;
+  --card-foreground: oklch(0.17 0.005 270.37);
+  --border: oklch(0.84 0.01 82.03);
+  --input: oklch(0.92 0.01 82.03);
+  --primary: oklch(0.62 0.23 73.83);
+  --primary-foreground: oklch(0.17 0.005 270.37);
+  --secondary: oklch(0.71 0.11 135.0);
+  --secondary-foreground: oklch(0.17 0.005 270.37);
+  --accent: oklch(0.62 0.15 326.04);
+  --accent-foreground: oklch(0.17 0.005 270.37);
+  --destructive: oklch(0.62 0.24 29.15);
+  --destructive-foreground: oklch(0.97 0.01 82.03);
+  --ring: oklch(0.71 0.23 73.83);
+  --chart-1: oklch(0.62 0.18 109.51);
+  --chart-2: oklch(0.62 0.24 41.11);
+  --chart-3: oklch(0.71 0.23 73.83);
+  --chart-4: oklch(0.62 0.07 184.7);
+  --chart-5: oklch(0.62 0.15 326.04);
+  --h1-color: oklch(0.52 0.24 29.15);
+  --h2-color: oklch(0.62 0.23 73.83);
+  --h3-color: oklch(0.52 0.18 109.51);
+  --h4-color: oklch(0.52 0.11 135.0);
+  --h5-color: oklch(0.42 0.07 184.7);
+  --h6-color: oklch(0.52 0.15 326.04);
   --theme-accent: var(--destructive);
 }
   

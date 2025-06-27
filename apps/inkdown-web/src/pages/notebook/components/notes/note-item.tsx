@@ -15,7 +15,7 @@ export const NoteItem = ({ note, depth, onDelete }: NoteItemProps) => {
       <ContextMenuTrigger>
         <Link to={`/notebook?id=${note.id}`}>
           <div
-            className="flex items-center py-1 px-2 hover:bg-accent  rounded cursor-pointer"
+            className="flex items-center py-1 px-2 hover:bg-accent rounded hover:cursor-pointer"
             style={{ paddingLeft: `${depth * 20 + 32}px` }}
           >
             <FileIcon className="h-4 w-4 mr-2 " />

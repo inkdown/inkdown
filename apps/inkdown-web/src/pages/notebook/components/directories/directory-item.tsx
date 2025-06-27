@@ -41,11 +41,11 @@ export const DirectoryItem = ({
       <ContextMenu>
         <ContextMenuTrigger>
           <div
-            className="flex items-center py-1 px-2 hover:bg-accent  rounded hover:cursor-pointer"
+            className="flex items-center py-1 px-2 hover:bg-accent rounded"
             style={{ paddingLeft: `${depth * 20 + 8}px` }}
           >
             <button
-              className="mr-1 w-full flex items-center"
+              className="mr-1 w-full flex items-center hover:cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsExpanded(!isExpanded);

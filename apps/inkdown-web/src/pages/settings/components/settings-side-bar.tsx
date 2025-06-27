@@ -26,7 +26,7 @@ const data = {
 		// { name: "Privacidade", icon: Paintbrush },
 		// { name: "Idiomas", icon: Globe },
 		//{ name: "Documentação", icon: Paperclip },
-		{ name: "Temas", icon: Palette }
+		{ name: "Aparência", icon: Palette }
 	],
 };
 

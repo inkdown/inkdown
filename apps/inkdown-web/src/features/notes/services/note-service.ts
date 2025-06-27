@@ -52,9 +52,9 @@ export async function getNoteContent(noteId: string) {
   });
   console.log(response);
 
-  const { note } = response.data;
+  const data = response.data;
 
-  return note === undefined ? null : note;
+  return data.note === undefined ? null : data;
 }
 
 export async function deleteNote(noteId: string) {
