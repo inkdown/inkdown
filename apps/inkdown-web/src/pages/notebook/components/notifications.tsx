@@ -16,9 +16,9 @@ export const Notifications: React.FC<NotificationsProps> = ({
 			<SidebarMenuItem className="flex items-center gap-2">
 				<SidebarMenuButton className="pl-0">
 					{notifications.length === 0 ? (
-						<Bell size={18} className="text-indigo-400" />
+						<Bell size={18} className="text-theme-accent" />
 					) : (
-						<BellDot size={18} className="text-indigo-400" />
+						<BellDot size={18} className="text-theme-accent" />
 					)}
 					<span>Atividades</span>
 				</SidebarMenuButton>

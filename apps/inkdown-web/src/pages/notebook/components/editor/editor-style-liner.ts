@@ -28,7 +28,6 @@ const createDecorations = (state: EditorState): DecorationSet => {
       try {
         const line = state.doc.lineAt(node.from);
         
-        // Elementos de cabeçalho - apenas tamanho
         if (node.name === "ATXHeading1") {
           widgets.push(createLineDecoration(line.from, "cm-h1"));
         } else if (node.name === "ATXHeading2") {
@@ -36,16 +35,15 @@ const createDecorations = (state: EditorState): DecorationSet => {
         } else if (node.name === "ATXHeading3") {
           widgets.push(createLineDecoration(line.from, "cm-h3"));
         }
-        // Blocos de código - apenas estrutura (sem afetar o highlight)
+        
         else if (node.name === "FencedCode") {
           const startLine = state.doc.lineAt(node.from);
           widgets.push(createLineDecoration(startLine.from, "cm-code-start"));
           
-          // Adiciona classe para o final do bloco de código
           const endLine = state.doc.lineAt(node.to);
           widgets.push(createLineDecoration(endLine.from, "cm-code-end"));
         }
-        // Elementos de lista - apenas espaçamento
+
         else if (node.name === "ListItem") {
           widgets.push(createLineDecoration(line.from, "cm-list-item"));
         }

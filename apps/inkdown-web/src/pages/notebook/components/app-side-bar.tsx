@@ -81,7 +81,7 @@ export const AppSidebar = () => {
                 {data.notes.length === 0 && data.directories.length === 0 ? (
                   <div className="w-full h-full flex-col pt-20 flex items-center space-y-3">
                     <span>
-                      clique com o <span className="text-indigo-500">botão direito</span>
+                      clique com o <span className="text-theme-accent">botão direito</span>
                     </span>
                     <span className="flex items-center space-x-2">
                       <FolderPlus size={20} /> <span>/</span> <FilePlus size={20} />

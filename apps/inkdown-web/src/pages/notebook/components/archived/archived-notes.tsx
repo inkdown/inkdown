@@ -23,7 +23,7 @@ export const ArchivedNotes: React.FC<ArchivedNotesProps> = ({ data }) => {
 			<SidebarMenuItem>
 				<CollapsibleTrigger className="w-full pl-0" asChild>
 					<SidebarMenuButton className="w-full">
-						<Archive size={40} className="text-indigo-400" />
+						<Archive size={40} className="text-theme-accent" />
 						Arquivados
 					</SidebarMenuButton>
 				</CollapsibleTrigger>

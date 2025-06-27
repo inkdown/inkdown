@@ -47,7 +47,7 @@ export function SettingsSidebar({ option }: { option: string }) {
 								<Link to={`?option=${item.name}`} key={item.name}>
 									<SidebarMenuItem>
 										<SidebarMenuButton
-											className={`${item.name === option && "bg-indigo-700 text-zinc-200 hover:bg-indigo-800 hover:text-zinc-200"}`}
+											className={`${item.name === option && "bg-accent text-primary hover:bg-accent-foreground"}`}
 										>
 											<item.icon />
 											<span>{item.name}</span>

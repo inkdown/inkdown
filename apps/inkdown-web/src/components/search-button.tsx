@@ -46,7 +46,7 @@ export const SearchButton = ({ notes }: SearchButtonProps) => {
 		<>
 			<Button
 				onClick={() => setOpen(true)}
-				className="flex dark:text-zinc-200 w-full justify-start space-x-4 bg-indigo-600 hover:bg-indigo-800 hover:cursor-pointer"
+				className="flex dark:text-zinc-200 w-full justify-start space-x-4 bg-theme-accent hover:bg-accent-foreground hover:cursor-pointer"
 			>
 				<Search />
 				Buscar

@@ -22,7 +22,7 @@ export async function changeUserSetting(data : UpdateSettingRequest) {
     const token = Cookies.get("inkdown-auth");
 
     await api.put("/settings/update", {
-        theme : data.theme,
+        theme : JSON.stringify(data.theme),
         markdownLineStyler : data.markdownLineStyler,
         vimMode : data.vimMode,
         syntaxHighlighting : data.syntaxHighlighting,
