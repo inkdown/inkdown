@@ -2,21 +2,12 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Notebook, Search } from "lucide-react";
 import {
-	Palette,
-	PenBox,
-	Settings,
-	User,
-} from "lucide-react";
-
-import {
 	CommandDialog,
 	CommandEmpty,
 	CommandGroup,
 	CommandInput,
 	CommandItem,
 	CommandList,
-	CommandSeparator,
-	CommandShortcut,
 } from "@/components/ui/command";
 import type { NoteDataType } from "@/features/notes/types/note-types";
 import { Link } from "react-router-dom";
@@ -25,14 +16,14 @@ interface SearchButtonProps {
 	notes: NoteDataType[];
 }
 
-export const SearchButton = ({ notes }: SearchButtonProps) => {
+export const SearchButton = React.memo(({
+	notes
+}: SearchButtonProps) => {
 	const [open, setOpen] = React.useState(false);
-
-	console.log(notes);
 
 	React.useEffect(() => {
 		const down = (e: KeyboardEvent) => {
-			if (e.key === "e" && (e.metaKey || e.ctrlKey)) {
+			if (e.key === "o" && (e.metaKey || e.ctrlKey)) {
 				e.preventDefault();
 				setOpen((open) => !open);
 			}
@@ -46,7 +37,7 @@ export const SearchButton = ({ notes }: SearchButtonProps) => {
 		<>
 			<Button
 				onClick={() => setOpen(true)}
-				className="flex dark:text-zinc-200 w-full justify-start space-x-4 bg-theme-accent hover:bg-accent-foreground hover:cursor-pointer"
+				className="flex bg-theme-accent dark:text-zinc-200 w-full justify-start space-x-4  hover:cursor-pointer"
 			>
 				<Search />
 				Buscar
@@ -75,43 +66,8 @@ export const SearchButton = ({ notes }: SearchButtonProps) => {
 							</Link>
 						))}
 					</CommandGroup>
-					<CommandSeparator />
-					<CommandGroup heading="Configurações">
-						<Link
-							onClick={() => setOpen(false)}
-							to={"/account"}
-							className="hover:cursor-pointer"
-						>
-							<CommandItem>
-								<User />
-								<span>Conta</span>
-								<CommandShortcut>⌘P</CommandShortcut>
-							</CommandItem>
-						</Link>
-						<CommandItem>
-							<PenBox />
-							<span>Editor</span>
-							<CommandShortcut>⌘B</CommandShortcut>
-						</CommandItem>
-						<CommandItem>
-							<Palette />
-							<span>Temas</span>
-							<CommandShortcut>⌘S</CommandShortcut>
-						</CommandItem>
-						<Link
-							onClick={() => setOpen(false)}
-							to={"/settings"}
-							className="hover:cursor-pointer"
-						>
-							<CommandItem>
-								<Settings />
-								<span>Configurações</span>
-								<CommandShortcut>⌘S</CommandShortcut>
-							</CommandItem>
-						</Link>
-					</CommandGroup>
 				</CommandList>
 			</CommandDialog>
 		</>
 	);
-};
+});

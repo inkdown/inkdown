@@ -43,6 +43,7 @@ model Note {
   Share       Share[]
   Directory   Directory? @relation(fields: [directoryId], references: [id], onDelete: Cascade)
   directoryId Int?
+  Tag         Tag[]
 
   @@map("notes")
 }
@@ -66,7 +67,10 @@ model Tag {
   name     String
   color    String
   authorId String
-  Author   Author @relation(fields: [authorId], references: [id])
+  noteId   String
+
+  Author Author @relation(fields: [authorId], references: [id])
+  Note   Note   @relation(fields: [noteId], references: [id])
 
   @@map("tags")
 }

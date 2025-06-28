@@ -26,13 +26,13 @@ export const EditorPage = () => {
         <p className="text-muted-foreground text-sm">{description}</p>
         <button
           onClick={() => toggleSetting(key)}
-          className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors duration-300 ${
+          className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${
             settings[key] ? "bg-theme-accent" : "bg-gray-400"
           }`}
         >
           <div
             className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${
-              settings[key] ? "translate-x-6" : "translate-x-0"
+              settings[key] ? "translate-x-3" : "translate-x-0"
             }`}
           />
         </button>

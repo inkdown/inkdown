@@ -10,14 +10,13 @@ export interface NoteDataType {
 }
 
 export interface GetNoteContentResponse {
-	note: NoteDataType,
-  Directory: {
+	note: NoteDataType & { Directory : {
     title: string,
     parent: {
       title: string
     } | null
-  } | null
-}
+  } | null,
+}}
 
 export interface CreateNoteRequest {
 	title: string,

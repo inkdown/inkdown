@@ -1,10 +1,10 @@
 import { ContextMenuContent, ContextMenuItem } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
-import { useDeleteDirectoryMutation } from "@/features/directories/queries/directory-query";
+import { useDeleteDirectoryMutation, useRenameDirectoryMutation } from "@/features/directories/queries/directory-query";
 import type { DirectoryWithChildren } from "@/features/directories/types/directory-types";
 import { ContextMenu, ContextMenuTrigger } from "@radix-ui/react-context-menu";
 import { ChevronDownIcon, ChevronRightIcon, Edit, FilePlus, FolderIcon, FolderOpenIcon, FolderPlus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NoteItem } from "../notes/note-item";
 import { useDeleteNoteMutationQuery } from "@/features/notes/queries/note-query";
 
@@ -13,7 +13,6 @@ interface DirectoryItemProps {
   depth?: number;
   onCreateNote: (parentId: number | null) => void;
   onCreateDirectory: (parentId: number | null) => void;
-  onRenameDirectory: (id: number, newTitle: string) => void;
 }
 
 export const DirectoryItem = ({
@@ -21,27 +20,35 @@ export const DirectoryItem = ({
   depth = 0,
   onCreateNote,
   onCreateDirectory,
-  onRenameDirectory
 }: DirectoryItemProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(directory.title);
   const deleteDirectoryMutation = useDeleteDirectoryMutation();
+  const renameDirectoryMutation = useRenameDirectoryMutation();
   const deleteNoteMutation = useDeleteNoteMutationQuery();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleRename = () => {
     if (newName.trim() && newName !== directory.title) {
-      onRenameDirectory(directory.id, newName);
+      renameDirectoryMutation.mutate({ id: directory.id, newName });
     }
     setIsRenaming(false);
   };
+
+  const handleCloseAutoFocus = (event: Event) => {
+    if (isRenaming) {
+      event.preventDefault();
+      inputRef.current?.focus();
+    }
+  }
 
   return (
     <div className="w-full">
       <ContextMenu>
         <ContextMenuTrigger>
           <div
-            className="flex items-center py-1 px-2 hover:bg-accent rounded"
+            className="flex items-center py-2 px-2 hover:bg-accent rounded"
             style={{ paddingLeft: `${depth * 20 + 8}px` }}
           >
             <button
@@ -54,25 +61,31 @@ export const DirectoryItem = ({
 
               {
                 isExpanded ? (
-                  <ChevronDownIcon className="h-4 w-4" />
+                  <ChevronDownIcon className="h-4 w-4 flex-shrink-0" />
                 ) : (
-                  <ChevronRightIcon className="h-4 w-4" />
+                  <ChevronRightIcon className="h-4 w-4 flex-shrink-0" />
                 )}
 
 
               {isExpanded ? (
-                <FolderOpenIcon className="h-4 w-4 mr-2 ml-2" />
+                <FolderOpenIcon className="h-4 w-4 mr-2 ml-2 flex-shrink-0" />
               ) : (
-                <FolderIcon className="h-4 w-4 mr-2 ml-2" />
+                <FolderIcon className="h-4 w-4 mr-2 ml-2 flex-shrink-0" />
               )}
 
               {isRenaming ? (
                 <Input
-                  autoFocus
+                  ref={inputRef}
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   onBlur={handleRename}
-                  onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleRename();
+                    } else if (e.key === ' ') {
+                      e.stopPropagation();
+                    }
+                  }}
                   className="h-6 px-1 text-sm"
                   onClick={(e) => e.stopPropagation()}
                 />
@@ -87,19 +100,19 @@ export const DirectoryItem = ({
           </div>
         </ContextMenuTrigger>
 
-        <ContextMenuContent>
-          <ContextMenuItem onClick={() => onCreateNote(directory.id)}>
+        <ContextMenuContent onCloseAutoFocus={handleCloseAutoFocus}>
+          <ContextMenuItem onSelect={() => onCreateNote(directory.id)}>
             <FilePlus className="h-4 w-4 mr-2" /> Nova Nota
           </ContextMenuItem>
-          <ContextMenuItem onClick={() => onCreateDirectory(directory.id)}>
+          <ContextMenuItem onSelect={() => onCreateDirectory(directory.id)}>
             <FolderPlus className="h-4 w-4 mr-2" /> Novo Diretório
           </ContextMenuItem>
-          <ContextMenuItem onClick={() => setIsRenaming(true)}>
+          <ContextMenuItem onSelect={() => setIsRenaming(true)}>
             <Edit className="h-4 w-4 mr-2" /> Renomear
           </ContextMenuItem>
           <ContextMenuItem
             className="text-red-600"
-            onClick={() => deleteDirectoryMutation.mutate(directory.id)}
+            onSelect={() => deleteDirectoryMutation.mutate(directory.id)}
           >
             <Trash2 className="h-4 w-4 mr-2" /> Excluir
           </ContextMenuItem>
@@ -123,7 +136,6 @@ export const DirectoryItem = ({
               depth={depth + 1}
               onCreateNote={onCreateNote}
               onCreateDirectory={onCreateDirectory}
-              onRenameDirectory={onRenameDirectory}
             />
           ))}
         </div>

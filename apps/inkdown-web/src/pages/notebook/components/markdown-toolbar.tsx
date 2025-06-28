@@ -99,7 +99,7 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({ editorRef, not
   };
 
   return (
-    <div className="flex space-x-2 ml-4">
+    <div className="flex space-x-4 ml-4">
       <button className='hover:cursor-pointer hover:opacity-80' onClick={() => applyMarkdown('**', '**')}><Bold size={18} /></button>
       <button className='hover:cursor-pointer hover:opacity-80' onClick={() => applyMarkdown('*', '*')}><Italic size={18} /></button>
       <button className='hover:cursor-pointer hover:opacity-80' onClick={() => applyMarkdown('~~', '~~')}><Strikethrough size={18} /></button>

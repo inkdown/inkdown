@@ -10,7 +10,6 @@ interface DirectoryTreeProps {
   aloneNotes: NoteDataType[];
   onCreateNote: (parentId: number | null) => void;
   onCreateDirectory: (parentId: number | null) => void;
-  onRenameDirectory: (id: number, newTitle: string) => void;
 }
 
 export const DirectoryTree = ({
@@ -18,7 +17,6 @@ export const DirectoryTree = ({
   aloneNotes,
   onCreateNote,
   onCreateDirectory,
-  onRenameDirectory
 }: DirectoryTreeProps) => {
   const deleteNoteMutation = useDeleteNoteMutationQuery();
 
@@ -31,7 +29,6 @@ export const DirectoryTree = ({
           depth={0}
           onCreateNote={onCreateNote}
           onCreateDirectory={onCreateDirectory}
-          onRenameDirectory={onRenameDirectory}
         />
       ))}
       {aloneNotes.map(note => (

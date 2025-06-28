@@ -1,58 +1,71 @@
 import {
   Sidebar,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
   SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Notifications } from "./notifications";
-import { notifications } from "@/data";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DirectoryTree } from "./directories/directory-tree";
-import type { NotificationDataType } from "@/features/notification/types/notification-types";
 import { SearchButton } from "@/components/search-button";
 import { ArchivedNotes } from "./archived/archived-notes";
 import { FilePlus, FolderPlus, Settings } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { NewNoteDirectoryContext } from "./new-note-directory-context";
-import { useCreateDirectoryMutation, useDirectoriesWithChildrenQuery, useRenameDirectoryMutation } from "@/features/directories/queries/directory-query";
+import { useCreateDirectoryMutation, useDirectoriesWithChildrenQuery } from "@/features/directories/queries/directory-query";
 import { useCreateNoteMutation } from "@/features/notes/queries/note-query";
+import type { DirectoryWithChildren } from "@/features/directories/types/directory-types";
+import type { NoteDataType } from "@/features/notes/types/note-types";
 
 export const AppSidebar = () => {
   const { data, isLoading } = useDirectoriesWithChildrenQuery();
-  
+
   const createNoteMutation = useCreateNoteMutation();
   const createDirectoryMutation = useCreateDirectoryMutation();
-  const renameMutation = useRenameDirectoryMutation();
+
+  const getAllNotesFromDirectories = (directories: DirectoryWithChildren[]): NoteDataType[] => {
+    let notes: NoteDataType[] = [];
+    for (const directory of directories) {
+      notes = notes.concat(directory.notes);
+      if (directory.childrens && directory.childrens.length > 0) {
+        notes = notes.concat(getAllNotesFromDirectories(directory.childrens));
+      }
+    }
+    return notes;
+  };
 
   const notesForSearch = useMemo(() => {
     if (!data) return [];
-    return [
-      ...data.notes.filter((n) => !n.archived),
-      ...data.directories.flatMap((dir) => dir.notes)
+
+    const allNotes = [
+      ...data.notes,
+      ...getAllNotesFromDirectories(data.directories)
     ];
+
+    return allNotes.filter((note) => !note.archived);
   }, [data]);
 
-  useEffect(() => {
-    console.log(data);
-  }, [data])
+  const archivedNotes = useMemo(() => {
+    if (!data) return [];
+
+    const allNotes = [
+      ...data.notes,
+      ...getAllNotesFromDirectories(data.directories)
+    ];
+
+    return allNotes.filter((note) => note.archived);
+  }, [data]);
+
 
   return (
     <Sidebar>
       {isLoading && (
         <div className="space-y-2 w-full pt-20 flex items-center flex-col">
-          <Skeleton className="h-6 w-[80%]" />
-          <Skeleton className="h-6 w-[80%]" />
-          <Skeleton className="h-6 w-[80%]" />
-          <Skeleton className="h-6 w-[80%]" />
-          <Skeleton className="h-6 w-[80%]" />
-          <Skeleton className="h-6 w-[80%]" />
-          <Skeleton className="h-6 w-[80%]" />
-          <Skeleton className="h-6 w-[80%]" />
-          <Skeleton className="h-6 w-[80%]" />
+          {Array.from({ length: 9 }).map((_, index) => (
+            <Skeleton key={index} className="h-6 w-[80%]" />
+          ))}
         </div>
       )}
       {data && (
@@ -64,12 +77,9 @@ export const AppSidebar = () => {
                 <Settings size={18} />
               </Link>
             </div>
-            <SearchButton notes={
-              notesForSearch
-            } />
+            <SearchButton notes={notesForSearch} />
             <span className="pl-2 list-none space-y-2">
-              <Notifications notifications={notifications as NotificationDataType[]} />
-              <ArchivedNotes data={data.notes.filter((n) => n.archived)} />
+              <ArchivedNotes data={archivedNotes} />
             </span>
           </SidebarHeader>
           <SidebarGroup className="h-full">
@@ -78,7 +88,7 @@ export const AppSidebar = () => {
                 handleNewNote={() => createNoteMutation.mutate(null)}
                 handleNewDirectory={() => createDirectoryMutation.mutate({ title: "Sem titulo", parentId: null })}
               >
-                {data.notes.length === 0 && data.directories.length === 0 ? (
+                {notesForSearch.length === 0 && archivedNotes.length === 0 ? (
                   <div className="w-full h-full flex-col pt-20 flex items-center space-y-3">
                     <span>
                       clique com o <span className="text-theme-accent">botão direito</span>
@@ -90,10 +100,9 @@ export const AppSidebar = () => {
                 ) : (
                   <DirectoryTree
                     directories={data.directories}
-                    aloneNotes={data.notes.filter(note => !note.directoryId)}
+                    aloneNotes={data.notes.filter(note => !note.directoryId && !note.archived)}
                     onCreateNote={(parentId: number | null) => createNoteMutation.mutate(parentId)}
                     onCreateDirectory={(parentId: number | null) => createDirectoryMutation.mutate({ parentId, title: "Sem titulo" })}
-                    onRenameDirectory={() => console.log("A")}
                   />
                 )}
               </NewNoteDirectoryContext>
@@ -101,9 +110,6 @@ export const AppSidebar = () => {
           </SidebarGroup>
         </>
       )}
-      {/*       <SidebarFooter>
-        <p>footer</p>
-      </SidebarFooter> */}
       <SidebarRail />
     </Sidebar >
   );

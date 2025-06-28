@@ -1,5 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { BookOpen, CircleDotIcon, Columns2, PenLine } from "lucide-react";
 import { TitleEditor } from "./components/title-editor";
@@ -9,6 +9,7 @@ import MarkdownPreview from "./components/editor/preview";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { MarkdownToolbar } from "./components/markdown-toolbar";
+import { NoteOptions } from "./components/note-options";
 
 export default function NotebookPage() {
   const [searchParams] = useSearchParams();
@@ -22,7 +23,6 @@ export default function NotebookPage() {
   };
 
   const [mode, setMode] = useState(defaultMode);
-
   const { data, isLoading } = useNoteContentQuery(id);
   const updateNoteMutation = useUpdateNotaMutation();
 
@@ -30,77 +30,78 @@ export default function NotebookPage() {
   const [noteTitle, setNoteTitle] = useState("");
   const [noteContent, setNoteContent] = useState("");
 
-
   const handleModeChange = () => {
-     console.log("Ao");
-  }
+    console.log("Mode changed");
+  };
 
   useEffect(() => {
     if (data) {
       setNoteTitle(data.note.title);
       setNoteContent(data.note.content);
-    }
+    };
+
   }, [data]);
 
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key.toLowerCase()) {
+        case 's':
+          e.preventDefault();
+          setEditingNote(false);
+          updateNoteMutation.mutate({ id, title: noteTitle, content: noteContent });
+          break;
+        case 'p':
+          e.preventDefault();
+          setMode(prev => ({ divided: false, editor: prev.preview, preview: !prev.preview }));
+          break;
+        case 'i':
+          e.preventDefault();
+          setMode({ divided: true, preview: false, editor: false });
+          break;
+        default:
+          break;
+      }
+    }
+  }, [id, noteTitle, noteContent, updateNoteMutation, mode]);
+
   useEffect(() => {
-    const handleSave = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
-        e.preventDefault();
-        setEditingNote(false);
-        updateNoteMutation.mutate({ id, title: noteTitle, content: noteContent });
-      }
-    };
-
-    const handleTogglePreview = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
-        e.preventDefault();
-        
-        const isInPreviewMode = mode.preview;
-
-        setMode({
-          divided: false,
-          editor: isInPreviewMode,
-          preview: !isInPreviewMode,
-        });
-      }
-    };
-
-    document.addEventListener("keydown", handleSave);
-    document.addEventListener("keydown", handleTogglePreview);
-
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener("keydown", handleSave);
-      document.removeEventListener("keydown", handleTogglePreview);
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [noteTitle, noteContent, id, updateNoteMutation]);
+  }, [handleKeyDown]);
 
   const contentRef = useRef<HTMLTextAreaElement>(null);
   const editorRef = useRef<any>(null);
-
 
   if (!data) {
     return (
       <div className="w-full h-full flex items-center justify-center">
         <h1 className="text-3xl font-bold">Nenhuma nota selecionada</h1>
       </div>
-    )
+    );
   }
 
+  const editorAndPreviewClassName = `${state === 'expanded' ? 'md:w-1/2' : 'md:w-1/2'} h-1/2 md:h-full`;
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-x-hidden">
-      <div className="flex-1  ml-4 flex flex-col pt-6 space-y-5">
+      <div className="flex-1 ml-4 flex flex-col pt-6 space-y-5">
         <div className="w-full flex items-center">
           <div className="flex items-center w-full gap-2 px-4">
-            {data.Directory && (
+            {data.note.Directory && (
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="#">{data.Directory.parent && data.Directory.parent.title}</BreadcrumbLink>
+                    <BreadcrumbLink href="#">{data.note.Directory.parent && <p>...</p>}</BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="hidden md:block" />
+                  <BreadcrumbItem className="hidden md:block">
+                    <BreadcrumbLink href="#">{data.note.Directory.parent && data.note.Directory.parent.title}</BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />
                   <BreadcrumbItem>
-                    <BreadcrumbPage>{data.Directory.title}</BreadcrumbPage>
+                    <BreadcrumbPage>{data.note.Directory.title}</BreadcrumbPage>
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
@@ -111,6 +112,8 @@ export default function NotebookPage() {
             {mode.preview && <BookOpen size={20} />}
             {mode.editor && <PenLine size={20} />}
           </button>
+          <NoteOptions />
+
         </div>
         <TitleEditor
           sidebarState={state}
@@ -128,35 +131,8 @@ export default function NotebookPage() {
           {editingNote && <CircleDotIcon size={20} />}
         </span>
         <div className="flex-1 flex flex-col md:flex-row">
-          {mode.divided && (
-            <>
-              <div className={`${state === 'expanded' ? 'md:w-1/2' : 'md:w-1/2'} h-1/2 md:h-full border-r border-gray-200`}>
-                <Editor
-                  ref={editorRef}
-                  content={data.note.content}
-                  onChange={(newContent) => {
-                    setNoteContent(newContent);
-                    setEditingNote(true);
-                  }}
-                />
-              </div>
-              <div className={`${state === 'expanded' ? 'md:w-1/2' : 'md:w-1/2'} h-1/2 md:h-full overflow-auto`}>
-                <MarkdownPreview
-                  content={noteContent}
-                  className="p-4"
-                />
-              </div>
-            </>
-          )}
-          {mode.preview && (
-            <div className="w-full h-full">
-              <MarkdownPreview
-                content={noteContent}
-              />
-            </div>
-          )}
-          {mode.editor && (
-            <div className={`w-full max-w-full h-1/2 md:h-full border-r border-gray-200`}>
+          {(mode.divided || mode.editor) && (
+            <div className={`${editorAndPreviewClassName} ${mode.editor ? 'w-full' : 'border-r border-gray-200'}`}>
               <Editor
                 ref={editorRef}
                 content={data.note.content}
@@ -167,10 +143,16 @@ export default function NotebookPage() {
               />
             </div>
           )}
-
+          {(mode.divided || mode.preview) && (
+            <div className={`${editorAndPreviewClassName} ${mode.preview ? 'w-full' : 'overflow-auto'}`}>
+              <MarkdownPreview
+                content={noteContent}
+                className={mode.divided ? "p-4" : ""}
+              />
+            </div>
+          )}
         </div>
       </div>
-
       {isLoading && <Skeleton className="flex-1" />}
     </div>
   );

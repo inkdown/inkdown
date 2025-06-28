@@ -1,7 +1,7 @@
 import { Icon } from "@/components/icon";
 
 import { Link, useNavigate } from "react-router-dom";
-import { SignUpForm } from "./compoenents/signup-form";
+import { SignUpForm } from "./components/signup-form";
 import { Button } from "@/components/ui/button";
 import { Github } from "lucide-react";
 import { authAuthorSocial } from "@/features/author/services/author-service";

@@ -65,12 +65,20 @@ export function useUpdateNotaMutation() {
 	return useMutation({
 		mutationFn: ({ id, title, content }: { id: string; title: string; content: string }) =>
 			updateNoteData(id, title, content),
-		onSuccess: (_, variables) => {
-			queryClient.setQueryData(["get-note-content", variables.id], (old: any) => ({
-				...old,
-				title: variables.title,
-				content: variables.content,
-			}));
+		onSuccess: (updatedNote, variables) => {
+			queryClient.setQueryData(["get-note-content", variables.id], (oldData: any) => {
+				if (!oldData) return oldData;
+
+				return {
+					...oldData,
+					note: {
+						...oldData.note,
+						title: updatedNote.title,
+						content: updatedNote.content,
+						updatedAt: updatedNote.updatedAt
+					}
+				};
+			});
 
 			queryClient.setQueryData(["get-author-directories"], (oldData: any) => {
 				if (!oldData) return oldData;

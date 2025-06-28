@@ -39,7 +39,7 @@ export default function SettingsPage() {
         <div className="w-full h-full pt-10 px-8 py-10 space-y-5">
           <h1 className="text-3xl text-theme-accent font-bold">{option}</h1>
           <hr className="h-2 w-full" />
-          {option === "Temas" && (
+          {option === "Aparência" && (
             <div className="space-y-10 flex flex-col">
               <p>
                 Baixe temas padrões conhecidos pela comunidade.

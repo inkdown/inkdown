@@ -43,15 +43,17 @@ export async function getAuthorDirectoriesWithChildrenNotes() {
 
 export async function renameDirectory(newName: string, id: number) {
   try {
+    const token = Cookies.get("inkdown-auth");
+
     const response = await api.put("directories/rename", {
       directoryId: id,
       newTitle: newName,
     }, {
-      withCredentials: true,
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
     });
 
-
-    console.log(response)
   } catch (err) {
     const axiosError = err as AxiosError;
 

@@ -6,7 +6,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 export default function AuthPage() {
   const [search] = useSearchParams();
   const router = useNavigate();
-  useAuthorDataQuery();
 
   useEffect(() => {
     const token = search.get("token");
@@ -17,14 +16,18 @@ export default function AuthPage() {
 
     Cookies.set("inkdown-auth", token);
 
-    
+
 
     router("/notebook");
-  }, [search])
+  },[]);
+
+  useAuthorDataQuery();
+
+
 
   return (
     <div>
-      <p> 
+      <p>
         Carregando...
       </p>
     </div>

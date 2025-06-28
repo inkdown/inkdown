@@ -82,8 +82,7 @@
 	--sidebar-accent-foreground: oklch(0.21 0.006 285.885);
 	--sidebar-border: oklch(0.92 0.004 286.32);
 	--sidebar-ring: oklch(0.705 0.015 286.067);
-  --color-indigo-700: oklch(0.457 0.24 277.023);
-  --theme-accent: oklch(0.457 0.24 277.023)
+  --theme-accent: oklch(0.59 0.20 277);
 }
 
 [data-theme='default-dark'] {
@@ -119,8 +118,7 @@
 	--sidebar-accent-foreground: 0 0% 99%;
 	--sidebar-border: oklch(1 0 0 / 10%);
 	--sidebar-ring: oklch(0.552 0.016 285.938);
-  --color-indigo-700: oklch(0.457 0.24 277.023);
-  --theme-accent: oklch(0.457 0.24 277.023);
+  --theme-accent: oklch(0.59 0.20 277);
 }
 [data-theme='gruvbox-light']{
   --radius: 0.625rem;

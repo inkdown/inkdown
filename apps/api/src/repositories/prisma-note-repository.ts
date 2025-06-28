@@ -27,8 +27,13 @@ export class PrismaNoteRepository implements NoteRepository{
               }
             }
           },
-        } 
-      }
+        },
+        Tag: {
+          where: {
+            noteId: id,
+          },
+        },
+      },
     });
     return note;
   }

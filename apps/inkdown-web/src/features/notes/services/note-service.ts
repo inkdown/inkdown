@@ -29,7 +29,7 @@ export async function createNote(data: CreateNoteRequest) {
 export async function updateNoteData(id: string, title: string, content: string) {
   const token = Cookies.get("inkdown-auth");
 
-  const response = await api.put("notes/update", {
+  const response = await api.put<{ note: NoteDataType }>("/notes/update", {
     id,
     title,
     content,
@@ -39,7 +39,7 @@ export async function updateNoteData(id: string, title: string, content: string)
     },
   });
 
-  console.log(response);
+  return response.data.note;
 }
 
 export async function getNoteContent(noteId: string) {

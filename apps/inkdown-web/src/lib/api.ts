@@ -10,29 +10,25 @@ export const api: AxiosInstance = axios.create({
 
 api.interceptors.response.use(
 	(response) => {
-	
-	console.log(response);
+		console.log(response);
 
-	return Promise.resolve(response);
-}, (error) => {
-	const axiosError = error as AxiosError;
+		return Promise.resolve(response);
+	}, (error) => {
+		const axiosError = error as AxiosError;
 
-	console.log(axiosError);
+		if (axiosError.response) {
+			if (axiosError.response.status === 403) {
+				throw redirect("/login");
+			};
 
-	if(axiosError.response) {
-		if(axiosError.response.status === 403) {
-			window.location.href = "/login";
+			if (axiosError.response.status === 404) {
+				const { message } = axiosError.response.data as ApiErrorResponse;
+				throw redirect(`/notfound?message=${message}`);
+			}
 		};
 
-		if(axiosError.status === 404) {
-			const { message } = axiosError.response.data as ApiErrorResponse;
-
-			window.location.href = `/notfound?message=${message}`;
-		}
-	};
-
-	return Promise.reject(error);
-})
+		return Promise.reject(error);
+	})
 
 
 export interface ApiResponse<TData = unknown> {
