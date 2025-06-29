@@ -6,13 +6,13 @@ import { ContextMenu, ContextMenuTrigger } from "@radix-ui/react-context-menu";
 import { ChevronDownIcon, ChevronRightIcon, Edit, FilePlus, FolderIcon, FolderOpenIcon, FolderPlus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { NoteItem } from "../notes/note-item";
-import { useDeleteNoteMutationQuery } from "@/features/notes/queries/note-query";
 
 interface DirectoryItemProps {
   directory: DirectoryWithChildren;
   depth?: number;
   onCreateNote: (parentId: number | null) => void;
   onCreateDirectory: (parentId: number | null) => void;
+  onArchiveNote: (noteId: string) => void;
 }
 
 export const DirectoryItem = ({
@@ -20,13 +20,13 @@ export const DirectoryItem = ({
   depth = 0,
   onCreateNote,
   onCreateDirectory,
+  onArchiveNote
 }: DirectoryItemProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(directory.title);
   const deleteDirectoryMutation = useDeleteDirectoryMutation();
   const renameDirectoryMutation = useRenameDirectoryMutation();
-  const deleteNoteMutation = useDeleteNoteMutationQuery();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleRename = () => {
@@ -84,6 +84,7 @@ export const DirectoryItem = ({
                       handleRename();
                     } else if (e.key === ' ') {
                       e.stopPropagation();
+                      e.preventDefault();
                     }
                   }}
                   className="h-6 px-1 text-sm"
@@ -117,7 +118,6 @@ export const DirectoryItem = ({
             <Trash2 className="h-4 w-4 mr-2" /> Excluir
           </ContextMenuItem>
         </ContextMenuContent>
-      </ContextMenu>
 
       {isExpanded && (
         <div className="w-full">
@@ -126,7 +126,7 @@ export const DirectoryItem = ({
               key={note.id}
               note={note}
               depth={depth + 1}
-              onDelete={() => deleteNoteMutation.mutate(note.id)}
+              onArchive={onArchiveNote}
             />
           ))}
           {directory.childrens.map(subDir => (
@@ -136,10 +136,12 @@ export const DirectoryItem = ({
               depth={depth + 1}
               onCreateNote={onCreateNote}
               onCreateDirectory={onCreateDirectory}
+              onArchiveNote={onArchiveNote}
             />
           ))}
         </div>
       )}
-    </div>
+    </ContextMenu>
+  </div>
   );
 };

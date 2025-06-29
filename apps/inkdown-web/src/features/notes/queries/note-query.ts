@@ -110,6 +110,82 @@ export function useUpdateNotaMutation() {
 	});
 }
 
+export function useArchiveNoteMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (noteId: string) => {
+      const queryData = queryClient.getQueryData<GetAuthorDirectoriesResponse>(['get-author-directories']);
+      let noteToArchive: NoteDataType | undefined;
+
+      if (queryData) {
+        // Search in root notes
+        noteToArchive = queryData.notes.find(note => note.id === noteId);
+
+        // Search in directory notes
+        if (!noteToArchive) {
+          const findNoteInDirectories = (dirs: DirectoryWithChildren[]): NoteDataType | undefined => {
+            for (const dir of dirs) {
+              const found = dir.notes.find(note => note.id === noteId);
+              if (found) return found;
+              const foundInChildren = findNoteInDirectories(dir.childrens);
+              if (foundInChildren) return foundInChildren;
+            }
+            return undefined;
+          };
+          noteToArchive = findNoteInDirectories(queryData.directories);
+        }
+      }
+
+      if (noteToArchive) {
+        return updateNoteData(noteId, noteToArchive.title, noteToArchive.content, true);
+      } else {
+        throw new Error("Note not found in cache.");
+      }
+    },
+    onMutate: async (noteId) => {
+      await queryClient.cancelQueries({ queryKey: ['get-author-directories'] });
+      
+      const previousData = queryClient.getQueryData<GetAuthorDirectoriesResponse>(
+        ['get-author-directories']
+      );
+
+      if (previousData) {
+        const updatedData = {
+          ...previousData,
+          notes: previousData.notes.map(note => 
+            note.id === noteId ? { ...note, archived: true } : note
+          ),
+          directories: previousData.directories.map(dir => ({
+            ...dir,
+            notes: dir.notes.map(note => 
+              note.id === noteId ? { ...note, archived: true } : note
+            ),
+            childrens: dir.childrens.map(childDir => ({
+              ...childDir,
+              notes: childDir.notes.map(note => 
+                note.id === noteId ? { ...note, archived: true } : note
+              ),
+            })),
+          })),
+        };
+        queryClient.setQueryData(['get-author-directories'], updatedData);
+        return { previousData };
+      }
+      return { previousData: undefined };
+    },
+    onError: (err, _, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(['get-author-directories'], context.previousData);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['get-author-directories'] });
+    }
+  });
+}
+
+
 export function useDeleteNoteMutationQuery() {
   const queryClient = useQueryClient();
 

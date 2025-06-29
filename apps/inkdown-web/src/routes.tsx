@@ -53,6 +53,10 @@ export const router = createBrowserRouter([
     element: <Suspense fallback={<Skeleton className="mx-20 my-8 wfull h-full" />}><NotFoundPage /></Suspense>
   },
   {
+    path: "*", 
+    element: <NotFoundPage/>,
+  },
+  {
     path: "/auth-callback",
     element: <Suspense fallback={<Skeleton className="mx-20 my-8 wfull h-full" />}><AuthPage /></Suspense>
   },

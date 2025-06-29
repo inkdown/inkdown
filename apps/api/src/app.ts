@@ -35,7 +35,8 @@ const publicRoutes = [
   '/auth/google',
   '/auth/google/callback',
   '/auth/github',
-  '/auth/github/callback'
+  '/auth/github/callback',
+  '/notifications/send-message'
 ];
 
 

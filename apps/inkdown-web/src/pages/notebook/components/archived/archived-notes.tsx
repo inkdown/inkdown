@@ -1,4 +1,4 @@
-import type { NoteDataType } from "@/app/@types/note-types";
+import type { NoteDataType } from "@/features/notes/types/note-types";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -7,8 +7,6 @@ import {
 import {
 	SidebarMenuButton,
 	SidebarMenuItem,
-	SidebarMenuSub,
-	SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { Archive } from "lucide-react";
 import { ArchivedNoteContainer } from "./archived-note-container";

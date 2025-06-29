@@ -15,7 +15,7 @@ import { FilePlus, FolderPlus, Settings } from "lucide-react";
 import { useMemo } from "react";
 import { NewNoteDirectoryContext } from "./new-note-directory-context";
 import { useCreateDirectoryMutation, useDirectoriesWithChildrenQuery } from "@/features/directories/queries/directory-query";
-import { useCreateNoteMutation } from "@/features/notes/queries/note-query";
+import { useCreateNoteMutation, useArchiveNoteMutation } from "@/features/notes/queries/note-query";
 import type { DirectoryWithChildren } from "@/features/directories/types/directory-types";
 import type { NoteDataType } from "@/features/notes/types/note-types";
 
@@ -24,6 +24,7 @@ export const AppSidebar = () => {
 
   const createNoteMutation = useCreateNoteMutation();
   const createDirectoryMutation = useCreateDirectoryMutation();
+  const archiveNoteMutation = useArchiveNoteMutation();
 
   const getAllNotesFromDirectories = (directories: DirectoryWithChildren[]): NoteDataType[] => {
     let notes: NoteDataType[] = [];
@@ -103,6 +104,7 @@ export const AppSidebar = () => {
                     aloneNotes={data.notes.filter(note => !note.directoryId && !note.archived)}
                     onCreateNote={(parentId: number | null) => createNoteMutation.mutate(parentId)}
                     onCreateDirectory={(parentId: number | null) => createDirectoryMutation.mutate({ parentId, title: "Sem titulo" })}
+                    onArchiveNote={(noteId: string) => archiveNoteMutation.mutate(noteId)}
                   />
                 )}
               </NewNoteDirectoryContext>

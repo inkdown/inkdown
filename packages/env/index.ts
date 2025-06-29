@@ -19,6 +19,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string(),
   GOOGLE_CLIENT_SECRET: z.string(),
   REDIS_HOST: z.string(),
+  DISCORD_WEBHOOK: z.string(),
 });
 
 const _env = envSchema.safeParse(process.env);

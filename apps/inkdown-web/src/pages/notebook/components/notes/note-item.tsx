@@ -1,21 +1,22 @@
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
-import { useUpdateNotaMutation } from "@/features/notes/queries/note-query";
+import { useArchiveNoteMutation, useUpdateNotaMutation } from "@/features/notes/queries/note-query";
 import type { NoteDataType } from "@/features/notes/types/note-types";
-import { Edit, FileIcon, Trash2 } from "lucide-react";
+import { Archive, Edit, FileIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useRef, useState } from "react";
 
 interface NoteItemProps {
   note: NoteDataType;
   depth: number;
-  onDelete: () => void;
+  onArchive: (noteId: string) => void;
 }
 
-export const NoteItem = ({ note, depth, onDelete }: NoteItemProps) => {
+export const NoteItem = ({ note, depth, onArchive }: NoteItemProps) => {
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(note.title);
   const updateNoteMutation = useUpdateNotaMutation();
+  const archiveNoteMutation = useArchiveNoteMutation();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleRename = () => {
@@ -71,9 +72,11 @@ export const NoteItem = ({ note, depth, onDelete }: NoteItemProps) => {
         </ContextMenuItem>
         <ContextMenuItem
           className="text-red-600"
-          onSelect={onDelete}
+          onSelect={() => {
+            archiveNoteMutation.mutate(note.id);
+          }}
         >
-          <Trash2 className="h-4 w-4 mr-2" /> Excluir
+          <Archive className="h-4 w-4 mr-2" /> Arquivar
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

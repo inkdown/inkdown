@@ -1,23 +1,14 @@
-import type { NoteDataType } from "@/app/@types/note-types";
+import type { NoteDataType } from "@/features/notes/types/note-types";
 import {
 	ContextMenu,
-	ContextMenuCheckboxItem,
 	ContextMenuContent,
 	ContextMenuItem,
-	ContextMenuLabel,
-	ContextMenuRadioGroup,
-	ContextMenuRadioItem,
-	ContextMenuSeparator,
 	ContextMenuShortcut,
-	ContextMenuSub,
-	ContextMenuSubContent,
-	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
 	SidebarMenuSub,
 	SidebarMenuSubButton,
-	SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { ArchiveRestore, ArchiveX } from "lucide-react";
 
@@ -27,7 +18,7 @@ export const ArchivedNoteContainer = ({ note }: { note: NoteDataType }) => {
 			<ContextMenuTrigger>
 				<SidebarMenuSub key={note.id}>
 					<SidebarMenuSubButton className="hover:cursor-pointer">
-						{note.name}
+						{note.title}
 					</SidebarMenuSubButton>
 				</SidebarMenuSub>
 			</ContextMenuTrigger>

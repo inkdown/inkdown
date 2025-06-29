@@ -26,13 +26,14 @@ export async function createNote(data: CreateNoteRequest) {
   }
 }
 
-export async function updateNoteData(id: string, title: string, content: string) {
+export async function updateNoteData(id: string, title: string, content: string, archived?: boolean) {
   const token = Cookies.get("inkdown-auth");
 
   const response = await api.put<{ note: NoteDataType }>("/notes/update", {
     id,
     title,
     content,
+    archived,
   }, {
     headers: {
       "Authorization": `Bearer ${token}`,

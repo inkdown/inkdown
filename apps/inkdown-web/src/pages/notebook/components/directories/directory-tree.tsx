@@ -3,13 +3,13 @@ import type { NoteDataType } from "@/features/notes/types/note-types"
 import { NewNoteDirectoryContext } from "../new-note-directory-context";
 import { DirectoryItem } from "./directory-item";
 import { NoteItem } from "../notes/note-item";
-import { useDeleteNoteMutationQuery } from "@/features/notes/queries/note-query";
 
 interface DirectoryTreeProps {
   directories: DirectoryWithChildren[];
   aloneNotes: NoteDataType[];
   onCreateNote: (parentId: number | null) => void;
   onCreateDirectory: (parentId: number | null) => void;
+  onArchiveNote: (noteId: string) => void;
 }
 
 export const DirectoryTree = ({
@@ -17,8 +17,8 @@ export const DirectoryTree = ({
   aloneNotes,
   onCreateNote,
   onCreateDirectory,
+  onArchiveNote
 }: DirectoryTreeProps) => {
-  const deleteNoteMutation = useDeleteNoteMutationQuery();
 
   return (
     <div className="w-full h-full py-2">
@@ -29,6 +29,7 @@ export const DirectoryTree = ({
           depth={0}
           onCreateNote={onCreateNote}
           onCreateDirectory={onCreateDirectory}
+          onArchiveNote={onArchiveNote}
         />
       ))}
       {aloneNotes.map(note => (
@@ -36,7 +37,7 @@ export const DirectoryTree = ({
           key={note.id}
           note={note}
           depth={0}
-          onDelete={() => deleteNoteMutation.mutate(note.id)}
+          onArchive={onArchiveNote}
         />
       ))}
       <NewNoteDirectoryContext

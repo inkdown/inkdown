@@ -48,7 +48,7 @@ export const SearchButton = React.memo(({
 				</p>
 			</Button>
 			<CommandDialog open={open} onOpenChange={setOpen}>
-				<CommandInput placeholder="Digite o comando..." />
+				<CommandInput placeholder="Digite o nome da nota..." />
 				<CommandList>
 					<CommandEmpty>Nenhum resultado.</CommandEmpty>
 					<CommandGroup heading="Notas">

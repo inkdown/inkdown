@@ -93,10 +93,6 @@ export default function NotebookPage() {
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="#">{data.note.Directory.parent && <p>...</p>}</BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem className="hidden md:block">
                     <BreadcrumbLink href="#">{data.note.Directory.parent && data.note.Directory.parent.title}</BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />
@@ -107,13 +103,17 @@ export default function NotebookPage() {
               </Breadcrumb>
             )}
           </div>
-          <button className="w-full flex justify-end mr-20 hover:cursor-pointer" onClick={handleModeChange}>
-            {mode.divided && <Columns2 size={20} />}
-            {mode.preview && <BookOpen size={20} />}
-            {mode.editor && <PenLine size={20} />}
-          </button>
-          <NoteOptions />
-
+          <div className="w-full space-x-8 flex items-center justify-end">
+            <span>
+              {editingNote && <CircleDotIcon size={15} />}
+            </span>
+            <button className="hover:cursor-pointer" onClick={handleModeChange}>
+              {mode.divided && <Columns2 size={20} />}
+              {mode.preview && <BookOpen size={20} />}
+              {mode.editor && <PenLine size={20} />}
+            </button>
+            <NoteOptions noteId={data.note.id} />
+          </div>
         </div>
         <TitleEditor
           sidebarState={state}
@@ -127,15 +127,12 @@ export default function NotebookPage() {
           noteContent={noteContent}
           setNoteContent={setNoteContent}
         />
-        <span className="ml-4">
-          {editingNote && <CircleDotIcon size={20} />}
-        </span>
         <div className="flex-1 flex flex-col md:flex-row">
           {(mode.divided || mode.editor) && (
             <div className={`${editorAndPreviewClassName} ${mode.editor ? 'w-full' : 'border-r border-gray-200'}`}>
               <Editor
                 ref={editorRef}
-                content={data.note.content}
+                content={noteContent}
                 onChange={(newContent) => {
                   setNoteContent(newContent);
                   setEditingNote(true);
