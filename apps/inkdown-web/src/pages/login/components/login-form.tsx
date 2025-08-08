@@ -35,37 +35,38 @@ export const LoginForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(handleLoginSubmit)} className="w-120 flex flex-col items-center justify-start pt-10 h-100 jp-5">
+    <form onSubmit={handleSubmit(handleLoginSubmit)} className="w-full flex flex-col items-center justify-start pt-10 h-100 jp-5">
       <div className="flex justify-center w-full pt-4 items-center gap-4">
-        <hr className="w-[40%] border-zinc-800" />
-        <span className="text-zinc-800 text-sm">ou</span>
-        <hr className="w-[40%] border-zinc-800" />
+        <hr className="w-[40%] border-muted-foreground" />
+        <span className="text-muted-foreground text-sm">ou</span>
+        <hr className="w-[40%] border-muted-foreground" />
       </div>
       <div className="flex flex-col">
         <label className=" w-80 pt-10" htmlFor="emailInput">
           Email
         </label>
         <Input
-          className="w-80 border-muted-foreground focus-visible:ring-indigo-600"
+          className="w-80 border-muted-foreground focus-visible:ring-indigo-500"
           id="emailInput"
           {...register("email")}
         />
         {errors.email && <ErrorSpan>{errors.email.message}</ErrorSpan>}
       </div>
       <div className="flex flex-col">
-        <label className=" w-80 pt-8" htmlFor="emailInput">
+        <label className=" w-80 pt-8" htmlFor="passwordInput">
           Senha
         </label>
         <Input
-          className="w-80 border-muted-foreground focus-visible:ring-indigo-600"
-          id="emailInput"
+          className="w-80 border-muted-foreground focus-visible:ring-indigo-500"
+          id="passwordInput"
+          type="password"
           {...register("password")}
         />
         {errors.password && <ErrorSpan>{errors.password.message}</ErrorSpan>}
       </div>
       <span className="pt-10">
         <Button
-          className="w-80 bg-indigo-700 hover:bg-indigo-800 hover:cursor-pointer text-zinc-200 font-bold"
+          className="w-80 bg-indigo-500 hover:bg-indigo-600 hover:cursor-pointer text-zinc-200 font-bold"
           type="submit"
         >
           Entrar
@@ -74,7 +75,7 @@ export const LoginForm = () => {
       {feedback}
       <span className="w-80 pt-5 flex gap-1 items-center text-sm text-muted-foreground">
         Não possui uma conta ?
-        <Link to={"/signup"} className="text-indigo-700">
+        <Link to={"/signup"} className="text-indigo-500">
           Criar
         </Link>
       </span>

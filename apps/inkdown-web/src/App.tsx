@@ -1,215 +1,225 @@
-import { ChartBar, Globe, Linkedin, Palette, Paperclip, Twitter, Users, Youtube } from "lucide-react"
-import { Button } from "./components/ui/button"
-import { Logo } from "./components/logo"
+import { Button } from "./components/ui/button";
+import { Logo } from "./components/logo";
+import { Link } from "react-router-dom";
+import { ArrowRight, Code, Edit, Lock, Palette, Terminal, Users } from "lucide-react";
+import { WindowsLogo } from "./components/logos/WindowsLogo";
+import { AppleLogo } from "./components/logos/AppleLogo";
+import { LinuxLogo } from "./components/logos/LinuxLogo";
+import DownloadCard from "./components/ui/download-card";
 
 function App() {
-
   return (
-    <div className="flex w-full h-[350vh] flex-col">
-      <div className="flex p-8 w-full items-center">
-        <Logo type="dark" />
-        <span className="text-sm text-muted-foreground ml-2">beta</span>
-        <span className="flex space-x-8 pl-8">
-          <a
-            href="/download"
-            className="text-zinc-600 ml-15 hover:text-indigo-600 transition-all"
-          >
-            Download
-          </a>
-          <a
-            href="/about"
-            className="text-zinc-600 hover:text-indigo-600 transition-all"
-          >
-            Sobre
-          </a>
-        </span>
-        <a
-          href="/account"
-          className="text-zinc-600  hover:text-indigo-600 transition-all  ml-auto pr-4"
-        >
-          Conta
-        </a>
-        <a href="https://github.com/l-furquim/ink-down" className="h-6 hover:cursor-pointer w-6">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <path
-              d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"
-              fill="currentColor"
-            />
-          </svg>
-        </a>
-      </div>
-      <div className="w-full h-full p-8 flex pt-32">
-        <div className="w-[50%] flex flex-col pl-5 space-y-10">
-          <h1 className="text-zinc-800 text-4xl font-bold ">
-            Liberte suas ideias
-          </h1>
-          <p className="text-zinc-400 w-[70%] pb-20 text-xl">
-            De forma gratuíta, escolha os arquivos que desjea incluir na núvem e
-            os que não deseja
-          </p>
-          <Button
-            className="bg-indigo-600 hover:bg-indigo-800 text-zinc-200 h-12 font-bold w-48"
-            size={"lg"}
-          >
-            Começar
-          </Button>
+    <div className="flex flex-col min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
+      {/* Header */}
+      <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm">
+        <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
+          <Logo />
+          <nav className="ml-auto flex items-center space-x-4">
+            <a href="https://github.com/inkdown/inkdown" target="_blank" rel="noopener noreferrer" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">
+              <svg className="h-5 w-5" viewBox="0 0 16 16"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>
+            </a>
+            <Link
+              to="/login"
+              className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+            >
+              Login
+            </Link>
+            <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              <Link to="/signup">Comece a usar</Link>
+            </Button>
+          </nav>
         </div>
-        <div className="w-[50%]">
-          <div className="relative w-80 h-80 bg-zinc-300 rounded-lg overflow-hidden flex items-center justify-center">
-            <span className="z-10 font-bold">PRINT SCREEN</span>
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute bottom-0 right-0 w-3/4 h-3/4 bg-gradient-to-tr from-indigo-800 to-transparent" />
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1">
+        {/* Hero Section */}
+        <section className="relative w-full pt-24 pb-32 md:pt-32 md:pb-40 bg-slate-50 dark:bg-slate-950 overflow-hidden">
+          <div className="absolute top-0 left-0 -z-10 h-full w-full bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+              <div className="flex flex-col items-start space-y-6 text-center md:text-left">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                  Sua nova experiência de escrita.
+                </h1>
+                <p className="max-w-xl text-lg text-slate-600 dark:text-slate-300">
+                  Inkdown é um editor de markdown elegante, construído para ser <span className="text-indigo-500 font-semibold">leve</span> e <span className="text-indigo-500 font-semibold">seguro</span>. Foco total no que importa: suas ideias.
+                </p>
+                <Button asChild size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white group">
+                  <Link to="/signup">
+                    Começar agora
+                    <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </Button>
+              </div>
+              <div className="relative flex items-center justify-center">
+                <div className="absolute w-full h-full bg-indigo-500/20 blur-3xl rounded-full"></div>
+                <div className="relative w-full max-w-md h-auto bg-white/30 dark:bg-slate-800/30 rounded-2xl shadow-2xl border border-slate-200/50 dark:border-slate-700/50 p-4 backdrop-blur-xl">
+                  <div className="w-full h-8 bg-slate-200 dark:bg-slate-700 rounded-t-lg flex items-center px-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full mr-1.5"></div>
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full mr-1.5"></div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  </div>
+                  <div className="p-4 text-left">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-mono"># Bem-vindo ao Inkdown</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-mono mt-2">- Escreva sem distrações.</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-mono">- Organize suas notas.</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-mono">- Exporte com facilidade.</p>
+                    <div className="w-full h-2 bg-indigo-500 rounded-full mt-4"></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div className="w-full h-full flex pt-30 flex-col pl-8">
-        <h1 className="text-indigo-600 font-bold text-3xl">
-          Contribua para a comunidade
-        </h1>
-        <p className="text-zinc-400 text-xl w-[50%] pt-10">
-          Crie seus próprios temas, compartilha suas notas e colabore para uma
-          comunidade cíclica
-        </p>
-        <a
-          href={"/community"}
-          className="pt-10 text-indigo-600 border-b-[1px] w-fit border-indigo-600"
-        >
-          Ver mais
-        </a>
-        <div className="w-full flex items-center text-zinc-400 justify-center space-x-6 pt-20">
-          <div className="fkex flex-col w-72 h-48 space-y-5 hover:bg-zinc-300 p-2 rounded-md hover:cursor-pointer transition-all">
-            <div className="flex items-center gap-2">
-              <Globe className="text-indigo-600" />
-              <h1 className="font-bold text-zinc-800">Publique suas notas</h1>
+        </section>
+
+        {/* Features Section */}
+        <section id="features" className="w-full py-20 md:py-28 bg-white dark:bg-slate-900">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+              <div className="inline-block rounded-lg bg-indigo-100 dark:bg-indigo-900/30 px-3 py-1 text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                Recursos Poderosos
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                Projetado para performance e prazer
+              </h2>
+              <p className="max-w-2xl text-slate-600 dark:text-slate-300 md:text-lg">
+                Ferramentas que melhoram seu fluxo de trabalho sem nunca atrapalhar seu caminho.
+              </p>
             </div>
-            <p>
-              Escolha as notas que deseja compartilhar, e receba feedback com
-              base nelas
-            </p>
-          </div>
-          <div className="fkex flex-col w-72 h-48 space-y-5 hover:bg-zinc-300 p-2 rounded-md hover:cursor-pointer transition-all">
-            <div className="flex items-center gap-2">
-              <Palette className="text-indigo-600" />
-              <h1 className="font-bold text-zinc-800">Troque seus temas</h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+              <div className="p-8 bg-slate-100 dark:bg-slate-800/50 rounded-2xl">
+                <div className="w-full h-64 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                  <Edit className="w-16 h-16 text-indigo-500" />
+                </div>
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-2xl font-bold">Editor Focado</h3>
+                <p className="text-slate-600 dark:text-slate-300">
+                  Uma interface limpa e minimalista que coloca seu conteúdo em primeiro lugar. Sem sinos e assobios desnecessários, apenas um espaço para você pensar e escrever.
+                </p>
+              </div>
             </div>
-            <p>
-              Explore os temas da comunidade e ecolha o que mais faz sua cara.
-              Não encontrou nenhum? crie o seu próprio no editor de temas e
-              publique para a comunidade.
-            </p>
-          </div>
-          <div className="fkex flex-col w-72 h-48 space-y-5 hover:bg-zinc-300 p-2 rounded-md hover:cursor-pointer transition-all">
-            <div className="flex items-center gap-2">
-              <ChartBar className="text-indigo-600" />
-              <h1 className="font-bold text-zinc-800">Notas otimizadas</h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mt-16">
+              <div className="space-y-4 md:order-2">
+                <h3 className="text-2xl font-bold">Segurança Total</h3>
+                <p className="text-slate-600 dark:text-slate-300">
+                  Suas notas são suas. Com criptografia de ponta a ponta e a opção de auto-hospedagem, você tem controle total sobre seus dados. Sem rastreamento, sem análise, sem preocupações.
+                </p>
+              </div>
+              <div className="p-8 bg-slate-100 dark:bg-slate-800/50 rounded-2xl md:order-1">
+                <div className="w-full h-64 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                  <Lock className="w-16 h-16 text-indigo-500" />
+                </div>
+              </div>
             </div>
-            <p>
-              Graças ao formato das notas nossa aplicação é capaz de converter
-              suas notas com alta performance
-            </p>
           </div>
-        </div>
-        <div className="pt-20  rounded-md h-56">
-          <p>SCREEN SHOT AQUI</p>
-        </div>
-      </div>
-      <div className="w-full h-full pb-30 items-center space-y-8 justify-center flex flex-col pl-5 pt-20">
-        <h1 className="text-4xl font-bold">Sua hora de brilhar chegou</h1>
-        <Button
-          size={"lg"}
-          className="bg-indigo-600 text-2xl hover:cursor-pointer hover:bg-indigo-800 h-16 text-zinc-200 font-bold rounded-md w-60"
-        >
-          Ter o app
-        </Button>
-        <div className="w-full h-72 flex justify-center items-center space-x-10">
-          <div className="bg-zinc-300 border-[1px] border-muted-foreground w-72 group hover:cursor-pointer h-48 flex-col flex space-y-4 p-3 rounded-md text-zinc-800">
-            <span className="flex space-x-3 items-center group-hover:text-indigo-600">
-              <h1 className="text-xl font-bold ">Entre no discord</h1>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                fill="currentColor"
-                viewBox="0 0 16 16"
-              >
-                <path d="M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.2 12.2 0 0 0-3.658 0 8 8 0 0 0-.412-.833.05.05 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.04.04 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032q.003.022.021.037a13.3 13.3 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019q.463-.63.818-1.329a.05.05 0 0 0-.01-.059l-.018-.011a9 9 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019q.127-.095.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.05.05 0 0 1 .053.007q.121.1.248.195a.05.05 0 0 1-.004.085 8 8 0 0 1-1.249.594.05.05 0 0 0-.03.03.05.05 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.2 13.2 0 0 0 4.001-2.02.05.05 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.03.03 0 0 0-.02-.019m-8.198 7.307c-.789 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612m5.316 0c-.788 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612" />
-              </svg>
-            </span>
-            <p>
-              Entre em um servidor de pessoas que partilham seus estudos com a
-              ink down
-            </p>
+        </section>
+
+        {/* Community & Extensibility Section */}
+        <section id="community" className="w-full py-20 md:py-28 bg-slate-50 dark:bg-slate-950">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+              <div className="inline-block rounded-lg bg-indigo-100 dark:bg-indigo-900/30 px-3 py-1 text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                Para a Comunidade
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                Construído para ser seu, de verdade.
+              </h2>
+              <p className="max-w-2xl text-slate-600 dark:text-slate-300 md:text-lg">
+                Inkdown é de código aberto e prospera com a colaboração. Personalize, estenda e contribua.
+              </p>
+            </div>
+            <div className="mx-auto grid max-w-5xl grid-cols-1 sm:grid-cols-2 gap-8">
+              <div className="p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                <Palette className="h-8 w-8 text-indigo-500 mb-3" />
+                <h3 className="text-xl font-bold">Temas e Plugins</h3>
+                <p className="text-slate-600 dark:text-slate-300 mt-2">
+                  Deixe o Inkdown com a sua cara. Crie e compartilhe temas, ou adicione novas funcionalidades com um sistema de plugins em desenvolvimento.
+                </p>
+              </div>
+              <div className="p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                <Users className="h-8 w-8 text-indigo-500 mb-3" />
+                <h3 className="text-xl font-bold">Comunidade Ativa</h3>
+                <p className="text-slate-600 dark:text-slate-300 mt-2">
+                  Junte-se a outros escritores e desenvolvedores. Compartilhe suas notas, peça feedback e ajude a moldar o futuro da plataforma.
+                </p>
+              </div>
+              <div className="p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                <Code className="h-8 w-8 text-indigo-500 mb-3" />
+                <h3 className="text-xl font-bold">100% Código Aberto</h3>
+                <p className="text-slate-600 dark:text-slate-300 mt-2">
+                  Transparência total. Inspecione o código, contribua com melhorias e tenha a certeza de que seus dados estão seguros e sob seu controle.
+                </p>
+              </div>
+              <div className="p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                <Terminal className="h-8 w-8 text-indigo-500 mb-3" />
+                <h3 className="text-xl font-bold">API Extensível</h3>
+                <p className="text-slate-600 dark:text-slate-300 mt-2">
+                  Para os desenvolvedores, estamos construindo uma API robusta para que você possa integrar o Inkdown com suas ferramentas e fluxos de trabalho.
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="bg-zinc-300 border-[1px] border-muted-foreground w-72 group hover:cursor-pointer h-48 flex-col flex space-y-4 p-3 rounded-md text-zinc-800">
-            <span className="flex space-x-3 items-center group-hover:text-indigo-600">
-              <h1 className="text-xl font-bold ">Documentação</h1>
-              <Paperclip />
-            </span>
-            <p>Documentação contando um pouco sobre como utilizar o ink down</p>
+        </section>
+
+        <section id="download" className="w-full py-20 md:py-28">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                Disponível em todas as plataformas
+              </h2>
+            </div>
+            <div className="mx-auto grid max-w-6xl grid-cols-1 lg:grid-cols-3 gap-8">
+              <DownloadCard
+                title="Windows"
+                logo={<WindowsLogo />}
+                options={[
+                  { label: ".exe", value: "exe" },
+                  { label: ".msi", value: "msi" },
+                ]}
+              />
+              <DownloadCard
+                title="macOS"
+                logo={<AppleLogo />}
+                options={[
+                  { label: "Intel", value: "intel" },
+                  { label: "Silicon", value: "silicon" },
+                ]}
+              />
+              <DownloadCard
+                title="Linux"
+                logo={<LinuxLogo />}
+                options={[
+                  { label: ".deb", value: "deb" },
+                  { label: "AppImage", value: "appimage" },
+                  { label: "Snap", value: "snap" },
+                ]}
+              />
+            </div>
           </div>
-          <div className="bg-zinc-300 border-[1px] border-muted-foreground w-72 group hover:cursor-pointer h-48 flex-col flex space-y-4 p-3 rounded-md text-zinc-800">
-            <span className="flex space-x-3 items-center group-hover:text-indigo-600">
-              <h1 className="text-xl font-bold ">Forum da comunidade</h1>
-              <Users />
-            </span>
-            <p>
-              Entre em um servidor de pessoas que partilham seus estudos com a
-              ink down
-            </p>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer className="w-full bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+        <div className="container mx-auto py-8 px-4 md:px-6 flex flex-col md:flex-row items-center justify-between">
+          <div className="flex flex-col items-center md:items-start">
+            <Logo />
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">&copy; 2025 Inkdown. Todos os direitos reservados.</p>
           </div>
+          <nav className="flex gap-4 sm:gap-6 mt-4 md:mt-0">
+            <Link to="#" className="text-xs text-slate-600 dark:text-slate-300 hover:underline underline-offset-4">
+              Termos
+            </Link>
+            <Link to="#" className="text-xs text-slate-600 dark:text-slate-300 hover:underline underline-offset-4">
+              Privacidade
+            </Link>
+          </nav>
         </div>
-      </div>
-      <div className="w-full h-full flex bg-zinc-800 p-8 space-x-10">
-        <div className="flex flex-col justify-start items-center w-56 space-y-20">
-          <Logo type="light" />
-          <span className="flex space-x-6 items-center">
-            <Twitter size={30} className="text-zinc-200" />
-            <Linkedin size={30} className="text-zinc-200" />
-            <Youtube size={30} className="text-zinc-200" />
-          </span>
-        </div>
-        <div className="flex flex-col pt-4 justify-start items-center w-56 space-y-5 text-zinc-200">
-          <h1 className="text-xl font-bold ">Documentação</h1>
-          <a className="opacity-80" href={""}>
-            Lorem
-          </a>
-          <a className="opacity-80" href={""}>
-            Lorem
-          </a>
-          <a className="opacity-80" href={""}>
-            Lorem
-          </a>
-        </div>
-        <div className="flex flex-col pt-4 justify-start items-center w-56 space-y-5 text-zinc-200">
-          <h1 className="text-xl font-bold ">Comunidade</h1>
-          <a className="opacity-80" href={""}>
-            Lorem
-          </a>
-          <a className="opacity-80" href={""}>
-            Lorem
-          </a>
-          <a className="opacity-80" href={""}>
-            Lorem
-          </a>
-        </div>
-        <div className="flex flex-col pt-4 justify-start items-start w-64 space-y-5 text-zinc-200">
-          <h1 className="text-xl w-fit font-bold">Realese notes</h1>
-          <div className="bg-zinc-600 rounded-md hover:cursor-pointer group p-3 flex flex-col w-full items-start justify-center space-y-3">
-            <span className="opacity-80 text-sm group-hover:opacity-100 transition-all">
-              versão 1.0b
-            </span>
-            <h2 className="text-xl font-bold group-hover:text-indigo-500 transition-all">
-              Lançamento da beta
-            </h2>
-            <span className="group-hover:text-indigo-500 transition-all">
-              xx-xx-2025
-            </span>
-          </div>
-        </div>
-      </div>
+      </footer>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

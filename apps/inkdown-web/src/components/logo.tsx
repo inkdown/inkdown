@@ -1,14 +1,13 @@
-interface LogoProps {
-  type: "light" | "dark";
-}
+import { useTheme } from "@/providers/theme-provider";
 
-export const Logo: React.FC<LogoProps> = ({ type }) => {
+export const Logo = () => {
+  const { theme } = useTheme();
+
   return (
     <img
-      src={`${type === "light" ? "logo-light.svg" : "logo.svg"}`}
-      width={200}
-      height={200}
-      alt="Ink down logo"
+      src={theme === "light" ? "/logo.svg" : "/logo-light.svg"}
+      alt="logo"
+      className="w-40"
     />
-  );
-};
+  )
+}
