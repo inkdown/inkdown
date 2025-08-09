@@ -15,7 +15,7 @@ const DocsPage: React.FC = () => {
     const fetchMarkdown = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`/src/pages/docs/content/${fileName}.md`);
+        const response = await fetch(`/docs/content/${fileName}.md`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
