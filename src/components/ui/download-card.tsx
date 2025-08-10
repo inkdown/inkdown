@@ -17,6 +17,29 @@ interface OptionsProps {
 const DownloadCard = ({ logo, title, options }: DownloadCardProps) => {
   const [selected, setSelected] = useState(options[0].value);
 
+  let downloadLink = "";
+
+  switch (selected) {
+    case("silicon"):
+      downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.1.0/darwin/aarch64/dmg/inkdown_0.1.0_aarch64.dmg";
+      break;
+    case("intel"):
+      downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.1.0/darwin/x86_64/dmg/inkdown_0.1.0_x64.dmg";
+      break;
+    case("msi"):
+      downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.1.0/windows/x86_64/msi/inkdown_0.1.0_x64_en-US.msi";
+      break;
+    case("exe"):
+      downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.1.0/windows/x86_64/nsis/inkdown_0.1.0_x64-setup.exe";
+      break;
+    case("deb"):
+      downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.1.0/linux/x86_64/deb/inkdown_0.1.0_amd64.deb";
+      break;
+    case("appimage"):
+      downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.1.0/linux/x86_64/appimage/inkdown_0.1.0_amd64.AppImage";
+      break;
+    }
+
   return (
     <div className="flex flex-col items-center text-center p-8 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow">
       <div className="w-16 h-16 mb-4 text-slate-800 dark:text-white">{logo}</div>
@@ -29,7 +52,7 @@ const DownloadCard = ({ logo, title, options }: DownloadCardProps) => {
         />
       </div>
       <Button asChild className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
-        <Link to={`/download/${title.toLowerCase()}/${selected}`}>Download</Link>
+        <Link to={downloadLink}>Download</Link>
       </Button>
     </div>
   );
