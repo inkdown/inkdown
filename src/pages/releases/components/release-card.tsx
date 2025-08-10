@@ -110,17 +110,17 @@ export function ReleaseCard({ release }: ReleaseCardProps) {
       transition={{ duration: 0.6, ease: "easeOut" }}
       className="group"
     >
-      <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 shadow-sm hover:shadow-lg transition-all duration-300 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 md:p-6 lg:p-8 shadow-sm hover:shadow-lg transition-all duration-300 backdrop-blur-sm">
         {/* Header */}
-        <div className="flex items-start justify-between mb-6">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+        <div className="flex flex-col sm:flex-row items-start justify-between mb-6 gap-4">
+          <div className="flex-1 w-full">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mb-2">
+              <h2 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                 {release.title}
               </h2>
               <Badge 
                 variant="secondary"
-                className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800"
+                className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 w-fit"
               >
                 {release.version}
               </Badge>
@@ -133,21 +133,21 @@ export function ReleaseCard({ release }: ReleaseCardProps) {
         </div>
 
         {/* Description */}
-        <div className="mb-8">
-          <p className="text-slate-600 dark:text-slate-300 text-base leading-relaxed">
+        <div className="mb-6 md:mb-8">
+          <p className="text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed">
             {release.description}
           </p>
         </div>
 
         {/* Changes */}
         <div>
-          <div className="flex items-center gap-2 mb-6">
-            <Tag className="h-5 w-5 text-slate-500 dark:text-slate-400" />
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+          <div className="flex items-center gap-2 mb-4 md:mb-6">
+            <Tag className="h-4 w-4 md:h-5 md:w-5 text-slate-500 dark:text-slate-400" />
+            <h3 className="text-base md:text-lg font-semibold text-slate-900 dark:text-white">
               Principais mudanças
             </h3>
           </div>
-          <div className="grid gap-3">
+          <div className="grid gap-2 md:gap-3">
             {release.changes.map((change, index) => {
               const config = changeTypeConfig[change.type];
               const Icon = config.icon;
@@ -159,10 +159,10 @@ export function ReleaseCard({ release }: ReleaseCardProps) {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
-                  className={`flex items-start gap-4 p-4 rounded-xl border ${config.bgClassName} ${config.borderClassName} hover:scale-[1.02] transition-transform duration-200`}
+                  className={`flex items-start gap-3 md:gap-4 p-3 md:p-4 rounded-xl border ${config.bgClassName} ${config.borderClassName} hover:scale-[1.02] transition-transform duration-200`}
                 >
                   <div className={`flex-shrink-0 mt-0.5 ${config.className}`}>
-                    <Icon className="h-5 w-5" />
+                    <Icon className="h-4 w-4 md:h-5 md:w-5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">

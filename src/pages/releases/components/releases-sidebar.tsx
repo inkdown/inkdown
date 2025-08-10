@@ -22,13 +22,13 @@ const formatId = (version: string) => version.replace(/\./g, '-');
 
 export function ReleasesSidebar({ releases, activeId }: ReleasesSidebarProps) {
   return (
-    <aside className="sticky top-32 h-fit w-72 flex-shrink-0">
-      <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 backdrop-blur-sm">
+    <aside className="lg:sticky lg:top-32 h-fit w-full lg:w-72 flex-shrink-0">
+      <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 md:p-6 backdrop-blur-sm">
         <nav>
-          <h3 className="mb-6 text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
+          <h3 className="mb-4 md:mb-6 text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
             Versões
           </h3>
-          <ul className="space-y-2">
+          <ul className="space-y-2 lg:max-h-[60vh] lg:overflow-y-auto lg:pr-2">
             {releases.map(release => {
               const formattedId = formatId(release.version);
               const isActive = activeId === formattedId;
@@ -37,7 +37,7 @@ export function ReleasesSidebar({ releases, activeId }: ReleasesSidebarProps) {
                   <a
                     href={`#${formattedId}`}
                     className={cn(
-                      'block rounded-lg px-3 py-3 transition-all duration-200 group',
+                      'block rounded-lg px-2 md:px-3 py-2 md:py-3 transition-all duration-200 group',
                       isActive
                         ? 'bg-indigo-50 dark:bg-indigo-900/30 border-l-4 border-indigo-500'
                         : 'hover:bg-slate-50 dark:hover:bg-slate-700/30 border-l-4 border-transparent hover:border-slate-300 dark:hover:border-slate-600',
