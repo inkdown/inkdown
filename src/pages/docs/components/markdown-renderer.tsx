@@ -81,15 +81,13 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
             );
           },
           pre: ({ children, ...props }) => {
-            // Extract language from className if available
+            // Extract code content for copy functionality
             const child = children as any;
-            const className = child?.props?.className || '';
-            const language = className.replace('language-', '') || 'text';
             const code = child?.props?.children || '';
 
             return (
               <div className="code-block-container group">
-                <pre className="hljs" data-language={language} {...props}>
+                <pre {...props}>
                   {children}
                 </pre>
                 <button 

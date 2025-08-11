@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { ChevronRight, Palette, Bug, BookOpen } from "lucide-react";
+import { ThemeToggleCompact } from "@/components/theme-toggle";
 
 interface SidebarProps {
   onLinkClick?: () => void;
@@ -23,11 +24,6 @@ const sidebarSections: SidebarSection[] = [
       {
         title: "Instalação",
         slug: "installation",
-        description: "Guia básico de instalação"
-      },
-      {
-        title: "Guia Completo",
-        slug: "INSTALACAO",
         description: "Instalação detalhada com todas as plataformas"
       }
     ]
@@ -63,13 +59,16 @@ const Sidebar: React.FC<SidebarProps> = ({ onLinkClick }) => {
   return (
     <aside className="w-72 h-screen bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 overflow-y-auto sticky top-0">
       <div className="p-6">
-        <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-            <BookOpen className="w-4 h-4 text-white" />
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <BookOpen className="w-4 h-4 text-white" />
+            </div>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+              Documentação
+            </h2>
           </div>
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-            Documentação
-          </h2>
+          <ThemeToggleCompact />
         </div>
 
         <nav className="space-y-6">

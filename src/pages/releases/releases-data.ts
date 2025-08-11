@@ -14,47 +14,18 @@ export interface Release {
 
 export const releasesData: Release[] = [
   {
-    version: 'v1.1.0',
-    title: 'Momentum',
-    date: 'August 08, 2025',
-    description:
-      'This release focuses on improving the user experience and adding key features for better workflow integration.',
-    platform: 'Cross-platform',
-    changes: [
-      { type: 'feat', description: 'Added new export options: PDF and HTML.' },
-      { type: 'feat', description: 'Integration with cloud storage providers.' },
-      { type: 'perf', description: 'Improved performance on large documents.' },
-      { type: 'docs', description: 'Added comprehensive API documentation.' },
-      { type: 'chore', description: 'Updated internal dependencies to latest versions.' },
-    ],
-  },
-  {
-    version: 'v1.0.2',
-    title: 'Stability Enhancements',
-    date: 'July 21, 2025',
-    description: 'A patch release to address critical bugs and improve the overall stability of the application.',
+    version: '0.1.0',
+    title: 'Inkdown beta',
+    date: 'Ago 11, 2025',
+    description: 'Primeira versão pública para download do inkdown, claro, possivelmente cheia de bugs.',
     platform: 'Desktop',
     changes: [
-      { type: 'fix', description: 'Fixed a critical bug causing data loss during sync.' },
-      { type: 'fix', description: 'Resolved UI glitches on smaller screen sizes.' },
-      { type: 'style', description: 'Improved visual consistency across the interface.' },
-      { type: 'test', description: 'Added comprehensive unit tests for core features.' },
-      { type: 'refactor', description: 'Optimized asset loading times.' },
-    ],
-  },
-  {
-    version: 'v1.0.0',
-    title: 'Genesis',
-    date: 'July 01, 2025',
-    description: 'The first public release of Inkdown! A new way to capture and organize your thoughts.',
-    platform: 'Cross-platform',
-    changes: [
-      { type: 'feat', description: 'Core markdown editor with real-time preview.' },
-      { type: 'feat', description: 'File system-based note organization.' },
-      { type: 'feat', description: 'Light and Dark mode themes.' },
-      { type: 'build', description: 'Configured build system and deployment pipeline.' },
-      { type: 'ci', description: 'Set up continuous integration workflows.' },
-      { type: 'chore', description: 'Initial project setup and deployment.' },
+      { type: 'feat', description: 'Core do editor de markdown com preview.' },
+      { type: 'feat', description: 'Sistemas de arquivos seguro feitos para organização.' },
+      { type: 'feat', description: 'Tema escuro e claro padrões.' },
+      { type: 'feat', description: 'Possibilidade de baixar temas feitos pela comunidade.' },
+      { type: 'build', description: 'App leve e performatico.' },
+      { type: 'ci', description: 'CI integrado para build em mutiplas plataformas.' },
     ],
   },
 ];

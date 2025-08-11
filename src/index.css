@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 
-@customzvariant dark (&:is(.dark *));
+@variant dark (&:is(.dark *));
 
 @theme inline {
   --radius: 0.625rem;

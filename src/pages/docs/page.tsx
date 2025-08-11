@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import MarkdownRenderer from './components/markdown-renderer';
 import Sidebar from './components/sidebar';
-import { useParams } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft, Menu, X } from 'lucide-react';
+import { ThemeToggleCompact } from '@/components/theme-toggle';
+import { Logo } from '@/components/logo';
+import { Button } from '@/components/ui/button';
 
 const DocsPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -34,7 +37,20 @@ const DocsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
-      {/* Header Section */}
+      {/* Header */}
+      <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-sm">
+        <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
+          <Logo type="dark" />
+          <nav className="ml-auto flex items-center space-x-4">
+            <Button variant="ghost" asChild>
+              <Link to="/" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 ">
+                <ArrowLeft className="w-4 h-4" />
+                Voltar ao início
+              </Link>
+            </Button>
+          </nav>
+        </div>
+      </header>
       <section className="relative w-full pt-24 pb-16 bg-slate-50 dark:bg-slate-950 overflow-hidden">
         <div className="absolute top-0 left-0 -z-10 h-full w-full bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
         <div className="container mx-auto px-4 md:px-6">
@@ -75,12 +91,15 @@ const DocsPage: React.FC = () => {
             <div className="md:hidden bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 sticky top-0 z-40">
               <div className="flex items-center justify-between">
                 <h1 className="text-lg font-semibold text-slate-900 dark:text-white">Documentação</h1>
-                <button
-                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                  className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-                >
-                  {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                </button>
+                <div className="flex items-center gap-2">
+                  <ThemeToggleCompact />
+                  <button
+                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                    className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                  >
+                    {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                  </button>
+                </div>
               </div>
             </div>
 
