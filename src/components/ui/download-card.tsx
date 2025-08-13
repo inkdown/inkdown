@@ -21,25 +21,25 @@ const DownloadCard = ({ logo, title, options }: DownloadCardProps) => {
 
  switch (selected) {
   case("silicon"):
-   downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.1.0/darwin/aarch64/inkdown_0.1.0_aarch64.dmg";
+   downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.2.0/darwin/aarch64/inkdown_0.2.0_aarch64.dmg";
    break;
   case("intel"):
-   downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.1.0/darwin/x86_64/inkdown_0.1.0_x64.dmg";
+   downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.2.0/darwin/x86_64/inkdown_0.2.0_x64.dmg";
    break;
   case("msi"):
-   downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.1.0/windows/x86_64/inkdown_0.1.0_x64_en-US.msi";
+   downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.2.0/windows/x86_64/inkdown_0.2.0_x64_en-US.msi";
    break;
   case("exe"):
-   downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.1.0/windows/x86_64/inkdown_0.1.0_x64-setup.exe";
+   downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.2.0/windows/x86_64/inkdown_0.2.0_x64-setup.exe";
    break;
   case("deb"):
-   downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.1.0/linux/x86_64/inkdown_0.1.0_amd64.deb";
+   downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.2.0/linux/x86_64/inkdown_0.2.0_amd64.deb";
    break;
   case("appimage"):
-   downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.1.0/linux/x86_64/inkdown_0.1.0_amd64.AppImage";
+   downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.2.0/linux/x86_64/inkdown_0.2.0_amd64.AppImage";
    break;
   case("rpm"):
-   downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.1.0/linux/x86_64/inkdown-0.1.0-1.x86_64.rpm";
+   downloadLink = "https://pub-43c32df55ce445d4b28356d240d95db1.r2.dev/releases/0.2.0/linux/x86_64/inkdown-0.2.0-1.x86_64.rpm";
    break;
   }
 
