@@ -1,0 +1,69 @@
+/* PopoverSuggest Component Styles */
+/* Base styles for all suggestion containers (EditorSuggest, FuzzySuggestModal, etc.) */
+
+.suggestion-container {
+    background: var(--bg-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 8px;
+    z-index: 1000;
+}
+
+/* Thin scrollbar for suggestion container */
+.suggestion-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.suggestion-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.suggestion-container::-webkit-scrollbar-thumb {
+    background: var(--background-modifier-border);
+    border-radius: 3px;
+}
+
+.suggestion-container::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    background-color: transparent;
+    font-size: var(--font-size-sm);
+}
+
+/* Mouse hover state */
+.suggestion-item:hover {
+    opacity: 0.8;
+}
+
+/* Selected state (both mouse and keyboard) */
+.suggestion-item.is-selected {
+    background-color: var(--background-modifier-active-hover);
+}
+
+/* Keyboard navigation specific state */
+.suggestion-item.is-keyboard-selected {
+    border: 2px solid var(--interactive-accent);
+    background-color: var(--background-modifier-active-hover);
+    padding: 6px 10px;
+    /* Compensate for border */
+}
+
+/* Empty state */
+.suggestion-empty {
+    padding: 12px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+}

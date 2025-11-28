@@ -1,0 +1,68 @@
+.plugins-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* Plugin name container with badge */
+.plugin-name-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Plugin badges */
+.plugin-badge {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.plugin-badge-core {
+    background: var(--accent-color);
+    color: white;
+}
+
+.plugin-badge-community {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+/* Section divider */
+.plugins-section-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0 8px 0;
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+}
+
+.plugins-section-divider::before,
+.plugins-section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+}
+
+/* Empty state */
+.plugins-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.plugins-empty p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+}

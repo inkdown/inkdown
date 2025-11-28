@@ -1,0 +1,46 @@
+{
+    "name": "@inkdown/desktop",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc -b && vite build",
+        "preview": "vite preview",
+        "typecheck": "tsc --noEmit",
+        "tauri": "tauri"
+    },
+    "dependencies": {
+        "@inkdown/core": "workspace:*",
+        "@inkdown/ui": "workspace:*",
+        "@inkdown/plugins": "workspace:*",
+        "@tauri-apps/api": "catalog:",
+        "@tauri-apps/plugin-clipboard-manager": "catalog:tauri",
+        "@tauri-apps/plugin-dialog": "catalog:tauri",
+        "@tauri-apps/plugin-fs": "catalog:tauri",
+        "@tauri-apps/plugin-opener": "catalog:tauri",
+        "idb": "catalog:",
+        "lucide-react": "catalog:",
+        "react": "catalog:",
+        "react-dom": "catalog:",
+        "react-markdown": "catalog:markdown",
+        "remark-gfm": "catalog:markdown",
+        "remark-math": "catalog:markdown",
+        "rehype-katex": "catalog:markdown",
+        "rehype-highlight": "catalog:markdown",
+        "highlight.js": "catalog:markdown",
+        "katex": "catalog:markdown",
+        "@lezer/highlight": "catalog:"
+    },
+    "devDependencies": {
+        "@tauri-apps/cli": "catalog:tauri",
+        "@tailwindcss/vite": "catalog:build",
+        "@types/node": "catalog:",
+        "@types/react": "catalog:",
+        "@types/react-dom": "catalog:",
+        "@vitejs/plugin-react": "catalog:build",
+        "tailwindcss": "catalog:build",
+        "typescript": "catalog:",
+        "vite": "catalog:build"
+    }
+}

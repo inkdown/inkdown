@@ -1,0 +1,11 @@
+{
+    "id": "word-count",
+    "name": "Word Count",
+    "version": "1.0.0",
+    "minAppVersion": "0.1.0",
+    "description": "Displays word and character count in the status bar for the current document.",
+    "author": "Inkdown Team",
+    "authorUrl": "https://github.com/inkdown",
+    "repo": "inkdown/word-count",
+    "license": "MIT"
+}

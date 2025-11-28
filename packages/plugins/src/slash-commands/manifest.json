@@ -1,0 +1,8 @@
+{
+    "id": "slash-commands",
+    "name": "Slash Commands",
+    "version": "1.0.0",
+    "minAppVersion": "0.1.0",
+    "description": "Adds slash commands to the editor to quickly insert markdown syntax",
+    "author": "Inkdown Team"
+}

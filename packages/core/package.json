@@ -1,0 +1,39 @@
+{
+    "name": "@inkdown/core",
+    "version": "0.1.0",
+    "type": "module",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "exports": {
+        ".": "./src/index.ts",
+        "./types": "./src/types/index.ts",
+        "./styles": "./src/styles/index.css",
+        "./styles/themes/dark": "./src/styles/themes/default-dark.css",
+        "./styles/themes/light": "./src/styles/themes/default-light.css"
+    },
+    "scripts": {
+        "typecheck": "tsc --noEmit",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "@tauri-apps/api": "catalog:",
+        "idb": "catalog:",
+        "pino": "^10.1.0"
+    },
+    "peerDependencies": {
+        "react": "catalog:",
+        "react-dom": "catalog:",
+        "lucide-react": "catalog:",
+        "@codemirror/view": "catalog:",
+        "@codemirror/state": "catalog:",
+        "@codemirror/lang-markdown": "catalog:",
+        "@codemirror/language-data": "catalog:",
+        "@codemirror/language": "catalog:",
+        "@lezer/highlight": "catalog:"
+    },
+    "devDependencies": {
+        "@types/react": "catalog:",
+        "typescript": "catalog:",
+        "@types/react-dom": "catalog:"
+    }
+}

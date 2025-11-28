@@ -1,0 +1,174 @@
+.theme-dark {
+   /* Background */
+   --bg-primary: #1e1e1e;
+   --bg-secondary: #252526;
+   --bg-sidebar: #181818;
+
+   /* Text */
+   --text-primary: #e0e0e0;
+   --text-secondary: #a0a0a0;
+   --text-muted: #707070;
+
+   /* Border */
+   --border-color: #3e3e3e;
+
+   /* Primary Colors */
+   --color-primary: #007acc;
+   --color-primary-hover: #005a9e;
+
+   /* ==========================================
+       Editor Variables
+       ========================================== */
+   --editor-bg: #1e1e1e;
+   --editor-fg: #e0e0e0;
+   --editor-selection: rgba(0, 122, 204, 0.4);
+   --editor-cursor: #e0e0e0;
+   --editor-active-line: #2a2a2a;
+   --editor-line-number: #5a5a5a;
+   --editor-scrollbar: #5a5a5a;
+
+   /* ==========================================
+       Heading Sizes & Colors
+       ========================================== */
+   --heading-font-weight: 600;
+   --heading-line-height: 1.3;
+   --heading-h1: #569cd6;
+   --heading-h1-size: 2em;
+   --heading-h2: #4ec9b0;
+   --heading-h2-size: 1.6em;
+   --heading-h3: #9cdcfe;
+   --heading-h3-size: 1.4em;
+   --heading-h4: #dcdcaa;
+   --heading-h4-size: 1.2em;
+   --heading-h5: #c586c0;
+   --heading-h5-size: 1.1em;
+   --heading-h6: #ce9178;
+   --heading-h6-size: 1em;
+
+   /* ==========================================
+       Syntax Highlighting (Markdown)
+       ========================================== */
+   --syntax-header: #569cd6;
+   --syntax-bold: #f48771;
+   --syntax-strong: #f48771;
+   --syntax-italic: #4ec9b0;
+   --syntax-emphasis: #4ec9b0;
+   --syntax-strikethrough: #808080;
+   --syntax-link: #3794ff;
+   --syntax-url: #3794ff;
+   --syntax-code: #c586c0;
+   --syntax-monospace: #c586c0;
+   --syntax-quote: #858585;
+   --syntax-list: #e0e0e0;
+   --syntax-separator: #5a5a5a;
+
+   /* ==========================================
+       Code Block Highlighting
+       ========================================== */
+   --code-bg: #0d1117;
+   --code-text: #e6edf3;
+   --code-keyword: #ff7b72;
+   --code-string: #a5d6ff;
+   --code-comment: #8b949e;
+   --code-function: #d2a8ff;
+   --code-number: #79c0ff;
+   --code-operator: #ff7b72;
+   --code-atom: #79c0ff;
+   --code-bool: #79c0ff;
+   --code-regexp: #a5d6ff;
+   --code-meta: #ffa657;
+   --code-punctuation: #e0e0e0;
+
+   /* ==========================================
+       CodeMirror Editor Syntax Highlighting
+       ========================================== */
+   /* Code elements in editor */
+   --cm-comment: #8b949e;
+   --cm-keyword: #ff7b72;
+   --cm-string: #a5d6ff;
+   --cm-number: #79c0ff;
+   --cm-operator: #ff7b72;
+   --cm-punctuation: #e0e0e0;
+   --cm-function: #d2a8ff;
+   --cm-property: #79c0ff;
+   --cm-variable: #e6edf3;
+   --cm-type: #ffa657;
+   --cm-tag: #7ee787;
+   --cm-attribute: #79c0ff;
+   --cm-bool: #79c0ff;
+   --cm-null: #ff7b72;
+   --cm-regexp: #a5d6ff;
+   --cm-meta: #ffa657;
+
+   /* Markdown-specific elements in editor */
+   --cm-heading-marker: #8b949e;
+   --cm-list-marker: #7aa2f7;
+   --cm-quote-marker: #9ece6a;
+   --cm-link-bracket: #8b949e;
+   /* Kept existing */
+   --cm-link-text: #79c0ff;
+   /* Kept existing */
+   --cm-link: #7dcfff;
+   --cm-link-hover: #b4f9f8;
+   --cm-link-url: #a5d6ff;
+   --cm-code-marker: #8b949e;
+   --cm-emphasis-marker: #8b949e;
+   --cm-strong-marker: #8b949e;
+
+   /* ==========================================
+       Code Inline & Quote Styling
+       ========================================== */
+   --code-font-size: 0.9em;
+   --code-padding: 2px 6px;
+   --code-border-radius: 4px;
+   --quote-border-width: 3px;
+   --quote-padding-left: 12px;
+   --quote-margin-left: 0;
+
+   /* Code Block Variables */
+   --code-bg: rgba(30, 30, 46, 0.5);
+   --font-family-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+   /* ==========================================
+       Scrollbar
+       ========================================== */
+   --scrollbar-width: 8px;
+   --scrollbar-border-radius: 4px;
+
+   /* UI Elements */
+   --button-secondary-bg: #2d2d2d;
+   --button-primary-bg: var(--color-primary);
+   --button-primary-text: #ffffff;
+   --button-secondary-text: var(--text-primary);
+
+   /* Tabs */
+   --tab-bg: transparent;
+   --tab-bg-active: var(--bg-primary);
+   --tab-border-active: var(--color-primary);
+
+   /* Input */
+   --input-bg: #2d2d2d;
+   --input-border: #3e3e3e;
+   --input-focus-border: var(--color-primary);
+
+   /* Shadows (darker) */
+   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+
+   /* ==========================================
+       Notice/Toast System
+       ========================================== */
+   --background-modifier-message: rgba(45, 45, 45, 0.95);
+   --background-modifier-success: rgba(46, 125, 50, 0.95);
+   --background-modifier-error: rgba(211, 47, 47, 0.95);
+
+   /* ==========================================
+       Component Modifiers
+       ========================================== */
+   --interactive-accent: var(--color-primary);
+   --interactive-accent-hover: var(--color-primary-hover);
+   --background-modifier-border: var(--border-color);
+   --background-modifier-hover: rgba(255, 255, 255, 0.05);
+   --background-modifier-active-hover: rgba(255, 255, 255, 0.1);
+}

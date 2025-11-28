@@ -1,0 +1,130 @@
+.editor-options-menu {
+    position: absolute;
+    top: 16px;
+    right: 24px;
+    z-index: 100;
+}
+
+.editor-options-button {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.editor-options-button:hover,
+.editor-options-button.active {
+    color: var(--text-primary);
+}
+
+.editor-options-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    width: 200px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: 4px 0;
+    animation: fadeIn 0.1s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.editor-options-section {
+    padding: 4px 8px;
+}
+
+.editor-options-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    padding-left: 8px;
+    font-weight: 600;
+}
+
+.view-mode-selector {
+    display: flex;
+    background: var(--bg-primary);
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    gap: 2px;
+}
+
+.view-mode-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.view-mode-option:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.view-mode-option.active {
+    background: var(--color-primary);
+    color: white;
+}
+
+.editor-options-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 8px 0;
+}
+
+.editor-menu-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    transition: background var(--transition-fast);
+}
+
+.editor-menu-item:hover {
+    background: var(--bg-primary);
+}
+
+.editor-menu-item.delete {
+    color: #ef4444;
+}
+
+.editor-menu-item.delete:hover {
+    background: rgba(239, 68, 68, 0.1);
+}

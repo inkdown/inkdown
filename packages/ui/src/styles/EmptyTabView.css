@@ -1,0 +1,110 @@
+.empty-tab-view {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.empty-tab-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 380px;
+    padding: 1.5rem;
+}
+
+.empty-tab-icon {
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    opacity: 0.4;
+}
+
+.empty-tab-content h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.empty-tab-content p {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.empty-tab-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 1.5rem;
+}
+
+.empty-tab-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--color-primary);
+    border: none;
+    border-radius: var(--radius-md);
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.empty-tab-button:hover {
+    background: var(--color-primary-hover);
+}
+
+.empty-tab-button.secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.empty-tab-button.secondary:hover {
+    background: var(--border-color);
+}
+
+.empty-tab-shortcuts {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem;
+    width: 100%;
+}
+
+.shortcut {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.shortcut:last-child {
+    margin-bottom: 0;
+}
+
+.shortcut kbd {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    padding: 0.125rem 0.375rem;
+    font-family: var(--font-family-mono);
+    font-size: 0.6875rem;
+    color: var(--text-primary);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.shortcut span {
+    margin-left: auto;
+    color: var(--text-secondary);
+}

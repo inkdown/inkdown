@@ -1,0 +1,48 @@
+/* Live Preview Code Block Styles */
+
+/* Code block line background - applied via StateField */
+.cm-codeblock-line {
+    background: var(--code-bg) !important;
+    padding-left: 12px;
+    padding-right: 48px;
+    /* Space for language badge */
+    position: relative;
+}
+
+/* Language badge - positioned absolutely on the right */
+.cm-codeblock-language-badge {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: 0.75em;
+    color: var(--cm-comment);
+    background: var(--editor-bg);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: var(--font-family-mono, 'JetBrains Mono', monospace);
+    opacity: 0.8;
+    z-index: 10;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* First line of code block - add top padding and border radius */
+.cm-line:has(+ .cm-codeblock-line):not(.cm-codeblock-line),
+.cm-codeblock-line:first-child {
+    padding-top: 12px;
+    border-top-left-radius: var(--code-border-radius, 6px);
+    border-top-right-radius: var(--code-border-radius, 6px);
+}
+
+/* Last line of code block - add bottom padding and border radius */
+.cm-codeblock-line:not(:has(+ .cm-codeblock-line)) {
+    padding-bottom: 12px;
+    border-bottom-left-radius: var(--code-border-radius, 6px);
+    border-bottom-right-radius: var(--code-border-radius, 6px);
+}
+
+/* Ensure code block content uses monospace font */
+.cm-codeblock-line {
+    font-family: var(--font-family-mono, 'JetBrains Mono', monospace);
+    font-size: var(--code-font-size, 0.9em);
+}

@@ -1,0 +1,8 @@
+/**
+ * @inkdown/editor Styles Index
+ *
+ * Import this file to get all editor component styles.
+ * Base theme variables should be provided by the desktop app.
+ */
+
+@import './Editor.css';

@@ -1,0 +1,103 @@
+.tab-bar {
+    display: flex;
+    align-items: center;
+    background: var(--bg-secondary);
+    height: 40px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-shrink: 0;
+}
+
+/* Sidebar toggle button */
+.tab-bar-toggle {
+    width: 32px;
+    height: 32px;
+    margin: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.tab-bar-toggle:hover {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.tab-list {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    height: 90%;
+    background: var(--tab-bg);
+    border: none;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+    flex-shrink: 0;
+    min-width: 80px;
+    max-width: 200px;
+    border-radius: 8px 8px 0 0;
+}
+
+.tab:hover {
+    background: var(--tab-bg-hover);
+}
+
+.tab-active {
+    background: var(--tab-bg-active);
+}
+
+.tab-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.tab-dirty-indicator {
+    color: var(--color-primary);
+    font-size: 12px;
+    line-height: 1;
+}
+
+.tab-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.tab-close:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}

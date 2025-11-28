@@ -1,0 +1,18 @@
+/**
+ * @inkdown/core - Core Styles Entry Point
+ */
+
+/* Global CSS variables */
+@import './variables.css';
+
+/* Base reset and global styles */
+@import './base.css';
+
+/* Icon system styles */
+@import './icons.css';
+
+/* Plugin API component styles (Setting, Modal, Notice, etc.) */
+@import './plugin-api.css';
+
+/* PopoverSuggest component styles (EditorSuggest, FuzzySuggestModal) */
+@import './popover-suggest.css';

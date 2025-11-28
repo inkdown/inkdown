@@ -1,0 +1,11 @@
+{
+    "id": "quick-finder",
+    "name": "Quick Finder",
+    "version": "1.0.0",
+    "minAppVersion": "0.1.0",
+    "description": "Quick search and create notes with fuzzy finding",
+    "author": "Inkdown Team",
+    "authorUrl": "https://github.com/inkdown",
+    "repo": "inkdown/quick-finder",
+    "license": "MIT"
+}
