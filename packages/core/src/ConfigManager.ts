@@ -38,7 +38,7 @@ export class ConfigManager {
         // 1. Try to load from cache (localStorage) - fastest
         const cached = this.loadFromCache<T>(configName);
         if (cached !== null) {
-            this.logger.debug(`Loaded ${configName} from localStorage cache`);
+            /*             this.logger.debug(`Loaded ${configName} from localStorage cache`); */
             // Debug: log tabs if it's app config
             if (configName === 'app' && (cached as any).tabs) {
                 this.logger.debug(`Cached tabs: ${(cached as any).tabs?.length || 0}`);
@@ -51,11 +51,7 @@ export class ConfigManager {
             const fileData = await this.loadFromFile<T>(configName);
             // Save to cache for next time
             this.saveToCache(configName, fileData);
-            this.logger.info(`Loaded ${configName} from file, cached to localStorage`);
-            // Debug: log tabs if it's app config
-            if (configName === 'app' && (fileData as any).tabs) {
-                this.logger.debug(`File tabs: ${(fileData as any).tabs?.length || 0}`);
-            }
+            /*             this.logger.info(`Loaded ${configName} from file, cached to localStorage`); */
             return fileData;
         } catch (error) {
             this.logger.info(`No existing ${configName}.json file, creating with defaults`);

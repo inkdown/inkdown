@@ -452,4 +452,22 @@ export class Workspace extends Events {
     onFileRename(callback: (file: TFile, oldPath: string) => void): EventRef {
         return this.on('file-rename', callback);
     }
+
+    /**
+     * Trigger a sync conflict event (called by ConflictResolver)
+     */
+    triggerSyncConflict(path: string, resolution: string, timestamp?: Date): void {
+        this.trigger('sync-conflict', {
+            path,
+            resolution,
+            timestamp: timestamp || new Date()
+        });
+    }
+
+    /**
+     * Trigger sync unlock required event (called by SyncManager)
+     */
+    triggerSyncUnlockRequired(): void {
+        this.trigger('sync-unlock-required');
+    }
 }

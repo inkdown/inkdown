@@ -39,16 +39,11 @@ export class TabManager {
             },
         });
 
-        // ⚠️ FIX: Clear localStorage cache for tabs to force fresh read from file
         // The cache can become stale and prevent tabs from loading correctly
         this.app.configManager.clearCache('app');
-        console.log('[TabManager] ✨ Cleared stale cache, forcing fresh load from file');
 
         // Load tabs from config (will now read from file)
         const config = await this.app.configManager.loadConfig<any>('app');
-
-        console.log('[TabManager] Loaded config tabs:', JSON.stringify(config.tabs || [], null, 2));
-        console.log('[TabManager] Active tab from config:', config.activeTabId);
 
         // Clear any existing tabs (in case of re-initialization)
         this.tabs = [];
@@ -81,7 +76,6 @@ export class TabManager {
                     isDirty: false,
                 };
                 this.tabs.push(tab);
-                console.log(`[TabManager] Restored tab: ${tab.filePath}`);
             }
 
             // Set active tab from config or first tab
@@ -94,7 +88,6 @@ export class TabManager {
 
         // Only create empty tab if no tabs were restored
         if (this.tabs.length === 0) {
-            console.log('[TabManager] No valid tabs found, creating empty tab');
             // Create empty tab without saving (we'll save after init if needed)
             const emptyTab: Tab = {
                 id: this.generateTabId(),
@@ -109,13 +102,6 @@ export class TabManager {
 
         // Notify listeners that tabs have been loaded
         this.notifyTabChange(this.activeTabId);
-
-        console.log(
-            '[TabManager] Initialized with',
-            this.tabs.length,
-            'tabs:',
-            this.tabs.map((t) => t.filePath || 'empty'),
-        );
     }
 
     /**

@@ -3,8 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import './components/EditorModes.css';
-import type { FileNode, RecentWorkspace } from '@inkdown/core';
-import { WorkspaceHistory } from '@inkdown/core';
+import type { FileNode, RecentWorkspace, SyncConfig } from '@inkdown/core';
+import { OnboardingScreen, WorkspaceHistory } from '@inkdown/core';
 import { EmptyTabView, Preview, StatusBar, TabBar, WorkspaceSelector } from '@inkdown/ui';
 import { invoke } from '@tauri-apps/api/core';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
@@ -21,7 +21,7 @@ import { Editor, registerEditorCommands } from '@inkdown/core';
 import { EditorOptionsMenu, type ViewMode } from './components/EditorOptionsMenu';
 import { MoveToModal } from './components/MoveToModal';
 import { RenameModal } from './components/RenameModal';
-
+import { SyncStatus } from './components/SyncStatus';
 const DEFAULT_SIDEBAR_WIDTH = 250;
 
 interface AppConfig {
@@ -47,6 +47,7 @@ const AppContent: React.FC = () => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
     const [sortOrder, setSortOrder] = useState<SortOrder>('a-z');
     const [recentWorkspaces, setRecentWorkspaces] = useState<RecentWorkspace[]>([]);
+    const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
     // Initialize font settings from config/localStorage
     useFontSettings();
@@ -127,6 +128,21 @@ const AppContent: React.FC = () => {
         };
         initWorkspace();
     }, [app]);
+
+    // Check if onboarding is needed
+    useEffect(() => {
+        const checkOnboarding = async () => {
+            try {
+                const syncConfig = await app.configManager.loadConfig<SyncConfig>('sync');
+                setNeedsOnboarding(!syncConfig?.onboardingCompleted);
+            } catch (error) {
+                console.error('Failed to check onboarding:', error);
+            }
+        };
+        if (!loading) {
+            checkOnboarding();
+        }
+    }, [app, loading]);
 
     // Handler to change view mode and save to config
     const handleViewModeChange = useCallback(
@@ -535,6 +551,31 @@ const AppContent: React.FC = () => {
         }
     }, []);
 
+    // Handler for toggling sync ignore
+    const handleToggleSyncIgnore = useCallback(
+        async (path: string, ignored: boolean) => {
+            try {
+                if (ignored) {
+                    await app.syncManager.selectiveSync.addIgnorePath(path);
+                } else {
+                    await app.syncManager.selectiveSync.removeIgnorePath(path);
+                }
+                // Force refresh of file explorer to update UI if needed (though state is internal to selectiveSync)
+                // We might need a way to trigger re-render of context menu or file nodes if we add visual indicators later
+            } catch (error) {
+                console.error('Failed to toggle sync ignore:', error);
+            }
+        },
+        [app],
+    );
+
+    const isSyncIgnored = useCallback(
+        (path: string) => {
+            return app.syncManager.selectiveSync.isIgnored(path);
+        },
+        [app],
+    );
+
     // Handler for move to functionality
     const handleMoveTo = useCallback(
         async (sourcePath: string) => {
@@ -596,6 +637,18 @@ const AppContent: React.FC = () => {
         );
     }
 
+    // Show onboarding if needed
+    if (needsOnboarding) {
+        return (
+            <OnboardingScreen
+                app={app}
+                onComplete={() => {
+                    setNeedsOnboarding(false);
+                }}
+            />
+        );
+    }
+
     // Show workspace selector if no workspace is set
     if (!rootPath) {
         return (
@@ -640,6 +693,8 @@ const AppContent: React.FC = () => {
                 recentWorkspaces={recentWorkspaces}
                 onWorkspaceSwitch={handleWorkspaceSelected}
                 onBrowseWorkspace={handleOpenDialog}
+                onToggleSyncIgnore={handleToggleSyncIgnore}
+                isSyncIgnored={isSyncIgnored}
             />
 
             {/* Main Content */}
@@ -761,7 +816,9 @@ const AppContent: React.FC = () => {
                         left: [],
                         right: [],
                     }}
-                />
+                >
+                    <SyncStatus />
+                </StatusBar>
             </div>
 
             {/* Settings Modal */}

@@ -8,6 +8,7 @@ import { FileSystemManager } from './filesystem/FileSystemManager';
 import { FileManager } from './managers/FileManager';
 import { FontManager } from './managers/FontManager';
 import { MetadataCache } from './managers/MetadataCache';
+import { SyncManager } from './managers/SyncManager';
 import { Workspace } from './managers/Workspace';
 import { WorkspaceUI } from './managers/WorkspaceUI';
 import { MarkdownProcessorRegistry } from './markdown/MarkdownProcessor';
@@ -37,6 +38,7 @@ export class App {
     metadataCache: MetadataCache;
     markdownProcessor: MarkdownProcessorRegistry;
     editorStateManager: EditorStateManager;
+    syncManager: SyncManager;
 
     editorRegistry: EditorRegistry;
     fontManager: FontManager;
@@ -57,6 +59,7 @@ export class App {
         this.editorStateManager = new EditorStateManager(this);
         this.editorRegistry = new EditorRegistry();
         this.fontManager = new FontManager();
+        this.syncManager = new SyncManager(this);
         this.pluginManager = new PluginManager(this);
         this.themeManager = new ThemeManager(this);
         this.shortcutManager = new ShortcutManager(this);
@@ -103,14 +106,18 @@ export class App {
             // 3. Load theme
             await this.loadTheme();
 
-            // 3. Load plugins
+            // 4. Initialize sync manager
+            await this.syncManager.init();
+            this.logger.debug('SyncManager initialized');
+
+            // 5. Load plugins
             await this.loadPlugins();
 
-            // 4. Initialize tab manager and restore tabs
+            // 6. Initialize tab manager and restore tabs
             await this.tabManager.init();
             this.logger.debug('TabManager initialized');
 
-            // 5. Initialize shortcut manager
+            // 7. Initialize shortcut manager
             await this.shortcutManager.init();
             this.logger.debug('ShortcutManager initialized');
 
@@ -147,7 +154,6 @@ export class App {
         // Save all dirty files
         await this.editorStateManager.saveAllDirty();
 
-        // ⚠️ NOTE: Don't save tabs here! They're already saved automatically when they change.
         // Saving here causes a race condition where empty tabs overwrite valid ones during hot reload.
         // await this.tabManager.saveTabs(); // ← REMOVED
 
@@ -214,5 +220,24 @@ export class App {
             }
         }
         return false;
+    }
+
+    /**
+     * Open an external URL in the default browser
+     * Uses Tauri's opener plugin for security
+     */
+    async openExternalLink(url: string): Promise<void> {
+        try {
+            // Dynamic import to avoid bundling on web
+            const { openUrl } = await import('@tauri-apps/plugin-opener');
+            await openUrl(url);
+            this.logger.debug(`Opened external link: ${url}`);
+        } catch (error) {
+            this.logger.error('Failed to open external link', error);
+            // Fallback for development/web
+            if (typeof window !== 'undefined') {
+                window.open(url, '_blank');
+            }
+        }
     }
 }

@@ -94,11 +94,15 @@ function createLoggerFromPino(pinoLogger: pino.Logger, module: string): Logger {
 export const loggers = {
     app: createLogger('App'),
     plugin: createLogger('PluginManager'),
-    config: createLogger('ConfigManager'),
-    editor: createLogger('EditorStateManager'),
     theme: createLogger('ThemeManager'),
-    tab: createLogger('TabManager'),
-    fs: createLogger('FileSystem'),
+    config: createLogger('ConfigManager'),
+    shortcuts: createLogger('ShortcutManager'),
+    tabs: createLogger('TabManager'),
+    workspace: createLogger('Workspace'),
+    fileSystem: createLogger('FileSystemManager'),
+    fontManager: createLogger('FontManager'),
+    editorState: createLogger('EditorStateManager'),
+    sync: createLogger('SyncManager'),
 };
 
 /**

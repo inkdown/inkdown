@@ -20,6 +20,7 @@ export type { FuzzyMatch, SearchMatch } from './components/FuzzySuggestModal';
 export { FuzzySuggestModal, PopoverSuggest } from './components/FuzzySuggestModal';
 export { ConfirmModal, KeyboardScope, Modal } from './components/Modal';
 export { injectNoticeStyles, Notice } from './components/Notice';
+export { OnboardingScreen } from './components/sync/OnboardingScreen';
 export { PluginSettingTab } from './components/PluginSettingTab';
 export type {
     SettingButtonComponent,
@@ -75,10 +76,18 @@ export type {
     TagCache,
 } from './managers/MetadataCache';
 export { MetadataCache } from './managers/MetadataCache';
+export { SyncManager } from './managers/SyncManager';
 export type { TAbstractFile, TFile, TFolder } from './managers/Workspace';
 export { Workspace } from './managers/Workspace';
 export { WorkspaceHistory } from './managers/WorkspaceHistory';
 export { WorkspaceUI } from './managers/WorkspaceUI';
+// Sync
+export { AuthService } from './sync/AuthService';
+export { LocalDatabase } from './sync/LocalDatabase';
+export { TokenManager } from './sync/TokenManager';
+export { DeviceManager } from './sync/DeviceManager';
+export { EncryptionManager } from './sync/EncryptionManager';
+export * from './sync/types';
 export type {
     MarkdownCodeBlockProcessor,
     MarkdownPostProcessor,

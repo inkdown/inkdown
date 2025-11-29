@@ -18,7 +18,8 @@
     "dependencies": {
         "@tauri-apps/api": "catalog:",
         "idb": "catalog:",
-        "pino": "^10.1.0"
+        "pino": "^10.1.0",
+        "@tauri-apps/plugin-opener": "catalog:tauri"
     },
     "peerDependencies": {
         "react": "catalog:",

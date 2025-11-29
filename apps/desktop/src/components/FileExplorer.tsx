@@ -7,6 +7,8 @@ import {
     ChevronsDown,
     ChevronsUp,
     Clipboard,
+    Cloud,
+    CloudOff,
     Copy,
     Edit2,
     ExternalLink,
@@ -81,6 +83,10 @@ export interface FileExplorerProps {
     onWorkspaceSwitch?: (path: string) => void;
     /** Callback to browse for new workspace */
     onBrowseWorkspace?: () => void;
+    /** Callback to toggle sync ignore status */
+    onToggleSyncIgnore?: (path: string, ignored: boolean) => Promise<void>;
+    /** Callback to check if path is ignored */
+    isSyncIgnored?: (path: string) => boolean;
 }
 
 type CreatingItem = {
@@ -190,6 +196,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     recentWorkspaces = [],
     onWorkspaceSwitch,
     onBrowseWorkspace,
+    onToggleSyncIgnore,
+    isSyncIgnored,
 }) => {
     const [expandedDirs, setExpandedDirs] = useState<Set<string>>(() => {
         return new Set(initialExpandedDirs || []);
@@ -1210,6 +1218,34 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                                 <ExternalLink size={14} />
                                                 Show in System Explorer
                                             </button>
+                                        )}
+                                        {onToggleSyncIgnore && isSyncIgnored && (
+                                            <>
+                                                <div className="context-menu-separator" />
+                                                {isSyncIgnored(contextMenu.path!) ? (
+                                                    <button
+                                                        className="context-menu-item"
+                                                        onClick={() => {
+                                                            onToggleSyncIgnore(contextMenu.path!, false);
+                                                            closeContextMenu();
+                                                        }}
+                                                    >
+                                                        <Cloud size={14} />
+                                                        Include in Sync
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        className="context-menu-item"
+                                                        onClick={() => {
+                                                            onToggleSyncIgnore(contextMenu.path!, true);
+                                                            closeContextMenu();
+                                                        }}
+                                                    >
+                                                        <CloudOff size={14} />
+                                                        Exclude from Sync
+                                                    </button>
+                                                )}
+                                            </>
                                         )}
                                     </>
                                 )}

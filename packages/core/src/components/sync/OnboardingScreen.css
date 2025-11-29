@@ -1,0 +1,183 @@
+.onboarding-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-background);
+    z-index: 9999;
+}
+
+.onboarding-content {
+    text-align: center;
+    max-width: 450px;
+    padding: 40px;
+}
+
+.onboarding-header {
+    margin-bottom: 48px;
+}
+
+.onboarding-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+}
+
+.onboarding-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    color: var(--color-primary);
+}
+
+.onboarding-header p {
+    font-size: 16px;
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+.onboarding-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.onboarding-button {
+    padding: 14px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: none;
+    outline: none;
+}
+
+.onboarding-button.primary {
+    background: var(--color-accent);
+    color: white;
+}
+
+.onboarding-button.primary:hover:not(:disabled) {
+    background: var(--color-accent-hover, var(--color-accent));
+    transform: translateY(-1px);
+}
+
+.onboarding-button.secondary {
+    background: var(--color-hover);
+    color: var(--color-text);
+}
+
+.onboarding-button.secondary:hover:not(:disabled) {
+    background: var(--color-border);
+}
+
+.onboarding-button.ghost {
+    background: transparent;
+    color: var(--color-text-muted);
+}
+
+.onboarding-button.ghost:hover:not(:disabled) {
+    color: var(--color-text);
+    background: var(--color-hover);
+}
+
+.onboarding-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.onboarding-button.full-width {
+    width: 100%;
+}
+
+/* Form Styles */
+.onboarding-form-container {
+    background: var(--color-background);
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 400px;
+    width: 100%;
+}
+
+.onboarding-form-header {
+    margin-bottom: 24px;
+}
+
+.onboarding-form-header h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-text);
+}
+
+.onboarding-error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.onboarding-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.form-group input {
+    padding: 12px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    background: var(--color-background);
+    color: var(--color-text);
+    font-size: 15px;
+    transition: all 0.15s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.onboarding-back-button {
+    margin-top: 20px;
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    transition: color 0.15s ease;
+}
+
+.onboarding-back-button:hover:not(:disabled) {
+    color: var(--color-text);
+}
+
+.onboarding-back-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

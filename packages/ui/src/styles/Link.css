@@ -1,0 +1,35 @@
+.ink-link {
+    color: var(--color-accent);
+    text-decoration: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+    border-bottom: 1px solid transparent;
+}
+
+.ink-link:hover {
+    color: var(--color-accent-hover, var(--color-accent));
+    border-bottom-color: var(--color-accent);
+}
+
+.ink-link-external {
+    font-size: 0.95em;
+}
+
+.ink-link-icon {
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
+.ink-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.ink-form-loading {
+    pointer-events: none;
+    opacity: 0.6;
+}
