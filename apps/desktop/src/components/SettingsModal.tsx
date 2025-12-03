@@ -1,6 +1,6 @@
-import type { App as InkdownApp, PluginSettingTab } from '@inkdown/core';
+import type { App as InkdownApp, PluginSettingTab, FileNode, WindowConfig } from '@inkdown/core';
 import { Button, Link, Select, Setting, Slider, TextInput, Toggle } from '@inkdown/ui';
-import { Cloud, Keyboard, Palette, Puzzle, RefreshCw, Settings as SettingsIcon, Trash2, X } from 'lucide-react';
+import { Cloud, FolderOpen, Keyboard, Palette, Puzzle, RefreshCw, Settings as SettingsIcon, Trash2, Type, X } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useApp } from '../contexts/AppContext';
@@ -10,6 +10,119 @@ import { PluginsSettings } from './PluginsSettings';
 import { ShortcutsSettings } from './ShortcutsSettings';
 import { EncryptionPasswordModal } from './EncryptionPasswordModal';
 import './SettingsModal.css';
+
+/**
+ * Autocomplete Input Component
+ * Shows suggestions as the user types
+ */
+interface AutocompleteInputProps {
+    value: string;
+    onChange: (value: string) => void;
+    suggestions: string[];
+    placeholder?: string;
+}
+
+const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
+    value,
+    onChange,
+    suggestions,
+    placeholder,
+}) => {
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+    const [selectedIndex, setSelectedIndex] = useState(-1);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Filter suggestions based on input value
+    useEffect(() => {
+        const trimmedValue = (value || '').trim();
+        if (trimmedValue) {
+            const filtered = suggestions.filter(s => 
+                s.toLowerCase().includes(trimmedValue.toLowerCase())
+            ).slice(0, 8); // Limit to 8 suggestions
+            setFilteredSuggestions(filtered);
+        } else {
+            // Show first 8 suggestions when input is empty but focused
+            setFilteredSuggestions(suggestions.slice(0, 8));
+        }
+        setSelectedIndex(-1);
+    }, [value, suggestions]);
+
+    // Handle click outside to close suggestions
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+                setShowSuggestions(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (!showSuggestions || filteredSuggestions.length === 0) return;
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setSelectedIndex(prev => 
+                    prev < filteredSuggestions.length - 1 ? prev + 1 : prev
+                );
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setSelectedIndex(prev => prev > 0 ? prev - 1 : -1);
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (selectedIndex >= 0) {
+                    onChange(filteredSuggestions[selectedIndex]);
+                    setShowSuggestions(false);
+                }
+                break;
+            case 'Escape':
+                setShowSuggestions(false);
+                break;
+        }
+    };
+
+    const handleSuggestionClick = (suggestion: string) => {
+        onChange(suggestion);
+        setShowSuggestions(false);
+        inputRef.current?.focus();
+    };
+
+    return (
+        <div className="autocomplete-input-container" ref={containerRef}>
+            <input
+                ref={inputRef}
+                type="text"
+                className="autocomplete-input"
+                value={value || ''}
+                onChange={(e) => onChange(e.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                onKeyDown={handleKeyDown}
+                placeholder={placeholder}
+            />
+            {showSuggestions && filteredSuggestions.length > 0 && (
+                <ul className="autocomplete-suggestions">
+                    {filteredSuggestions.map((suggestion, index) => (
+                        <li
+                            key={suggestion}
+                            className={`autocomplete-suggestion ${index === selectedIndex ? 'selected' : ''}`}
+                            onClick={() => handleSuggestionClick(suggestion)}
+                            onMouseEnter={() => setSelectedIndex(index)}
+                        >
+                            <FolderOpen size={14} />
+                            <span>{suggestion}</span>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
+};
 
 interface AppConfig {
     version: string;
@@ -25,7 +138,33 @@ interface SettingsModalProps {
     onClose: () => void;
 }
 
-type SettingsTab = 'general' | 'appearance' | 'shortcuts' | 'plugins' | string;
+type SettingsTab = 'general' | 'appearance' | 'editor' | 'shortcuts' | 'plugins' | string;
+
+/**
+ * Editor configuration interface
+ */
+export interface EditorConfig {
+    autoPairBrackets: boolean;
+    tabIndentation: boolean;
+    convertPastedHtmlToMarkdown: boolean;
+    vimMode: boolean;
+    showLineNumbers: boolean;
+    foldHeading: boolean;
+}
+
+/**
+ * Files configuration interface
+ */
+export interface FilesConfig {
+    /** Location type for new notes: 'root' or 'folder' */
+    newNotesLocation: 'root' | 'folder';
+    /** Custom folder path for new notes (relative to workspace) */
+    newNotesFolder: string;
+    /** Location type for new attachments: 'root' or 'folder' */
+    newAttachmentsLocation: 'root' | 'folder';
+    /** Custom folder path for new attachments (relative to workspace) */
+    newAttachmentsFolder: string;
+}
 
 interface TabInfo {
     id: SettingsTab;
@@ -87,6 +226,106 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     // Sync Settings State
     const [ignoredPatterns, setIgnoredPatterns] = useState<string[]>([]);
     const [newPattern, setNewPattern] = useState('');
+
+    // Editor Settings State
+    const [editorConfig, setEditorConfig] = useState<EditorConfig>({
+        autoPairBrackets: true,
+        tabIndentation: true,
+        convertPastedHtmlToMarkdown: true,
+        vimMode: false,
+        showLineNumbers: false,
+        foldHeading: true,
+    });
+
+    // Files Settings State
+    const [filesConfig, setFilesConfig] = useState<FilesConfig>({
+        newNotesLocation: 'root',
+        newNotesFolder: '',
+        newAttachmentsLocation: 'root',
+        newAttachmentsFolder: '',
+    });
+    const [workspaceFolders, setWorkspaceFolders] = useState<string[]>([]);
+
+    // Window Settings State
+    const [windowConfig, setWindowConfig] = useState<WindowConfig>({
+        customTitleBar: false,
+    });
+
+    // Load editor config
+    useEffect(() => {
+        const loadEditorConfig = async () => {
+            try {
+                const config = await app.configManager.loadConfig<EditorConfig>('editor');
+                if (config) {
+                    setEditorConfig(config);
+                }
+            } catch (error) {
+                console.error('Failed to load editor config:', error);
+            }
+        };
+        loadEditorConfig();
+    }, [app]);
+
+    // Load files config and workspace folders
+    useEffect(() => {
+        const loadFilesConfig = async () => {
+            try {
+                const config = await app.configManager.loadConfig<FilesConfig>('files');
+                if (config) {
+                    setFilesConfig(config);
+                }
+            } catch (error) {
+                console.error('Failed to load files config:', error);
+            }
+        };
+
+        const loadWorkspaceFolders = async () => {
+            try {
+                const appConfig = await app.configManager.loadConfig<AppConfig>('app');
+                if (appConfig?.workspace) {
+                    const files = await app.fileSystemManager.readDirectory(appConfig.workspace, true);
+                    const folders: string[] = [];
+                    
+                    const collectFolders = (nodes: FileNode[]) => {
+                        for (const node of nodes) {
+                            if (node.isDirectory) {
+                                // Get relative path from workspace root
+                                const relativePath = node.path.replace(appConfig.workspace + '/', '');
+                                folders.push(relativePath);
+                                if (node.children) {
+                                    collectFolders(node.children);
+                                }
+                            }
+                        }
+                    };
+                    
+                    collectFolders(files);
+                    setWorkspaceFolders(folders.sort());
+                }
+            } catch (error) {
+                console.error('Failed to load workspace folders:', error);
+            }
+        };
+
+        loadFilesConfig();
+        loadWorkspaceFolders();
+    }, [app]);
+
+    // Load window config
+    useEffect(() => {
+        const loadWindowConfig = async () => {
+            try {
+                const config = await app.windowConfigManager.loadConfig();
+                if (config) {
+                    setWindowConfig(config);
+                }
+            } catch (error) {
+                console.error('Failed to load window config:', error);
+            }
+        };
+        loadWindowConfig();
+    }, [app]);
+
     const [isSyncing, setIsSyncing] = useState(false);
 
     // Load local DB name and ignore patterns
@@ -248,7 +487,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         const newConfig = { ...config, font: { ...config.font, size } };
         await saveConfig(newConfig);
 
-        localStorage.setItem('inkdown-font-size', String(size));
+        // Apply to CSS variables immediately
         document.documentElement.style.setProperty('--font-size-base', `${size}px`);
         document.documentElement.style.setProperty('--font-size-editor', `${size}px`);
     };
@@ -259,8 +498,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         const newConfig = { ...config, font: { ...config.font, family } };
         await saveConfig(newConfig);
 
-        localStorage.setItem('inkdown-font-family', family);
+        // Apply to CSS variables immediately - both general and monospace for code blocks
         document.documentElement.style.setProperty('--font-family', family);
+        document.documentElement.style.setProperty('--font-family-mono', family);
+    };
+
+    const handleCustomTitleBarChange = async (useCustom: boolean) => {
+        const confirmed = window.confirm(
+            'Changing the window style requires restarting the app. The app will close and you need to open it again. Continue?'
+        );
+
+        if (!confirmed) return;
+
+        try {
+            const changed = await app.windowConfigManager.toggleCustomTitleBar(useCustom);
+            if (changed) {
+                // Save and close - user needs to manually restart
+                const { exit } = await import('@tauri-apps/plugin-process');
+                await exit(0);
+            }
+        } catch (error) {
+            console.error('Failed to change window style:', error);
+        }
     };
 
     const handleColorSchemeChange = async (scheme: 'light' | 'dark') => {
@@ -315,10 +574,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     const tabs: TabInfo[] = [
         { id: 'general', label: 'General', icon: <SettingsIcon size={16} /> },
         { id: 'appearance', label: 'Appearance', icon: <Palette size={16} /> },
+        { id: 'editor', label: 'Editor', icon: <Type size={16} /> },
+        { id: 'files', label: 'Files', icon: <FolderOpen size={16} /> },
         { id: 'sync', label: 'Sync', icon: <Cloud size={16} /> },
         { id: 'shortcuts', label: 'Shortcuts', icon: <Keyboard size={16} /> },
         { id: 'plugins', label: 'Plugins', icon: <Puzzle size={16} /> },
     ];
+
+    // Handler for updating editor config
+    const handleEditorConfigChange = async <K extends keyof EditorConfig>(
+        key: K,
+        value: EditorConfig[K]
+    ) => {
+        const newConfig = { ...editorConfig, [key]: value };
+        setEditorConfig(newConfig);
+        try {
+            await app.configManager.saveConfig('editor', newConfig);
+            // Dispatch custom event to notify App.tsx of config changes
+            window.dispatchEvent(new CustomEvent('inkdown:editor-config-changed', {
+                detail: newConfig
+            }));
+        } catch (error) {
+            console.error('Failed to save editor config:', error);
+        }
+    };
+
+    // Handler for updating files config
+    const handleFilesConfigChange = async <K extends keyof FilesConfig>(
+        key: K,
+        value: FilesConfig[K]
+    ) => {
+        const newConfig = { ...filesConfig, [key]: value };
+        setFilesConfig(newConfig);
+        try {
+            await app.configManager.saveConfig('files', newConfig);
+        } catch (error) {
+            console.error('Failed to save files config:', error);
+        }
+    };
 
     // Create tabs for plugin-registered settings
     // Use pluginId + name as unique identifier since PluginSettingTab uses the name property
@@ -480,6 +773,150 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                             ]}
                                         />
                                     </Setting>
+
+                                    <Setting
+                                        name="Custom Title Bar"
+                                        description="Use a custom window title bar with integrated controls. Requires app restart."
+                                    >
+                                        <Toggle
+                                            checked={windowConfig.customTitleBar}
+                                            onChange={handleCustomTitleBarChange}
+                                        />
+                                    </Setting>
+                                </div>
+                            )}
+
+                            {activeTab === 'editor' && (
+                                <div className="settings-section">
+                                    <h3>Editor Settings</h3>
+                                    <p className="settings-description">
+                                        Configure how the editor behaves.
+                                    </p>
+
+                                    <Setting
+                                        name="Auto Pair Brackets"
+                                        description="Automatically insert closing brackets, quotes, and parentheses when typing opening ones"
+                                    >
+                                        <Toggle
+                                            checked={editorConfig.autoPairBrackets}
+                                            onChange={(checked) => handleEditorConfigChange('autoPairBrackets', checked)}
+                                        />
+                                    </Setting>
+
+                                    <Setting
+                                        name="Tab Indentation"
+                                        description="Use Tab key to indent text. When disabled, Tab will insert a tab character"
+                                    >
+                                        <Toggle
+                                            checked={editorConfig.tabIndentation}
+                                            onChange={(checked) => handleEditorConfigChange('tabIndentation', checked)}
+                                        />
+                                    </Setting>
+
+                                    <Setting
+                                        name="Convert Pasted HTML to Markdown"
+                                        description="Automatically convert HTML content to Markdown when pasting from clipboard"
+                                    >
+                                        <Toggle
+                                            checked={editorConfig.convertPastedHtmlToMarkdown}
+                                            onChange={(checked) => handleEditorConfigChange('convertPastedHtmlToMarkdown', checked)}
+                                        />
+                                    </Setting>
+
+                                    <Setting
+                                        name="Vim Mode"
+                                        description="Enable Vim keybindings for the editor"
+                                    >
+                                        <Toggle
+                                            checked={editorConfig.vimMode}
+                                            onChange={(checked) => handleEditorConfigChange('vimMode', checked)}
+                                        />
+                                    </Setting>
+
+                                    <Setting
+                                        name="Show Line Numbers"
+                                        description="Display line numbers in the editor gutter"
+                                    >
+                                        <Toggle
+                                            checked={editorConfig.showLineNumbers}
+                                            onChange={(checked) => handleEditorConfigChange('showLineNumbers', checked)}
+                                        />
+                                    </Setting>
+
+                                    <Setting
+                                        name="Fold Headings"
+                                        description="Enable collapsing/expanding content under markdown headings by clicking the fold indicator"
+                                    >
+                                        <Toggle
+                                            checked={editorConfig.foldHeading}
+                                            onChange={(checked) => handleEditorConfigChange('foldHeading', checked)}
+                                        />
+                                    </Setting>
+                                </div>
+                            )}
+
+                            {activeTab === 'files' && (
+                                <div className="settings-section">
+                                    <h3>Files & Folders</h3>
+                                    <p className="settings-description">
+                                        Configure where new notes and attachments are saved.
+                                    </p>
+
+                                    <Setting
+                                        name="Default location for new notes"
+                                        description="Choose where newly created notes will be saved"
+                                    >
+                                        <Select
+                                            value={filesConfig.newNotesLocation}
+                                            onChange={(value: string) => handleFilesConfigChange('newNotesLocation', value as 'root' | 'folder')}
+                                            options={[
+                                                { value: 'root', label: 'Workspace root' },
+                                                { value: 'folder', label: 'In folder specified below' },
+                                            ]}
+                                        />
+                                    </Setting>
+
+                                    {filesConfig.newNotesLocation === 'folder' && (
+                                        <Setting
+                                            name="Notes folder path"
+                                            description="Relative path from workspace root (e.g., 'notes' or 'documents/notes')"
+                                        >
+                                            <AutocompleteInput
+                                                value={filesConfig.newNotesFolder}
+                                                onChange={(value) => handleFilesConfigChange('newNotesFolder', value)}
+                                                suggestions={workspaceFolders}
+                                                placeholder="notes"
+                                            />
+                                        </Setting>
+                                    )}
+
+                                    <Setting
+                                        name="Default location for new attachments"
+                                        description="Choose where attachments (images, files) will be saved"
+                                    >
+                                        <Select
+                                            value={filesConfig.newAttachmentsLocation}
+                                            onChange={(value: string) => handleFilesConfigChange('newAttachmentsLocation', value as 'root' | 'folder')}
+                                            options={[
+                                                { value: 'root', label: 'Workspace root' },
+                                                { value: 'folder', label: 'In folder specified below' },
+                                            ]}
+                                        />
+                                    </Setting>
+
+                                    {filesConfig.newAttachmentsLocation === 'folder' && (
+                                        <Setting
+                                            name="Attachments folder path"
+                                            description="Relative path from workspace root (e.g., 'attachments' or 'assets/images')"
+                                        >
+                                            <AutocompleteInput
+                                                value={filesConfig.newAttachmentsFolder}
+                                                onChange={(value) => handleFilesConfigChange('newAttachmentsFolder', value)}
+                                                suggestions={workspaceFolders}
+                                                placeholder="attachments"
+                                            />
+                                        </Setting>
+                                    )}
                                 </div>
                             )}
 

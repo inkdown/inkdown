@@ -2,6 +2,7 @@ import type { App } from '../App';
 import { Events } from '../Events';
 import type { SelectiveSyncManager } from './SelectiveSyncManager';
 import type { FileChangeEvent } from './types';
+import type { TFile, TAbstractFile } from '../managers/Workspace';
 
 export class FileWatcherService extends Events {
     private app: App;
@@ -10,10 +11,22 @@ export class FileWatcherService extends Events {
     private readonly DEBOUNCE_MS = 1000;
     private isActive = false;
 
+    // Store bound handlers so we can properly remove them
+    private boundHandleFileCreate: (file: TFile) => void;
+    private boundHandleFileModify: (file: TFile) => void;
+    private boundHandleFileDelete: (file: TAbstractFile) => void;
+    private boundHandleFileRename: (file: TFile, oldPath: string) => void;
+
     constructor(app: App, selectiveSync: SelectiveSyncManager) {
         super();
         this.app = app;
         this.selectiveSync = selectiveSync;
+
+        // Bind handlers once in constructor
+        this.boundHandleFileCreate = this.handleFileCreate.bind(this);
+        this.boundHandleFileModify = this.handleFileModify.bind(this);
+        this.boundHandleFileDelete = this.handleFileDelete.bind(this);
+        this.boundHandleFileRename = this.handleFileRename.bind(this);
     }
 
     async start(): Promise<void> {
@@ -26,10 +39,11 @@ export class FileWatcherService extends Events {
         console.log('[FileWatcherService] Starting file watcher...');
 
         // Register listeners for workspace file events
-        this.app.workspace.on('file-create', this.handleFileCreate.bind(this));
-        this.app.workspace.on('file-modify', this.handleFileModify.bind(this));
-        this.app.workspace.on('file-delete', this.handleFileDelete.bind(this));
-        this.app.workspace.on('file-rename', this.handleFileRename.bind(this));
+        // Note: Workspace events pass TFile/TAbstractFile objects, not paths
+        this.app.workspace.on('file-create', this.boundHandleFileCreate);
+        this.app.workspace.on('file-modify', this.boundHandleFileModify);
+        this.app.workspace.on('file-delete', this.boundHandleFileDelete);
+        this.app.workspace.on('file-rename', this.boundHandleFileRename);
 
         console.log('[FileWatcherService] File watcher started');
     }
@@ -44,28 +58,45 @@ export class FileWatcherService extends Events {
         this.debounceTimers.forEach(timer => clearTimeout(timer));
         this.debounceTimers.clear();
 
-        // Remove event listeners
-        this.app.workspace.off('file-create', this.handleFileCreate.bind(this));
-        this.app.workspace.off('file-modify', this.handleFileModify.bind(this));
-        this.app.workspace.off('file-delete', this.handleFileDelete.bind(this));
+        // Remove event listeners using the same bound references
+        this.app.workspace.off('file-create', this.boundHandleFileCreate);
+        this.app.workspace.off('file-modify', this.boundHandleFileModify);
+        this.app.workspace.off('file-delete', this.boundHandleFileDelete);
+        this.app.workspace.off('file-rename', this.boundHandleFileRename);
         this.offAll();
         console.log('[FileWatcherService] File watcher stopped');
     }
 
-    private async handleFileCreate(path: string): Promise<void> {
+    /**
+     * Handle file creation event
+     * @param file - The created TFile object
+     */
+    private async handleFileCreate(file: TFile): Promise<void> {
+        const path = file.path;
+        
+        // Only sync markdown files
+        if (!path.endsWith('.md')) {
+            console.log('[FileWatcherService] Ignoring non-markdown file:', path);
+            return;
+        }
+        
         if (!this.isActive || this.selectiveSync.shouldIgnore(path)) return;
+
+        console.log('[FileWatcherService] File create detected:', path);
+
+        // Store path for use in debounced callback (file reference may become stale)
+        const filePath = path;
 
         this.debounce(path, async () => {
             try {
-                const file = this.app.workspace.getAbstractFileByPath(path) as any;
-                if (!file) return;
-
-                const content = await this.app.fileManager.read(file);
+                // Read content directly using fileSystemManager (more reliable than re-fetching TFile)
+                const content = await this.app.fileSystemManager.readFile(filePath);
                 const contentHash = await this.calculateHash(content);
 
+                console.log('[FileWatcherService] Triggering change event for create:', filePath);
                 this.trigger('change', {
                     type: 'create',
-                    path,
+                    path: filePath,
                     timestamp: new Date(),
                     contentHash,
                 } as FileChangeEvent);
@@ -75,20 +106,35 @@ export class FileWatcherService extends Events {
         });
     }
 
-    private async handleFileModify(path: string): Promise<void> {
+    /**
+     * Handle file modification event
+     * @param file - The modified TFile object
+     */
+    private async handleFileModify(file: TFile): Promise<void> {
+        const path = file.path;
+        
+        // Only sync markdown files
+        if (!path.endsWith('.md')) {
+            return;
+        }
+        
         if (!this.isActive || this.selectiveSync.shouldIgnore(path)) return;
+
+        console.log('[FileWatcherService] File modify detected:', path);
+
+        // Store path for use in debounced callback (file reference may become stale)
+        const filePath = path;
 
         this.debounce(path, async () => {
             try {
-                const file = this.app.workspace.getAbstractFileByPath(path) as any;
-                if (!file) return;
-
-                const content = await this.app.fileManager.read(file);
+                // Read content directly using fileSystemManager (more reliable than re-fetching TFile)
+                const content = await this.app.fileSystemManager.readFile(filePath);
                 const contentHash = await this.calculateHash(content);
 
+                console.log('[FileWatcherService] Triggering change event for modify:', filePath);
                 this.trigger('change', {
                     type: 'modify',
-                    path,
+                    path: filePath,
                     timestamp: new Date(),
                     contentHash,
                 } as FileChangeEvent);
@@ -98,8 +144,21 @@ export class FileWatcherService extends Events {
         });
     }
 
-    private handleFileDelete(path: string): void {
+    /**
+     * Handle file deletion event
+     * @param file - The deleted TAbstractFile object
+     */
+    private handleFileDelete(file: TAbstractFile): void {
+        const path = file.path;
+        
+        // Only sync markdown files
+        if (!path.endsWith('.md')) {
+            return;
+        }
+        
         if (!this.isActive || this.selectiveSync.shouldIgnore(path)) return;
+
+        console.log('[FileWatcherService] File delete detected:', path);
 
         // No debounce for delete - immediate action
         this.trigger('change', {
@@ -109,8 +168,22 @@ export class FileWatcherService extends Events {
         } as FileChangeEvent);
     }
 
-    private handleFileRename(oldPath: string, newPath: string): void {
+    /**
+     * Handle file rename event
+     * @param file - The renamed TFile object (with new path)
+     * @param oldPath - The previous path of the file
+     */
+    private handleFileRename(file: TFile, oldPath: string): void {
+        const newPath = file.path;
+        
+        // Only sync markdown files
+        if (!newPath.endsWith('.md')) {
+            return;
+        }
+        
         if (!this.isActive || this.selectiveSync.shouldIgnore(newPath)) return;
+
+        console.log('[FileWatcherService] File rename detected:', oldPath, '->', newPath);
 
         this.trigger('change', {
             type: 'rename',

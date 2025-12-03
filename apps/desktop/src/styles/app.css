@@ -5,6 +5,25 @@
     overflow: hidden;
 }
 
+/* Container for file explorer and main content */
+.app-workspace {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.app-layout.with-custom-titlebar > :not(.custom-titlebar) {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Create a wrapper for sidebar and main content */
+.app-layout.with-custom-titlebar .file-explorer,
+.app-layout.with-custom-titlebar .app-main {
+    /* These will be in a virtual row */
+}
+
 .app-loading {
     display: flex;
     flex-direction: column;

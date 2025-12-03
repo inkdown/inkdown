@@ -1,10 +1,18 @@
+import { history, historyKeymap } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import { EditorState } from '@codemirror/state';
-import { EditorView } from '@codemirror/view';
+import { drawSelection, EditorView, keymap } from '@codemirror/view';
 import type React from 'react';
 import { useEffect, useRef } from 'react';
 import type { App, EditorRegistry, ShortcutManager } from '../index';
+import {
+    createConfigurableExtensions,
+    createImagePasteExtension,
+    DEFAULT_EDITOR_CONFIG,
+    type EditorConfig,
+    getReconfigurationEffects,
+} from './extensions';
 import { createCustomizableKeymap, createMarkdownKeymap, createSuggestionKeymap } from './keymaps';
 import { createInkdownTheme } from './theme/codemirror-theme';
 
@@ -24,6 +32,8 @@ export interface EditorProps {
     shortcutManager?: ShortcutManager;
     /** App instance for checking plugin states */
     app: App;
+    /** Editor configuration for extensions */
+    editorConfig?: EditorConfig;
 }
 
 /**
@@ -50,11 +60,13 @@ export const Editor: React.FC<EditorProps> = ({
     editorRegistry,
     shortcutManager,
     app,
+    editorConfig = DEFAULT_EDITOR_CONFIG,
 }) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
     const isExternalUpdate = useRef(false);
     const onChangeRef = useRef(onChange);
+    const editorConfigRef = useRef(editorConfig);
 
     // Generate a unique ID for this editor instance
     const editorId = useRef(filePath || `editor-${Date.now()}`);
@@ -70,6 +82,15 @@ export const Editor: React.FC<EditorProps> = ({
             editorId.current = filePath;
         }
     }, [filePath]);
+
+    // Reconfigure editor extensions when config changes
+    useEffect(() => {
+        if (viewRef.current && editorConfigRef.current !== editorConfig) {
+            editorConfigRef.current = editorConfig;
+            const effects = getReconfigurationEffects(editorConfig);
+            viewRef.current.dispatch({ effects });
+        }
+    }, [editorConfig]);
 
     // Create editor on mount
     useEffect(() => {
@@ -87,8 +108,17 @@ export const Editor: React.FC<EditorProps> = ({
             extensions: [
                 markdown({ codeLanguages: languages }),
                 createInkdownTheme(), // Theme now uses CSS variables automatically
-                // Live Preview is now optional - can be added via plugin if needed
-                // Use customizable keymap if ShortcutManager is provided, otherwise use defaults
+                // Line wrapping to prevent horizontal overflow
+                EditorView.lineWrapping,
+                // Draw selection is required for vim visual mode to render correctly
+                drawSelection(),
+                // History for undo/redo (Ctrl+Z, Ctrl+Shift+Z)
+                history(),
+                keymap.of(historyKeymap),
+                // Configurable extensions (auto-pair brackets, tab indentation, etc.)
+                ...createConfigurableExtensions(editorConfig),
+                // Image paste extension (saves pasted images and inserts markdown)
+                createImagePasteExtension(app),
                 // Use customizable keymap if ShortcutManager is provided, otherwise use defaults
                 shortcutManager
                     ? createCustomizableKeymap(shortcutManager)

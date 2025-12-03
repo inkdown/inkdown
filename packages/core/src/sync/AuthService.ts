@@ -11,6 +11,13 @@ export class AuthService {
     }
 
     /**
+     * Update the base URL for API requests
+     */
+    setBaseURL(url: string): void {
+        this.baseURL = url;
+    }
+
+    /**
      * Login with email and password
      */
     async login(data: LoginData): Promise<AuthResponse> {

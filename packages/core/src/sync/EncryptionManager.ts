@@ -15,6 +15,13 @@ export class EncryptionManager {
     }
 
     /**
+     * Update the base URL for API requests
+     */
+    setBaseURL(url: string): void {
+        this.baseURL = url;
+    }
+
+    /**
      * Set token refresh service (injected by SyncManager)
      */
     setTokenRefreshService(service: TokenRefreshService): void {
@@ -446,6 +453,7 @@ export class EncryptionManager {
 
     /**
      * Encrypt entire note (title + content)
+     * SECURITY: Combines title and content into single encrypted blob to avoid nonce reuse
      */
     async encryptNote(title: string, content: string): Promise<{
         encrypted_title: string;
@@ -457,39 +465,43 @@ export class EncryptionManager {
             throw new Error('Master key not initialized');
         }
 
-        // Use same nonce for title and content (they're part of same note)
+        // SECURITY FIX: Combine title and content into single blob before encryption
+        // This prevents nonce reuse vulnerability with AES-GCM
+        const combinedData = JSON.stringify({
+            title: title,
+            content: content,
+        });
+
         const nonce = this.generateNonce();
         const encoder = new TextEncoder();
+        const data = encoder.encode(combinedData);
 
-        // Encrypt title
-        const titleData = encoder.encode(title);
-        const encryptedTitleBuffer = await crypto.subtle.encrypt(
+        const encryptedBuffer = await crypto.subtle.encrypt(
             { name: 'AES-GCM', iv: nonce as any },
             this.masterKey,
-            titleData
+            data
         );
 
-        // Encrypt content
-        const contentData = encoder.encode(content);
-        const encryptedContentBuffer = await crypto.subtle.encrypt(
-            { name: 'AES-GCM', iv: nonce as any },
-            this.masterKey,
-            contentData
-        );
+        const encryptedBase64 = this.arrayBufferToBase64(encryptedBuffer);
 
         // Calculate hash of plaintext content
         const contentHash = await this.calculateHash(content);
 
+        // For backward compatibility with server API:
+        // - encrypted_title: stores the combined encrypted blob
+        // - encrypted_content: empty string (data is in encrypted_title)
         return {
-            encrypted_title: this.arrayBufferToBase64(encryptedTitleBuffer),
-            encrypted_content: this.arrayBufferToBase64(encryptedContentBuffer),
+            encrypted_title: encryptedBase64,
+            encrypted_content: '', // Kept for API compatibility
             nonce: this.arrayBufferToBase64(nonce),
             content_hash: contentHash,
         };
     }
 
+
     /**
      * Decrypt entire note
+     * Supports both new format (combined blob) and legacy format (separate fields)
      */
     async decryptNote(encryptedNote: {
         encrypted_title: string;
@@ -503,25 +515,49 @@ export class EncryptionManager {
         const nonce = this.base64ToArrayBuffer(encryptedNote.nonce);
         const decoder = new TextDecoder();
 
-        // Decrypt title
-        const encryptedTitleBuffer = this.base64ToArrayBuffer(encryptedNote.encrypted_title);
-        const decryptedTitleBuffer = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv: nonce as any },
-            this.masterKey,
-            encryptedTitleBuffer as any
-        );
-        const title = decoder.decode(decryptedTitleBuffer);
+        // Check if using new format (encrypted_content is empty)
+        if (!encryptedNote.encrypted_content || encryptedNote.encrypted_content === '') {
+            // NEW FORMAT: Combined encryption
+            const encryptedBuffer = this.base64ToArrayBuffer(encryptedNote.encrypted_title);
+            const decryptedBuffer = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv: nonce as any },
+                this.masterKey,
+                encryptedBuffer as any
+            );
+            const combinedData = decoder.decode(decryptedBuffer);
 
-        // Decrypt content
-        const encryptedContentBuffer = this.base64ToArrayBuffer(encryptedNote.encrypted_content);
-        const decryptedContentBuffer = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv: nonce as any },
-            this.masterKey,
-            encryptedContentBuffer as any
-        );
-        const content = decoder.decode(decryptedContentBuffer);
+            try {
+                const parsed = JSON.parse(combinedData);
+                return {
+                    title: parsed.title || '',
+                    content: parsed.content || '',
+                };
+            } catch (error) {
+                console.error('[EncryptionManager] Failed to parse combined data:', error);
+                throw new Error('Failed to decrypt note: invalid format');
+            }
+        } else {
+            // LEGACY FORMAT: Separate title and content encryption
+            // Decrypt title
+            const encryptedTitleBuffer = this.base64ToArrayBuffer(encryptedNote.encrypted_title);
+            const decryptedTitleBuffer = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv: nonce as any },
+                this.masterKey,
+                encryptedTitleBuffer as any
+            );
+            const title = decoder.decode(decryptedTitleBuffer);
 
-        return { title, content };
+            // Decrypt content
+            const encryptedContentBuffer = this.base64ToArrayBuffer(encryptedNote.encrypted_content);
+            const decryptedContentBuffer = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv: nonce as any },
+                this.masterKey,
+                encryptedContentBuffer as any
+            );
+            const content = decoder.decode(decryptedContentBuffer);
+
+            return { title, content };
+        }
     }
 
     /**

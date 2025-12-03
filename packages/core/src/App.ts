@@ -6,9 +6,12 @@ import { EditorRegistry } from './EditorRegistry';
 import { EditorStateManager } from './EditorStateManager';
 import { FileSystemManager } from './filesystem/FileSystemManager';
 import { FileManager } from './managers/FileManager';
+import { FilesConfigManager } from './managers/FilesConfigManager';
 import { FontManager } from './managers/FontManager';
+import { BookmarkManager } from './managers/BookmarkManager';
 import { MetadataCache } from './managers/MetadataCache';
 import { SyncManager } from './managers/SyncManager';
+import { WindowConfigManager } from './managers/WindowConfigManager';
 import { Workspace } from './managers/Workspace';
 import { WorkspaceUI } from './managers/WorkspaceUI';
 import { MarkdownProcessorRegistry } from './markdown/MarkdownProcessor';
@@ -35,6 +38,9 @@ export class App {
     workspace: Workspace;
     workspaceUI: WorkspaceUI;
     fileManager: FileManager;
+    filesConfigManager: FilesConfigManager;
+    windowConfigManager: WindowConfigManager;
+    bookmarkManager: BookmarkManager;
     metadataCache: MetadataCache;
     markdownProcessor: MarkdownProcessorRegistry;
     editorStateManager: EditorStateManager;
@@ -54,6 +60,9 @@ export class App {
         this.workspace = new Workspace(this);
         this.workspaceUI = new WorkspaceUI(this);
         this.fileManager = new FileManager(this);
+        this.filesConfigManager = new FilesConfigManager(this);
+        this.windowConfigManager = new WindowConfigManager(this);
+        this.bookmarkManager = new BookmarkManager(this);
         this.metadataCache = new MetadataCache(this);
         this.markdownProcessor = new MarkdownProcessorRegistry();
         this.editorStateManager = new EditorStateManager(this);
@@ -110,7 +119,11 @@ export class App {
             await this.syncManager.init();
             this.logger.debug('SyncManager initialized');
 
-            // 5. Load plugins
+            // 5. Initialize bookmark manager
+            await this.bookmarkManager.initialize();
+            this.logger.debug('BookmarkManager initialized');
+
+            // 6. Load plugins
             await this.loadPlugins();
 
             // 6. Initialize tab manager and restore tabs

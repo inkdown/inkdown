@@ -1,0 +1,167 @@
+/* Create Bookmark Group Modal */
+.create-bookmark-group-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.15s ease-out;
+}
+
+.create-bookmark-group-modal {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.2s ease-out;
+}
+
+.create-bookmark-group-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.create-bookmark-group-modal-header h2 {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.create-bookmark-group-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.create-bookmark-group-modal-close:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.create-bookmark-group-modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.create-bookmark-group-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.create-bookmark-group-form-group label {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.create-bookmark-group-form-group .required {
+    color: var(--color-error);
+}
+
+.create-bookmark-group-form-group input,
+.create-bookmark-group-form-group textarea {
+    padding: 10px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    transition: all var(--transition-fast);
+}
+
+.create-bookmark-group-form-group input:focus,
+.create-bookmark-group-form-group textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    background: var(--bg-primary);
+}
+
+.create-bookmark-group-form-group textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.create-bookmark-group-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+}
+
+.create-bookmark-group-button {
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: none;
+}
+
+.create-bookmark-group-button.secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.create-bookmark-group-button.secondary:hover {
+    background: var(--bg-tertiary);
+}
+
+.create-bookmark-group-button.primary {
+    background: var(--color-accent);
+    color: white;
+}
+
+.create-bookmark-group-button.primary:hover {
+    opacity: 0.9;
+}
+
+.create-bookmark-group-button.primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

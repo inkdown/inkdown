@@ -55,8 +55,13 @@ export class SyncManager {
         const config = await this.app.configManager.loadConfig<SyncConfig>('sync');
         this.enabled = config?.enabled || false;
 
-        this.baseURL = config.serverUrl || 'http://localhost:8080/api/v1';
+        this.baseURL = config?.serverUrl || 'http://localhost:8080/api/v1';
         this.wsURL = this.baseURL.replace(/\/api\/v1$/, '').replace(/^http/, 'ws') + '/ws';
+
+        // Update service URLs
+        this.authService.setBaseURL(this.baseURL);
+        this.deviceManager.setBaseURL(this.baseURL);
+        this.encryptionManager.setBaseURL(this.baseURL);
 
         // Initialize selective sync
         await this.selectiveSync.init();
@@ -137,6 +142,14 @@ export class SyncManager {
      * Start WebSocket connection and periodic sync
      */
     async startSync(): Promise<void> {
+        this.logger.info('startSync() called');
+        this.logger.info(`  - enabled: ${this.enabled}`);
+        this.logger.info(`  - syncEngine active: ${this.syncEngine?.isActive()}`);
+        this.logger.info(`  - isLoggedIn: ${this.isLoggedIn()}`);
+        this.logger.info(`  - encryption initialized: ${this.encryptionManager.isInitialized()}`);
+        this.logger.info(`  - baseURL: ${this.baseURL}`);
+        this.logger.info(`  - wsURL: ${this.wsURL}`);
+
         if (!this.enabled) {
             this.logger.info('Sync not enabled, skipping start');
             return;
@@ -158,12 +171,21 @@ export class SyncManager {
         }
 
         try {
+            this.logger.info('Creating SyncEngine...');
+
             // Create and configure sync engine
-            this.syncEngine = new SyncEngine(this.app, this.baseURL, this.wsURL, this.encryptionManager);
+            this.syncEngine = new SyncEngine(
+                this.app,
+                this.baseURL,
+                this.wsURL,
+                this.encryptionManager,
+                this.localDatabase
+            );
 
             // Inject TokenRefreshService into WebSocketService
             this.syncEngine.getWebSocketService().setTokenRefreshService(this.tokenRefresh);
 
+            this.logger.info('Starting SyncEngine...');
             await this.syncEngine.start();
             this.logger.info('Sync started successfully');
         } catch (error) {

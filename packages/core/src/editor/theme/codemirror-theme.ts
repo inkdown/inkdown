@@ -49,6 +49,34 @@ export function createInkdownTheme(): Extension {
         '.cm-line': {
             padding: '0 16px',
         },
+        // Vim mode styles
+        '.cm-vim-panel': {
+            backgroundColor: 'var(--bg-secondary, #252526)',
+            color: 'var(--text-primary, #e0e0e0)',
+            padding: '4px 8px',
+            fontFamily: 'var(--font-family-mono, monospace)',
+            fontSize: '0.9em',
+        },
+        '.cm-vim-panel input': {
+            backgroundColor: 'transparent',
+            color: 'inherit',
+            border: 'none',
+            outline: 'none',
+            fontFamily: 'inherit',
+        },
+        // Vim fat cursor for normal mode
+        '&.cm-focused .cm-fat-cursor': {
+            backgroundColor: 'var(--editor-cursor, #e0e0e0)',
+            color: 'var(--editor-bg, #1e1e1e)',
+        },
+        '.cm-fat-cursor': {
+            backgroundColor: 'var(--editor-cursor, #e0e0e0) !important',
+            color: 'var(--editor-bg, #1e1e1e) !important',
+        },
+        // Vim visual mode selection
+        '& .cm-selectionMatch': {
+            backgroundColor: 'var(--editor-selection)',
+        },
     });
 
     // Syntax highlighting using CSS variables

@@ -161,8 +161,8 @@ export class NoteSyncService {
         }
 
         const result = await response.json();
-        // Handle null/undefined changes array
-        return result.changes || [];
+        // Server returns { success: true, data: { changes: [...], sync_time: ... } }
+        return result.data?.changes || [];
     }
 
     async processSync(

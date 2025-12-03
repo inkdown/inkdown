@@ -3,6 +3,7 @@ import { WorkspaceSwitcher } from '@inkdown/ui';
 import {
     ArrowDownAZ,
     ArrowUpAZ,
+    Bookmark,
     Check,
     ChevronsDown,
     ChevronsUp,
@@ -25,6 +26,10 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BookmarkGroupModal } from './BookmarkGroupModal';
+import { CreateBookmarkGroupModal } from './CreateBookmarkGroupModal';
+import { useApp } from '../contexts/AppContext';
+import type { BookmarkGroup } from '@inkdown/core';
 import '../styles/FileExplorer.css';
 
 export type SelectedItem = {
@@ -199,9 +204,11 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     onToggleSyncIgnore,
     isSyncIgnored,
 }) => {
+    const app = useApp();
     const [expandedDirs, setExpandedDirs] = useState<Set<string>>(() => {
         return new Set(initialExpandedDirs || []);
     });
+    const [expandingDirs, setExpandingDirs] = useState<Set<string>>(new Set());
     const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());
     const [renamingPath, setRenamingPath] = useState<string | null>(null);
     const [creatingItem, setCreatingItem] = useState<CreatingItem | null>(null);
@@ -216,6 +223,13 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     const [dragOverPath, setDragOverPath] = useState<string | null>(null);
     const [lastClickTime, setLastClickTime] = useState<number>(0);
     const [lastClickPath, setLastClickPath] = useState<string | null>(null);
+    const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
+    const [bookmarkFilePath, setBookmarkFilePath] = useState<string>('');
+    const [bookmarkFileName, setBookmarkFileName] = useState<string>('');
+    const [viewMode, setViewMode] = useState<'files' | 'bookmarks'>('files');
+    const [bookmarkGroups, setBookmarkGroups] = useState<BookmarkGroup[]>([]);
+    const [expandedBookmarkGroups, setExpandedBookmarkGroups] = useState<Set<string>>(new Set());
+    const [createGroupModalOpen, setCreateGroupModalOpen] = useState(false);
 
     // Sort state
     const [sortOrder, setSortOrder] = useState<SortOrder>(initialSortOrder || 'a-z');
@@ -227,6 +241,33 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             setSortOrder(initialSortOrder);
         }
     }, [initialSortOrder]);
+
+    // Load bookmarks and listen for changes
+    useEffect(() => {
+        const loadBookmarks = () => {
+            const groups = app.bookmarkManager.getGroups();
+            setBookmarkGroups(groups);
+        };
+
+        loadBookmarks();
+
+        // Listen for bookmark events
+        const groupCreatedRef = app.bookmarkManager.on('group-created', loadBookmarks);
+        const groupDeletedRef = app.bookmarkManager.on('group-deleted', loadBookmarks);
+        const groupRenamedRef = app.bookmarkManager.on('group-renamed', loadBookmarks);
+        const bookmarkAddedRef = app.bookmarkManager.on('bookmark-added', loadBookmarks);
+        const bookmarkRemovedRef = app.bookmarkManager.on('bookmark-removed', loadBookmarks);
+        const bookmarksReloadedRef = app.bookmarkManager.on('bookmarks-reloaded', loadBookmarks);
+
+        return () => {
+            groupCreatedRef.unload();
+            groupDeletedRef.unload();
+            groupRenamedRef.unload();
+            bookmarkAddedRef.unload();
+            bookmarkRemovedRef.unload();
+            bookmarksReloadedRef.unload();
+        };
+    }, [app]);
 
     // Memoized sorted files
     const sortedFiles = useMemo(() => {
@@ -262,6 +303,23 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         [onSortOrderChange],
     );
 
+    // Check if all bookmark groups are expanded
+    const allBookmarkGroupsExpanded = useMemo(() => {
+        if (bookmarkGroups.length === 0) return true;
+        return bookmarkGroups.every((group) => expandedBookmarkGroups.has(group.id));
+    }, [bookmarkGroups, expandedBookmarkGroups]);
+
+    const handleExpandCollapseAllBookmarks = useCallback(() => {
+        if (allBookmarkGroupsExpanded) {
+            // Collapse all
+            setExpandedBookmarkGroups(new Set());
+        } else {
+            // Expand all
+            const allGroupIds = bookmarkGroups.map((g) => g.id);
+            setExpandedBookmarkGroups(new Set(allGroupIds));
+        }
+    }, [bookmarkGroups, allBookmarkGroupsExpanded]);
+
     // Resize state
 
     // Resize state
@@ -289,11 +347,28 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         (path: string) => {
             setExpandedDirs((prev) => {
                 const newExpanded = new Set(prev);
+                
                 if (newExpanded.has(path)) {
                     newExpanded.delete(path);
                 } else {
                     newExpanded.add(path);
+                    // Mark as expanding for animation
+                    setExpandingDirs((prevExpanding) => {
+                        const newExpanding = new Set(prevExpanding);
+                        newExpanding.add(path);
+                        return newExpanding;
+                    });
+                    
+                    // Remove expanding state after animation completes
+                    setTimeout(() => {
+                        setExpandingDirs((prevExpanding) => {
+                            const newExpanding = new Set(prevExpanding);
+                            newExpanding.delete(path);
+                            return newExpanding;
+                        });
+                    }, 250); // Match animation duration
                 }
+                
                 onExpandedDirsChange?.(Array.from(newExpanded));
                 return newExpanded;
             });
@@ -815,6 +890,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     const renderFileNode = useCallback(
         (node: FileNode, depth = 0): React.ReactNode => {
             const isExpanded = expandedDirs.has(node.path);
+            const isExpanding = expandingDirs.has(node.path);
             const isSelected = selectedPaths.has(node.path);
             const isRenaming = renamingPath === node.path;
             const isDragOver = dragOverPath === node.path;
@@ -895,7 +971,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                     </div>
 
                     {node.isDirectory && isExpanded && (
-                        <div className="file-node-children">
+                        <div className={`file-node-children ${isExpanding ? 'expanding' : ''}`}>
                             {creatingItem && creatingItem.parentPath === node.path && (
                                 <div
                                     className="file-node-item creating"
@@ -937,6 +1013,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         },
         [
             expandedDirs,
+            expandingDirs,
             selectedPaths,
             renamingPath,
             dragOverPath,
@@ -953,6 +1030,56 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             handleCreateItem,
         ],
     );
+
+    // Render bookmark group as folder
+    const renderBookmarkGroup = useCallback((group: BookmarkGroup) => {
+        const isExpanded = expandedBookmarkGroups.has(group.id);
+
+        return (
+            <div key={group.id} className="file-node">
+                <div
+                    className="file-node-item directory"
+                    style={{ paddingLeft: '8px' }}
+                    onClick={() => {
+                        setExpandedBookmarkGroups((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(group.id)) {
+                                next.delete(group.id);
+                            } else {
+                                next.add(group.id);
+                            }
+                            return next;
+                        });
+                    }}
+                >
+                    <span className="file-node-icon">
+                        {isExpanded ? <FolderOpen size={16} /> : <Folder size={16} />}
+                    </span>
+                    <span className="file-node-name">{group.name}</span>
+                    <span className="file-node-count">({group.bookmarks.length})</span>
+                </div>
+                {isExpanded && (
+                    <div className="file-node-children">
+                        {group.bookmarks.map((bookmark) => (
+                            <div key={bookmark.id} className="file-node">
+                                <div
+                                    className={`file-node-item ${activeFilePath === bookmark.filePath ? 'active' : ''}`}
+                                    style={{ paddingLeft: '32px' }}
+                                    onClick={() => onFileSelect(bookmark.filePath)}
+                                    title={bookmark.filePath}
+                                >
+                                    <span className="file-node-icon">
+                                        <File size={16} />
+                                    </span>
+                                    <span className="file-node-name">{bookmark.title}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    }, [expandedBookmarkGroups, activeFilePath, onFileSelect]);
 
     // Selection count for status/context
     const selectionCount = selectedPaths.size;
@@ -978,6 +1105,13 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                     onSelect={onWorkspaceSwitch || (() => { })}
                                     onBrowse={onBrowseWorkspace || (() => { })}
                                 />
+                                <button
+                                    className={`file-explorer-action ${viewMode === 'bookmarks' ? 'active' : ''}`}
+                                    onClick={() => setViewMode(viewMode === 'files' ? 'bookmarks' : 'files')}
+                                    title={viewMode === 'files' ? 'Show Bookmarks' : 'Show Files'}
+                                >
+                                    <Bookmark size={18} />
+                                </button>
                                 {onOpenSettings && (
                                     <button
                                         className="file-explorer-action"
@@ -989,31 +1123,56 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                 )}
                             </div>
                             <div className="file-explorer-header-bottom">
-                                <button
-                                    className="file-explorer-action"
-                                    onClick={() => startCreateFile()}
-                                    title="New File"
-                                >
-                                    <Plus size={18} />
-                                </button>
-                                <button
-                                    className="file-explorer-action"
-                                    onClick={() => startCreateDirectory()}
-                                    title="New Folder"
-                                >
-                                    <FolderPlus size={18} />
-                                </button>
-                                <button
-                                    className={`file-explorer-action ${sortOrder !== 'a-z' ? 'active' : ''}`}
-                                    onClick={() => setSortMenuOpen(!sortMenuOpen)}
-                                    title="Sort Options"
-                                >
-                                    {sortOrder === 'a-z' ? (
-                                        <ArrowDownAZ size={18} />
-                                    ) : (
-                                        <ArrowUpAZ size={18} />
-                                    )}
-                                </button>
+                                {viewMode === 'files' ? (
+                                    <>
+                                        <button
+                                            className="file-explorer-action"
+                                            onClick={() => startCreateFile()}
+                                            title="New File"
+                                        >
+                                            <Plus size={18} />
+                                        </button>
+                                        <button
+                                            className="file-explorer-action"
+                                            onClick={() => startCreateDirectory()}
+                                            title="New Folder"
+                                        >
+                                            <FolderPlus size={18} />
+                                        </button>
+                                        <button
+                                            className={`file-explorer-action ${sortOrder !== 'a-z' ? 'active' : ''}`}
+                                            onClick={() => setSortMenuOpen(!sortMenuOpen)}
+                                            title="Sort Options"
+                                        >
+                                            {sortOrder === 'a-z' ? (
+                                                <ArrowDownAZ size={18} />
+                                            ) : (
+                                                <ArrowUpAZ size={18} />
+                                            )}
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button
+                                            className="file-explorer-action"
+                                            onClick={() => setCreateGroupModalOpen(true)}
+                                            title="New Bookmark Group"
+                                        >
+                                            <FolderPlus size={18} />
+                                        </button>
+                                        <button
+                                            className="file-explorer-action"
+                                            onClick={handleExpandCollapseAllBookmarks}
+                                            title={allBookmarkGroupsExpanded ? 'Collapse All' : 'Expand All'}
+                                        >
+                                            {allBookmarkGroupsExpanded ? (
+                                                <ChevronsUp size={16} />
+                                            ) : (
+                                                <ChevronsDown size={16} />
+                                            )}
+                                        </button>
+                                    </>
+                                )}
                                 {sortMenuOpen && (
                                     <div className="file-explorer-sort-menu">
                                         <div
@@ -1090,7 +1249,19 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                     </div>
                                 </div>
                             )}
-                            {sortedFiles.map((node) => renderFileNode(node, 0))}
+                            {viewMode === 'files'
+                                ? sortedFiles.map((node) => renderFileNode(node, 0))
+                                : bookmarkGroups.length > 0
+                                    ? bookmarkGroups.map((group) => renderBookmarkGroup(group))
+                                    : (
+                                        <div className="file-explorer-empty">
+                                            <Bookmark size={48} />
+                                            <p>No bookmarks yet</p>
+                                            <p className="text-muted">
+                                                Add bookmarks from the context menu or editor options
+                                            </p>
+                                        </div>
+                                    )}
                         </div>
 
                         {contextMenu && (
@@ -1142,6 +1313,21 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                             <Edit2 size={14} />
                                             Rename
                                         </button>
+                                        {!contextMenu.isDirectory && (
+                                            <button
+                                                className="context-menu-item"
+                                                onClick={() => {
+                                                    const fileName = contextMenu.path!.split('/').pop() || '';
+                                                    setBookmarkFilePath(contextMenu.path!);
+                                                    setBookmarkFileName(fileName);
+                                                    setBookmarkModalOpen(true);
+                                                    closeContextMenu();
+                                                }}
+                                            >
+                                                <Bookmark size={14} />
+                                                Add to Bookmarks
+                                            </button>
+                                        )}
                                         {onMoveTo && (
                                             <button
                                                 className="context-menu-item"
@@ -1274,6 +1460,23 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                     <PanelLeft size={16} />
                 </button>
             )}
+
+            {/* Bookmark Modal */}
+            <BookmarkGroupModal
+                isOpen={bookmarkModalOpen}
+                onClose={() => setBookmarkModalOpen(false)}
+                filePath={bookmarkFilePath}
+                fileName={bookmarkFileName}
+            />
+
+            {/* Create Bookmark Group Modal */}
+            <CreateBookmarkGroupModal
+                isOpen={createGroupModalOpen}
+                onClose={() => setCreateGroupModalOpen(false)}
+                onCreate={(name, description, color) => {
+                    app.bookmarkManager.createGroup(name, description, color);
+                }}
+            />
         </div>
     );
 };

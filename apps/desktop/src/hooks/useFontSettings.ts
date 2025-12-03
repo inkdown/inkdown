@@ -1,9 +1,17 @@
 import { useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 
+interface AppFontConfig {
+    font?: {
+        family?: string;
+        size?: number;
+    };
+}
+
 /**
  * Hook to apply font settings from config.
- * Sets CSS variables for font family, size, and line height.
+ * Loads from app.json config which stores font settings under font.family and font.size.
+ * Sets CSS variables for font family and size.
  */
 export function useFontSettings(): void {
     const app = useApp();
@@ -11,31 +19,22 @@ export function useFontSettings(): void {
     useEffect(() => {
         const applyFontSettings = async () => {
             try {
-                const config = await app.configManager.loadConfig<{
-                    fontFamily?: string;
-                    fontSize?: number;
-                    lineHeight?: number;
-                    editorFontSize?: number;
-                }>('editor');
+                // Load from app config which stores font as { family, size }
+                const config = await app.configManager.loadConfig<AppFontConfig>('app');
 
-                if (!config) return;
+                if (!config?.font) return;
 
                 const root = document.documentElement;
 
-                if (config.fontFamily) {
-                    root.style.setProperty('--font-family', config.fontFamily);
+                if (config.font.family) {
+                    // Apply font family to both general and monospace (for code blocks)
+                    root.style.setProperty('--font-family', config.font.family);
+                    root.style.setProperty('--font-family-mono', config.font.family);
                 }
 
-                if (config.fontSize) {
-                    root.style.setProperty('--font-size-base', `${config.fontSize}px`);
-                }
-
-                if (config.editorFontSize) {
-                    root.style.setProperty('--font-size-editor', `${config.editorFontSize}px`);
-                }
-
-                if (config.lineHeight) {
-                    root.style.setProperty('--line-height-base', String(config.lineHeight));
+                if (config.font.size) {
+                    root.style.setProperty('--font-size-base', `${config.font.size}px`);
+                    root.style.setProperty('--font-size-editor', `${config.font.size}px`);
                 }
             } catch (error) {
                 console.error('Failed to load font settings:', error);
@@ -44,9 +43,9 @@ export function useFontSettings(): void {
 
         applyFontSettings();
 
-        // Subscribe to config changes
+        // Subscribe to config changes (when settings are saved)
         const handleConfigChange = (event: CustomEvent<{ key: string }>) => {
-            if (event.detail.key === 'editor') {
+            if (event.detail.key === 'app') {
                 applyFontSettings();
             }
         };

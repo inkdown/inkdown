@@ -68,6 +68,24 @@ export class FileSystemManager {
     }
 
     /**
+     * Write binary file content (base64 encoded)
+     * Used for saving images and other binary files
+     */
+    async writeFileBinary(path: string, base64Content: string): Promise<void> {
+        try {
+            await invoke('write_file_binary', { path, data: base64Content });
+
+            // Emit file:created event through workspace
+            if (this._app?.workspace) {
+                this._app.workspace.trigger('file:created', path);
+            }
+        } catch (error) {
+            console.error('Failed to write binary file:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Create a new file
      */
     async createFile(path: string): Promise<void> {

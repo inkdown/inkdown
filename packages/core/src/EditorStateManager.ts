@@ -5,7 +5,7 @@ import type { App } from './App';
  *
  * This class is responsible for:
  * - Caching file contents in memory for fast switching
- * - Saving dirty files to disk
+ * - Saving dirty files to disk with auto-save
  * - Loading files from disk
  *
  * The cache is keyed by filePath (not tabId) because:
@@ -23,6 +23,12 @@ export class EditorStateManager {
 
     // Track the last saved content to detect real changes: filePath -> content
     private lastSavedContent: Map<string, string> = new Map();
+
+    // Auto-save debounce timers: filePath -> timer
+    private autoSaveTimers: Map<string, NodeJS.Timeout> = new Map();
+    
+    // Auto-save delay in milliseconds (2 seconds after last change)
+    private readonly AUTO_SAVE_DELAY_MS = 2000;
 
     constructor(app: App) {
         this.app = app;
@@ -70,6 +76,7 @@ export class EditorStateManager {
 
     /**
      * Update content in cache and mark as dirty
+     * Triggers auto-save after a debounce period
      */
     updateContent(filePath: string, content: string): void {
         if (!filePath) return;
@@ -80,9 +87,58 @@ export class EditorStateManager {
         const lastSaved = this.lastSavedContent.get(filePath);
         if (lastSaved !== content) {
             this.dirtyFiles.add(filePath);
+            
+            // Schedule auto-save with debounce
+            this.scheduleAutoSave(filePath);
         } else {
             this.dirtyFiles.delete(filePath);
+            // Cancel any pending auto-save since content is same as saved
+            this.cancelAutoSave(filePath);
         }
+    }
+
+    /**
+     * Schedule auto-save for a file with debounce
+     */
+    private scheduleAutoSave(filePath: string): void {
+        // Cancel existing timer for this file
+        this.cancelAutoSave(filePath);
+
+        // Schedule new auto-save
+        const timer = setTimeout(async () => {
+            this.autoSaveTimers.delete(filePath);
+            
+            // Only save if still dirty
+            if (this.dirtyFiles.has(filePath)) {
+                try {
+                    await this.saveFile(filePath);
+                    console.log(`[EditorStateManager] Auto-saved: ${filePath}`);
+                } catch (error) {
+                    console.error(`[EditorStateManager] Auto-save failed for ${filePath}:`, error);
+                }
+            }
+        }, this.AUTO_SAVE_DELAY_MS);
+
+        this.autoSaveTimers.set(filePath, timer);
+    }
+
+    /**
+     * Cancel pending auto-save for a file
+     */
+    private cancelAutoSave(filePath: string): void {
+        const existingTimer = this.autoSaveTimers.get(filePath);
+        if (existingTimer) {
+            clearTimeout(existingTimer);
+            this.autoSaveTimers.delete(filePath);
+        }
+    }
+
+    /**
+     * Cancel all pending auto-saves
+     */
+    cancelAllAutoSaves(): void {
+        this.autoSaveTimers.forEach(timer => clearTimeout(timer));
+        this.autoSaveTimers.clear();
     }
 
     /**
@@ -95,7 +151,17 @@ export class EditorStateManager {
         if (content === undefined) return;
 
         try {
-            await this.app.fileSystemManager.writeFile(filePath, content);
+            // Get the TFile object to use fileManager (which dispatches events)
+            const file = this.app.workspace.getAbstractFileByPath(filePath);
+            if (file && 'extension' in file) {
+                // Use fileManager.modify to trigger file-modify event for sync
+                await this.app.fileManager.modify(file as any, content);
+            } else {
+                // Fallback to direct write if file object not found
+                await this.app.fileSystemManager.writeFile(filePath, content);
+                // Manually trigger file-modify event
+                this.app.workspace._onFileModify({ path: filePath } as any);
+            }
             this.lastSavedContent.set(filePath, content);
             this.dirtyFiles.delete(filePath);
         } catch (error) {
@@ -111,7 +177,17 @@ export class EditorStateManager {
         if (!filePath) return;
 
         try {
-            await this.app.fileSystemManager.writeFile(filePath, content);
+            // Get the TFile object to use fileManager (which dispatches events)
+            const file = this.app.workspace.getAbstractFileByPath(filePath);
+            if (file && 'extension' in file) {
+                // Use fileManager.modify to trigger file-modify event for sync
+                await this.app.fileManager.modify(file as any, content);
+            } else {
+                // Fallback to direct write if file object not found
+                await this.app.fileSystemManager.writeFile(filePath, content);
+                // Manually trigger file-modify event
+                this.app.workspace._onFileModify({ path: filePath } as any);
+            }
             this.contentCache.set(filePath, content);
             this.lastSavedContent.set(filePath, content);
             this.dirtyFiles.delete(filePath);

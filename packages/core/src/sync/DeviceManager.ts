@@ -19,6 +19,13 @@ export class DeviceManager {
     }
 
     /**
+     * Update the base URL for API requests
+     */
+    setBaseURL(url: string): void {
+        this.baseURL = url;
+    }
+
+    /**
      * Load device ID from localStorage
      */
     private loadDeviceId(): void {

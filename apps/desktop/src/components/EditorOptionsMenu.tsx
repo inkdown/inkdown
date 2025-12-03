@@ -1,4 +1,5 @@
 import {
+    Bookmark,
     Clipboard,
     Columns2,
     Copy,
@@ -21,6 +22,7 @@ interface EditorOptionsMenuProps {
     viewMode: ViewMode;
     onViewModeChange: (mode: ViewMode) => void;
     onRename: () => void;
+    onAddBookmark: () => void;
     onDelete: () => void;
     onMoveTo: () => void;
     onMakeCopy: () => void;
@@ -33,6 +35,7 @@ export const EditorOptionsMenu: React.FC<EditorOptionsMenuProps> = ({
     viewMode,
     onViewModeChange,
     onRename,
+    onAddBookmark,
     onDelete,
     onMoveTo,
     onMakeCopy,
@@ -118,6 +121,16 @@ export const EditorOptionsMenu: React.FC<EditorOptionsMenuProps> = ({
                         >
                             <Pencil size={16} />
                             <span>Rename Note</span>
+                        </button>
+                        <button
+                            className="editor-menu-item"
+                            onClick={() => {
+                                onAddBookmark();
+                                setIsOpen(false);
+                            }}
+                        >
+                            <Bookmark size={16} />
+                            <span>Add to Bookmarks</span>
                         </button>
                         <button
                             className="editor-menu-item"

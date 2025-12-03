@@ -49,6 +49,20 @@ export type {
     EditorTransaction,
 } from './editor/EditorAdapter';
 export { EditorAdapter } from './editor/EditorAdapter';
+// Editor configurable extensions
+export {
+    createCloseBracketsExtension,
+    createConfigurableExtensions,
+    createHeadingFoldExtension,
+    createLineNumbersExtension,
+    createPasteHtmlToMarkdownExtension,
+    createTabIndentationExtension,
+    createVimModeExtension,
+    DEFAULT_EDITOR_CONFIG,
+    editorCompartments,
+    getReconfigurationEffects,
+} from './editor/extensions';
+export type { EditorConfig } from './editor/extensions';
 export {
     createCustomizableKeymap,
     createMarkdownKeymap,
@@ -64,6 +78,10 @@ export { FileSystemManager } from './filesystem/FileSystemManager';
 export { FontManager } from './managers/FontManager';
 export type { DataWriteOptions } from './managers/FileManager';
 export { FileManager } from './managers/FileManager';
+export type { FilesConfig } from './managers/FilesConfigManager';
+export { FilesConfigManager, DEFAULT_FILES_CONFIG } from './managers/FilesConfigManager';
+export type { WindowConfig } from './managers/WindowConfigManager';
+export { WindowConfigManager, DEFAULT_WINDOW_CONFIG } from './managers/WindowConfigManager';
 export type {
     BlockCache,
     CachedMetadata,
@@ -81,6 +99,7 @@ export type { TAbstractFile, TFile, TFolder } from './managers/Workspace';
 export { Workspace } from './managers/Workspace';
 export { WorkspaceHistory } from './managers/WorkspaceHistory';
 export { WorkspaceUI } from './managers/WorkspaceUI';
+export { BookmarkManager } from './managers/BookmarkManager';
 // Sync
 export { AuthService } from './sync/AuthService';
 export { LocalDatabase } from './sync/LocalDatabase';
@@ -141,6 +160,12 @@ export type {
     ThemeConfig,
     ThemeManifest,
 } from './types/theme';
+export type {
+    Bookmark,
+    BookmarkGroup,
+    BookmarksConfig,
+    BookmarkEvents,
+} from './types/bookmarks';
 // Icon utilities (only setIcon is exported - addIcon/hasIcon/getIcon are internal)
 export { setIcon } from './utils/icons';
 export type { Logger } from './utils/logger';

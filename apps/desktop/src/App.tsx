@@ -17,11 +17,15 @@ import { useEditorState } from './hooks/useEditorState';
 import { useFontSettings } from './hooks/useFontSettings';
 import { useTabManager } from './hooks/useTabManager';
 import './styles/FileExplorer.css';
-import { Editor, registerEditorCommands } from '@inkdown/core';
+import { Editor, registerEditorCommands, DEFAULT_EDITOR_CONFIG } from '@inkdown/core';
+import type { EditorConfig } from '@inkdown/core';
 import { EditorOptionsMenu, type ViewMode } from './components/EditorOptionsMenu';
 import { MoveToModal } from './components/MoveToModal';
 import { RenameModal } from './components/RenameModal';
 import { SyncStatus } from './components/SyncStatus';
+import { WindowControls } from './components/WindowControls';
+import { BookmarkGroupModal } from './components/BookmarkGroupModal';
+
 const DEFAULT_SIDEBAR_WIDTH = 250;
 
 interface AppConfig {
@@ -48,9 +52,51 @@ const AppContent: React.FC = () => {
     const [sortOrder, setSortOrder] = useState<SortOrder>('a-z');
     const [recentWorkspaces, setRecentWorkspaces] = useState<RecentWorkspace[]>([]);
     const [needsOnboarding, setNeedsOnboarding] = useState(false);
+    const [editorConfig, setEditorConfig] = useState<EditorConfig>(DEFAULT_EDITOR_CONFIG);
+    const [useCustomTitleBar, setUseCustomTitleBar] = useState<boolean>(false);
+    const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
+    const [bookmarkFilePath, setBookmarkFilePath] = useState<string>('');
+    const [bookmarkFileName, setBookmarkFileName] = useState<string>('');
 
     // Initialize font settings from config/localStorage
     useFontSettings();
+
+    // Load window configuration (must load early for title bar)
+    useEffect(() => {
+        const loadWindowConfig = async () => {
+            try {
+                const config = await app.windowConfigManager.loadConfig();
+                setUseCustomTitleBar(config.customTitleBar);
+            } catch (error) {
+                console.error('Failed to load window config:', error);
+            }
+        };
+        loadWindowConfig();
+    }, [app]);
+
+    // Load editor configuration
+    useEffect(() => {
+        const loadEditorConfig = async () => {
+            try {
+                const config = await app.configManager.loadConfig<EditorConfig>('editor');
+                if (config) {
+                    setEditorConfig(config);
+                }
+            } catch (error) {
+                console.error('Failed to load editor config:', error);
+            }
+        };
+        loadEditorConfig();
+
+        // Listen for config changes from settings modal
+        const handleConfigChange = (e: CustomEvent<EditorConfig>) => {
+            setEditorConfig(e.detail);
+        };
+        window.addEventListener('inkdown:editor-config-changed', handleConfigChange as EventListener);
+        return () => {
+            window.removeEventListener('inkdown:editor-config-changed', handleConfigChange as EventListener);
+        };
+    }, [app]);
 
     // Get active tab
     const activeTab = getActiveTab();
@@ -368,6 +414,19 @@ const AppContent: React.FC = () => {
         loadFiles();
     }, [loadFiles]);
 
+    // Listen for file-create events to refresh the file tree
+    useEffect(() => {
+        const handleFileCreate = () => {
+            loadFiles();
+        };
+        
+        app.workspace.on('file-create', handleFileCreate);
+        
+        return () => {
+            app.workspace.off('file-create', handleFileCreate);
+        };
+    }, [app, loadFiles]);
+
     const handleOpenDialog = useCallback(async (): Promise<string | null> => {
         const selected = await openDialog({
             directory: true,
@@ -660,9 +719,11 @@ const AppContent: React.FC = () => {
     }
 
     return (
-        <div className="app-layout">
-            {/* File Explorer with integrated resize and toggle */}
-            <FileExplorer
+        <div className={`app-layout ${useCustomTitleBar ? 'with-custom-titlebar' : ''}`}>
+            {/* Main workspace container */}
+            <div className="app-workspace">
+                {/* File Explorer with integrated resize and toggle */}
+                <FileExplorer
                 rootPath={rootPath}
                 activeFilePath={activeTab?.filePath || null}
                 files={files}
@@ -707,6 +768,13 @@ const AppContent: React.FC = () => {
                     onTabClose={closeTab}
                     sidebarCollapsed={sidebarCollapsed}
                     onToggleSidebar={() => handleSidebarCollapsedChange(!sidebarCollapsed)}
+                    windowControls={
+                        useCustomTitleBar ? (
+                            <WindowControls
+                                workspaceName={rootPath ? rootPath.split('/').pop() || 'Inkdown' : 'Inkdown'}
+                            />
+                        ) : undefined
+                    }
                 />
 
                 {/* Toolbar replaced by EditorOptionsMenu */}
@@ -723,6 +791,14 @@ const AppContent: React.FC = () => {
                                         handleRename(activeTab.filePath!, newName);
                                     });
                                     modal.open();
+                                }
+                            }}
+                            onAddBookmark={() => {
+                                if (activeTab?.filePath) {
+                                    const fileName = activeTab.filePath.split('/').pop() || '';
+                                    setBookmarkFilePath(activeTab.filePath);
+                                    setBookmarkFileName(fileName);
+                                    setBookmarkModalOpen(true);
                                 }
                             }}
                             onDelete={() => {
@@ -793,6 +869,7 @@ const AppContent: React.FC = () => {
                                     editorRegistry={app.editorRegistry}
                                     shortcutManager={app.shortcutManager}
                                     app={app}
+                                    editorConfig={editorConfig}
                                 />
                             )}
 
@@ -823,6 +900,15 @@ const AppContent: React.FC = () => {
 
             {/* Settings Modal */}
             <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
+            {/* Bookmark Modal */}
+            <BookmarkGroupModal
+                isOpen={bookmarkModalOpen}
+                onClose={() => setBookmarkModalOpen(false)}
+                filePath={bookmarkFilePath}
+                fileName={bookmarkFileName}
+            />
+            </div>
         </div>
     );
 };

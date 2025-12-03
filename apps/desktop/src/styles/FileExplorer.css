@@ -41,8 +41,7 @@
 .file-explorer-header-top {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 20px;
+    gap: 4px;
     padding: 4px 8px;
 }
 
@@ -378,4 +377,86 @@
     text-transform: uppercase;
     font-weight: 600;
     flex-shrink: 0;
+}
+
+/* Folder children animation */
+.file-node-children {
+    overflow: hidden;
+}
+
+.file-node-children.expanding {
+    animation: slideDownFade 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideDownFade {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Smooth icon rotation for folder expand/collapse */
+.file-node-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.file-node-item.directory .file-node-icon svg {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Subtle scale effect on folder items */
+.file-node-item.directory {
+    transition: 
+        background var(--transition-fast),
+        transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.file-node-item.directory:active {
+    transform: scale(0.98);
+}
+
+/* Empty state for bookmarks */
+.file-explorer-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--text-secondary);
+    gap: 12px;
+}
+
+.file-explorer-empty svg {
+    opacity: 0.3;
+}
+
+.file-explorer-empty p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+}
+
+.file-explorer-empty .text-muted {
+    opacity: 0.7;
+    font-size: var(--font-size-xs);
+}
+
+/* Bookmark count in groups */
+.file-node-count {
+    margin-left: auto;
+    opacity: 0.6;
+    font-size: var(--font-size-xs);
+}
+
+/* Active state for bookmark button */
+.file-explorer-action.active {
+    background: var(--bg-secondary);
+    color: var(--color-accent);
 }

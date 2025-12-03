@@ -250,3 +250,75 @@
 .settings-section .ink-button svg {
     flex-shrink: 0;
 }
+
+/* Autocomplete Input */
+.autocomplete-input-container {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+}
+
+.autocomplete-input {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    outline: none;
+    transition: border-color var(--transition-fast);
+}
+
+.autocomplete-input:focus {
+    border-color: var(--color-primary);
+}
+
+.autocomplete-input::placeholder {
+    color: var(--text-muted);
+}
+
+.autocomplete-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin: 4px 0 0 0;
+    padding: 4px 0;
+    list-style: none;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.autocomplete-suggestion {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    transition: background-color var(--transition-fast);
+}
+
+.autocomplete-suggestion:hover,
+.autocomplete-suggestion.selected {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.autocomplete-suggestion svg {
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+
+.autocomplete-suggestion span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

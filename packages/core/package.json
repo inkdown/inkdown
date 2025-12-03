@@ -25,12 +25,15 @@
         "react": "catalog:",
         "react-dom": "catalog:",
         "lucide-react": "catalog:",
+        "@codemirror/autocomplete": "catalog:",
+        "@codemirror/commands": "catalog:",
         "@codemirror/view": "catalog:",
         "@codemirror/state": "catalog:",
         "@codemirror/lang-markdown": "catalog:",
         "@codemirror/language-data": "catalog:",
         "@codemirror/language": "catalog:",
-        "@lezer/highlight": "catalog:"
+        "@lezer/highlight": "catalog:",
+        "@replit/codemirror-vim": "catalog:"
     },
     "devDependencies": {
         "@types/react": "catalog:",

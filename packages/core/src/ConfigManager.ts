@@ -179,6 +179,13 @@ export class ConfigManager {
             shortcuts: {
                 shortcuts: {},
             },
+            // Editor configuration
+            editor: {
+                autoPairBrackets: true,
+                tabIndentation: true,
+                convertPastedHtmlToMarkdown: true,
+                vimMode: false,
+            },
         };
 
         return (defaults[configName] || {}) as T;

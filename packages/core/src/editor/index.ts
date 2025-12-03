@@ -31,6 +31,21 @@ export type {
     EditorTransaction,
 } from './EditorAdapter';
 export { EditorAdapter } from './EditorAdapter';
+// Configurable extensions
+export {
+    createCloseBracketsExtension,
+    createConfigurableExtensions,
+    createHeadingFoldExtension,
+    createImagePasteExtension,
+    createLineNumbersExtension,
+    createPasteHtmlToMarkdownExtension,
+    createTabIndentationExtension,
+    createVimModeExtension,
+    DEFAULT_EDITOR_CONFIG,
+    editorCompartments,
+    getReconfigurationEffects,
+} from './extensions';
+export type { EditorConfig } from './extensions';
 // Keymaps
 export {
     createCustomizableKeymap,

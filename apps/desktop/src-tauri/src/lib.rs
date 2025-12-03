@@ -275,6 +275,28 @@ fn write_file(path: String, content: String) -> Result<(), String> {
         .map_err(|e| format!("Failed to write file: {}", e))
 }
 
+/// Write binary file content (base64 encoded)
+#[tauri::command]
+fn write_file_binary(path: String, data: String) -> Result<(), String> {
+    use base64::{Engine as _, engine::general_purpose};
+    
+    let file_path = PathBuf::from(&path);
+    
+    // Create parent directories if they don't exist
+    if let Some(parent) = file_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create parent directories: {}", e))?;
+    }
+    
+    // Decode base64 data
+    let bytes = general_purpose::STANDARD
+        .decode(&data)
+        .map_err(|e| format!("Failed to decode base64 data: {}", e))?;
+    
+    fs::write(&file_path, bytes)
+        .map_err(|e| format!("Failed to write binary file: {}", e))
+}
+
 /// Create a new file
 #[tauri::command]
 fn create_file(path: String) -> Result<(), String> {
@@ -515,6 +537,34 @@ fn path_exists(path: String) -> bool {
     PathBuf::from(&path).exists()
 }
 
+/// Apply window configuration (decorations) based on config file
+fn apply_window_config(app: &tauri::AppHandle) {
+    use serde_json::Value;
+    
+    // Read window config
+    if let Ok(config_dir) = app.path().app_config_dir() {
+        let window_config_path = config_dir.join("window.json");
+        
+        if let Ok(content) = fs::read_to_string(&window_config_path) {
+            if let Ok(config) = serde_json::from_str::<Value>(&content) {
+                if let Some(custom_titlebar) = config.get("customTitleBar").and_then(|v| v.as_bool()) {
+                    if let Some(window) = app.get_webview_window("main") {
+                        // Apply decorations setting
+                        let _ = window.set_decorations(!custom_titlebar);
+                        
+                        // On macOS, set titlebar style for better integration
+                        #[cfg(target_os = "macos")]
+                        if custom_titlebar {
+                            use tauri::TitleBarStyle;
+                            let _ = window.set_title_bar_style(TitleBarStyle::Overlay);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -522,6 +572,12 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_process::init())
+        .setup(|app| {
+            // Apply window configuration on startup
+            apply_window_config(&app.handle());
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             greet,
             get_config_dir,
@@ -535,6 +591,7 @@ pub fn run() {
             read_directory,
             read_file,
             write_file,
+            write_file_binary,
             create_file,
             create_directory,
             rename_path,

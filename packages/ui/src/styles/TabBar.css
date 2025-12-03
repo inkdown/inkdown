@@ -101,3 +101,12 @@
     background: var(--bg-secondary);
     color: var(--text-primary);
 }
+
+/* Window controls container */
+.tab-bar-window-controls {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    flex-shrink: 0;
+    margin-left: auto;
+}

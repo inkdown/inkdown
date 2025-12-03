@@ -52,6 +52,7 @@ export interface TabBarProps {
     onTabClose: (tabId: string) => void;
     sidebarCollapsed?: boolean;
     onToggleSidebar?: () => void;
+    windowControls?: React.ReactNode;
 }
 
 /**
@@ -64,9 +65,10 @@ export const TabBar: React.FC<TabBarProps> = ({
     onTabClose,
     sidebarCollapsed,
     onToggleSidebar,
+    windowControls,
 }) => {
     return (
-        <div className="tab-bar">
+        <div className="tab-bar" data-tauri-drag-region>
             {onToggleSidebar && (
                 <button
                     className="tab-bar-toggle"
@@ -89,6 +91,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                     />
                 ))}
             </div>
+            {windowControls && <div className="tab-bar-window-controls">{windowControls}</div>}
         </div>
     );
 };

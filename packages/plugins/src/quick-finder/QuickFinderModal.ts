@@ -171,6 +171,7 @@ export class QuickFinderModal extends FuzzySuggestModal<TFile> {
 
     /**
      * Create a new note with the given path
+     * Uses FilesConfigManager to determine the correct location
      * Recent files tracking is handled automatically when file is opened
      */
     private async createNote(inputValue: string) {
@@ -178,31 +179,31 @@ export class QuickFinderModal extends FuzzySuggestModal<TFile> {
         if (!value) return;
 
         try {
-            // Clean up path
-            let relativePath = value;
-            if (relativePath.startsWith('/')) {
-                relativePath = relativePath.substring(1);
+            // Clean up the input - remove leading slash and .md extension for processing
+            let noteName = value;
+            if (noteName.startsWith('/')) {
+                noteName = noteName.substring(1);
             }
-
-            // Build full path
-            const fullPath = this.app.fileSystemManager.joinPath(this.workspacePath, relativePath);
-
-            // Add .md extension if not present
-            const notePath = fullPath.endsWith('.md') ? fullPath : fullPath + '.md';
-
-            // Create parent directories if they don't exist
-            const parentDir = this.app.fileSystemManager.getParentPath(notePath);
-            if (parentDir && parentDir !== this.workspacePath) {
-                try {
-                    // Check if directory exists first
-                    const exists = await this.app.fileSystemManager.exists(parentDir);
-                    if (!exists) {
-                        await this.app.fileSystemManager.createDirectory(parentDir);
-                    }
-                } catch (dirError) {
-                    // If error checking/creating directory, log but continue
-                    console.warn('Directory creation warning:', dirError);
+            
+            // Check if user provided a path (contains /)
+            const hasPath = noteName.includes('/');
+            
+            let notePath: string;
+            
+            if (hasPath) {
+                // User specified a path - use it directly relative to workspace
+                const fullPath = this.app.fileSystemManager.joinPath(this.workspacePath, noteName);
+                notePath = fullPath.endsWith('.md') ? fullPath : fullPath + '.md';
+                
+                // Create parent directories if they don't exist
+                const parentDir = this.app.fileSystemManager.getParentPath(notePath);
+                if (parentDir && parentDir !== this.workspacePath) {
+                    await this.ensureDirectoryExists(parentDir);
                 }
+            } else {
+                // User provided just a filename - use FilesConfigManager for location
+                const filename = noteName.endsWith('.md') ? noteName : `${noteName}.md`;
+                notePath = await this.app.filesConfigManager.getNewNotePath(filename);
             }
 
             // Create file
@@ -215,6 +216,20 @@ export class QuickFinderModal extends FuzzySuggestModal<TFile> {
         } catch (error) {
             console.error('Failed to create note:', error);
             new Notice('Failed to create note: ' + error);
+        }
+    }
+
+    /**
+     * Ensure a directory exists, creating it if necessary
+     */
+    private async ensureDirectoryExists(path: string): Promise<void> {
+        try {
+            const exists = await this.app.fileSystemManager.exists(path);
+            if (!exists) {
+                await this.app.fileSystemManager.createDirectory(path);
+            }
+        } catch (error) {
+            console.warn('Failed to ensure directory exists:', error);
         }
     }
 

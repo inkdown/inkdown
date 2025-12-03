@@ -21,13 +21,17 @@ export const SyncStatus: React.FC = () => {
 
             if (enabled && app.syncManager.syncEngine) {
                 setPendingCount(app.syncManager.syncEngine.getPendingChanges());
-                setStatus(app.syncManager.syncEngine.isActive() ? 'syncing' : 'idle');
+                // Use isSyncing() for active sync status, not isActive() which means engine is running
+                setStatus(app.syncManager.syncEngine.isSyncing() ? 'syncing' : 'idle');
 
                 // Load last sync time
                 const config = await app.configManager.loadConfig<any>('sync');
                 if (config?.lastSyncTime) {
                     setLastSyncTime(new Date(config.lastSyncTime));
                 }
+            } else if (enabled) {
+                // Sync is enabled but engine not started yet
+                setStatus('idle');
             } else {
                 setStatus('offline');
             }
