@@ -14,13 +14,17 @@
             {
                 "title": "inkdown",
                 "width": 800,
-                "height": 600
+                "height": 600,
+                "decorations": true,
+                "titleBarStyle": "Transparent",
+                "transparent": true
             }
         ],
         "security": {
             "csp": null
         }
     },
+
     "bundle": {
         "active": true,
         "targets": "all",

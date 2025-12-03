@@ -756,6 +756,7 @@ const AppContent: React.FC = () => {
                 onBrowseWorkspace={handleOpenDialog}
                 onToggleSyncIgnore={handleToggleSyncIgnore}
                 isSyncIgnored={isSyncIgnored}
+                useCustomTitleBar={useCustomTitleBar}
             />
 
             {/* Main Content */}

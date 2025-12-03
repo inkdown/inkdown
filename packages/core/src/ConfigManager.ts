@@ -87,14 +87,14 @@ export class ConfigManager {
 
         // Save to cache
         this.saveToCache(configName, data);
-        this.logger.debug(`✅ Saved ${configName} to localStorage cache`);
+        this.logger.debug(`Saved ${configName} to localStorage cache`);
 
         // Save to file
         try {
             await this.saveToFile(configName, data);
-            this.logger.info(`✅ Saved ${configName} to file successfully`);
+            this.logger.info(`Saved ${configName} to file successfully`);
         } catch (error) {
-            this.logger.error(`❌ Failed to save ${configName} to file:`, error);
+            this.logger.error(`Failed to save ${configName} to file:`, error);
             throw error;
         }
     }
@@ -148,11 +148,11 @@ export class ConfigManager {
         const fileName = `${configName}.json`;
         const content = JSON.stringify(data, null, 2);
         try {
-            this.logger.debug(`📝 Writing ${fileName} (${content.length} bytes)...`);
+            this.logger.debug(`Writing ${fileName} (${content.length} bytes)...`);
             await invoke('write_config_file', { fileName, content });
-            this.logger.debug(`✅ Successfully wrote ${fileName} to disk`);
+            this.logger.debug(`Successfully wrote ${fileName} to disk`);
         } catch (error) {
-            this.logger.error(`❌ Failed to write ${fileName}:`, error);
+            this.logger.error(`Failed to write ${fileName}:`, error);
             throw error;
         }
     }

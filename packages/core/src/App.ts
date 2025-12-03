@@ -2,6 +2,7 @@ import type { ViewUpdate } from '@codemirror/view';
 import { ConfigManager } from './ConfigManager';
 import type { EditorSuggest } from './components/EditorSuggest';
 import { injectNoticeStyles } from './components/Notice';
+import { CommunityThemeManager } from './CommunityThemeManager';
 import { EditorRegistry } from './EditorRegistry';
 import { EditorStateManager } from './EditorStateManager';
 import { FileSystemManager } from './filesystem/FileSystemManager';
@@ -31,6 +32,7 @@ export class App {
     // Managers
     pluginManager: PluginManager;
     themeManager: ThemeManager;
+    communityThemeManager: CommunityThemeManager;
     configManager: ConfigManager;
     shortcutManager: ShortcutManager;
     tabManager: TabManager;
@@ -71,6 +73,7 @@ export class App {
         this.syncManager = new SyncManager(this);
         this.pluginManager = new PluginManager(this);
         this.themeManager = new ThemeManager(this);
+        this.communityThemeManager = new CommunityThemeManager(this);
         this.shortcutManager = new ShortcutManager(this);
         this.tabManager = new TabManager(this);
 
@@ -114,6 +117,10 @@ export class App {
 
             // 3. Load theme
             await this.loadTheme();
+
+            // 3.5. Initialize community theme manager
+            await this.communityThemeManager.init();
+            this.logger.debug('CommunityThemeManager initialized');
 
             // 4. Initialize sync manager
             await this.syncManager.init();

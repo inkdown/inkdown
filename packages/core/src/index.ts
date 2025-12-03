@@ -11,6 +11,7 @@ export { App } from './App';
 // Views
 export { Component } from './Component';
 export { ConfigManager } from './ConfigManager';
+export { CommunityThemeManager } from './CommunityThemeManager';
 export type {
     EditorSuggestContext,
     EditorSuggestTriggerInfo,
@@ -160,6 +161,15 @@ export type {
     ThemeConfig,
     ThemeManifest,
 } from './types/theme';
+export type {
+    CommunityTheme,
+    CommunityThemeCache,
+    CommunityThemeListing,
+    CommunityThemeManifest,
+    InstalledCommunityTheme,
+    InstalledThemesConfig,
+    ThemeVariant,
+} from './types/community-theme';
 export type {
     Bookmark,
     BookmarkGroup,

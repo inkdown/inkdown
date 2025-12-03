@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 const isMacOS = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
 /**
- * Window control button icons
+ * Window control button icons (for Windows/Linux)
  */
 const MinimizeIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24">
@@ -36,64 +36,6 @@ const CloseIcon = () => (
         />
     </svg>
 );
-
-/**
- * macOS-style traffic light button
- */
-interface TrafficLightButtonProps {
-    type: 'close' | 'minimize' | 'maximize';
-    onClick: () => void;
-    isHovered: boolean;
-}
-
-const TrafficLightButton: React.FC<TrafficLightButtonProps> = ({ type, onClick, isHovered }) => {
-    const colors = {
-        close: { bg: '#ff5f56' },
-        minimize: { bg: '#ffbd2e' },
-        maximize: { bg: '#27c93f' },
-    };
-
-    const icons = {
-        close: (
-            <svg width="8" height="8" viewBox="0 0 8 8">
-                <path stroke="rgba(0,0,0,0.5)" strokeWidth="1.2" d="M1 1l6 6M7 1L1 7" fill="none" />
-            </svg>
-        ),
-        minimize: (
-            <svg width="8" height="8" viewBox="0 0 8 8">
-                <path stroke="rgba(0,0,0,0.5)" strokeWidth="1.2" d="M1 4h6" fill="none" />
-            </svg>
-        ),
-        maximize: (
-            <svg width="8" height="8" viewBox="0 0 8 8">
-                <path stroke="rgba(0,0,0,0.5)" strokeWidth="1.2" d="M1 4l3-3 3 3M1 4l3 3 3-3" fill="none" />
-            </svg>
-        ),
-    };
-
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className="titlebar-traffic-light"
-            style={{
-                width: '12px',
-                height: '12px',
-                borderRadius: '50%',
-                border: 'none',
-                backgroundColor: colors[type].bg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'default',
-                padding: 0,
-                marginRight: type !== 'maximize' ? '8px' : '0',
-            }}
-        >
-            {isHovered && icons[type]}
-        </button>
-    );
-};
 
 /**
  * Windows-style window control button
@@ -158,15 +100,16 @@ const WindowControlButton: React.FC<WindowControlButtonProps> = ({
 /**
  * Window Controls Component
  * Renders platform-specific window controls (minimize, maximize, close)
+ * On macOS with custom titlebar, traffic lights are rendered in the FileExplorer header
+ * This component provides a draggable area on the right side
  */
 export interface WindowControlsProps {
-    /** Workspace name to display (macOS only) */
+    /** Workspace name to display (macOS only) - deprecated, not shown anymore */
     workspaceName?: string;
 }
 
-export const WindowControls: React.FC<WindowControlsProps> = ({ workspaceName }) => {
+export const WindowControls: React.FC<WindowControlsProps> = ({ workspaceName: _workspaceName }) => {
     const [isMaximized, setIsMaximized] = useState(false);
-    const [isHovered, setIsHovered] = useState(false);
 
     // Check if window is maximized on mount
     useEffect(() => {
@@ -196,45 +139,21 @@ export const WindowControls: React.FC<WindowControlsProps> = ({ workspaceName })
     }, []);
 
     if (isMacOS) {
+        // On macOS, traffic lights are in the FileExplorer header
+        // This component just provides a draggable area on the right
         return (
             <div
-                className="window-controls-macos"
+                className="window-controls-macos-drag-area"
+                data-tauri-drag-region
                 style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px',
-                    paddingLeft: '12px',
+                    height: '100%',
+                    minWidth: '80px',
                     paddingRight: '12px',
-                }}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-            >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
-                    <TrafficLightButton type="close" onClick={handleClose} isHovered={isHovered} />
-                    <TrafficLightButton
-                        type="minimize"
-                        onClick={handleMinimize}
-                        isHovered={isHovered}
-                    />
-                    <TrafficLightButton
-                        type="maximize"
-                        onClick={handleMaximize}
-                        isHovered={isHovered}
-                    />
-                </div>
-                {workspaceName && (
-                    <span
-                        style={{
-                            fontSize: '13px',
-                            fontWeight: 500,
-                            color: 'var(--text-secondary)',
-                            userSelect: 'none',
-                        }}
-                    >
-                        {workspaceName}
-                    </span>
-                )}
-            </div>
+                    WebkitAppRegion: 'drag',
+                } as React.CSSProperties & { WebkitAppRegion: 'drag' | 'no-drag' }}
+            />
         );
     }
 

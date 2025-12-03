@@ -1,6 +1,6 @@
 import type { App as InkdownApp, PluginSettingTab, FileNode, WindowConfig } from '@inkdown/core';
 import { Button, Link, Select, Setting, Slider, TextInput, Toggle } from '@inkdown/ui';
-import { Cloud, FolderOpen, Keyboard, Palette, Puzzle, RefreshCw, Settings as SettingsIcon, Trash2, Type, X } from 'lucide-react';
+import { Cloud, FolderOpen, Keyboard, Palette, Paintbrush, Puzzle, RefreshCw, Settings as SettingsIcon, Trash2, Type, X } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useApp } from '../contexts/AppContext';
@@ -8,6 +8,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useConfig } from '../hooks/useConfig';
 import { PluginsSettings } from './PluginsSettings';
 import { ShortcutsSettings } from './ShortcutsSettings';
+import { ThemesSettings } from './ThemesSettings';
 import { EncryptionPasswordModal } from './EncryptionPasswordModal';
 import './SettingsModal.css';
 
@@ -574,6 +575,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     const tabs: TabInfo[] = [
         { id: 'general', label: 'General', icon: <SettingsIcon size={16} /> },
         { id: 'appearance', label: 'Appearance', icon: <Palette size={16} /> },
+        { id: 'themes', label: 'Themes', icon: <Paintbrush size={16} /> },
         { id: 'editor', label: 'Editor', icon: <Type size={16} /> },
         { id: 'files', label: 'Files', icon: <FolderOpen size={16} /> },
         { id: 'sync', label: 'Sync', icon: <Cloud size={16} /> },
@@ -1068,6 +1070,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                         usage.
                                     </p>
                                     <PluginsSettings />
+                                </div>
+                            )}
+
+                            {activeTab === 'themes' && (
+                                <div className="settings-section settings-section-wide">
+                                    <h3>Community Themes</h3>
+                                    <ThemesSettings />
                                 </div>
                             )}
 

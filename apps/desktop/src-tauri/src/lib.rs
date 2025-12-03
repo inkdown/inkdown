@@ -93,7 +93,7 @@ fn list_custom_themes(app: tauri::AppHandle) -> Result<Vec<String>, String> {
     Ok(themes)
 }
 
-/// Read a theme manifest file
+/// Read a theme manifest file (reads manifest.json)
 #[tauri::command]
 fn read_theme_manifest(app: tauri::AppHandle, theme_name: String) -> Result<String, String> {
     let config_dir = app
@@ -112,7 +112,7 @@ fn read_theme_manifest(app: tauri::AppHandle, theme_name: String) -> Result<Stri
 
 /// Read a theme CSS file
 #[tauri::command]
-fn read_theme_css(app: tauri::AppHandle, theme_name: String) -> Result<String, String> {
+fn read_theme_css(app: tauri::AppHandle, theme_name: String, css_file: String) -> Result<String, String> {
     let config_dir = app
         .path()
         .app_config_dir()
@@ -121,10 +121,75 @@ fn read_theme_css(app: tauri::AppHandle, theme_name: String) -> Result<String, S
     let css_path = config_dir
         .join("themes")
         .join(&theme_name)
-        .join("theme.css");
+        .join(&css_file);
     
     fs::read_to_string(&css_path)
-        .map_err(|e| format!("Failed to read theme CSS for {}: {}", theme_name, e))
+        .map_err(|e| format!("Failed to read theme CSS for {} ({}): {}", theme_name, css_file, e))
+}
+
+/// Install a community theme file (saves file to themes directory)
+#[tauri::command]
+fn install_community_theme_file(
+    app: tauri::AppHandle,
+    theme_name: String,
+    file_name: String,
+    content: String,
+) -> Result<(), String> {
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|e| format!("Failed to get config directory: {}", e))?;
+    
+    let theme_dir = config_dir.join("themes").join(&theme_name);
+    
+    // Create theme directory if it doesn't exist
+    fs::create_dir_all(&theme_dir)
+        .map_err(|e| format!("Failed to create theme directory: {}", e))?;
+    
+    let file_path = theme_dir.join(&file_name);
+    
+    fs::write(&file_path, content)
+        .map_err(|e| format!("Failed to write theme file {}: {}", file_name, e))
+}
+
+/// Uninstall a community theme (removes entire theme directory)
+#[tauri::command]
+fn uninstall_community_theme(app: tauri::AppHandle, theme_name: String) -> Result<(), String> {
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|e| format!("Failed to get config directory: {}", e))?;
+    
+    let theme_dir = config_dir.join("themes").join(&theme_name);
+    
+    // Remove theme directory if it exists
+    if theme_dir.exists() {
+        fs::remove_dir_all(&theme_dir)
+            .map_err(|e| format!("Failed to remove theme directory: {}", e))?;
+    }
+    
+    Ok(())
+}
+
+/// Read a specific file from a theme directory
+#[tauri::command]
+fn read_theme_file(
+    app: tauri::AppHandle,
+    theme_name: String,
+    file_name: String,
+) -> Result<String, String> {
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|e| format!("Failed to get config directory: {}", e))?;
+    
+    let file_path = config_dir
+        .join("themes")
+        .join(&theme_name)
+        .join(&file_name);
+    
+    fs::read_to_string(&file_path)
+        .map_err(|e| format!("Failed to read theme file {}/{}: {}", theme_name, file_name, e))
 }
 
 // ============================================================================
@@ -586,6 +651,9 @@ pub fn run() {
             list_custom_themes,
             read_theme_manifest,
             read_theme_css,
+            install_community_theme_file,
+            uninstall_community_theme,
+            read_theme_file,
             list_system_fonts,
             // File system operations
             read_directory,

@@ -84,7 +84,9 @@ export class ThemeManager {
                         name: manifest.name,
                         author: manifest.author,
                         version: manifest.version,
-                        modes: manifest.modes,
+                        description: manifest.description,
+                        homepage: manifest.homepage,
+                        modes: manifest.modes || ['dark'],
                         builtIn: false,
                     };
                     this.availableThemes.set(themeName, themeConfig);
@@ -95,6 +97,21 @@ export class ThemeManager {
         } catch {
             // Custom themes not available, that's fine
         }
+    }
+
+    /**
+     * Reload custom themes (called after installing/uninstalling community themes)
+     */
+    async reloadCustomThemes(): Promise<void> {
+        // Remove non-built-in themes from available themes
+        for (const [id, theme] of this.availableThemes.entries()) {
+            if (!theme.builtIn) {
+                this.availableThemes.delete(id);
+            }
+        }
+        // Reload custom themes
+        await this.loadCustomThemes();
+        console.log(`ThemeManager reloaded with ${this.availableThemes.size} themes`);
     }
 
     /**
@@ -121,9 +138,22 @@ export class ThemeManager {
             this.applyColorScheme(scheme);
         } else {
             // For custom themes, load and inject the CSS
+            // Determine which CSS file to load based on available modes and current scheme
+            const modes = theme.modes || ['dark'];
+            const cssFile = modes.includes(this.colorScheme) 
+                ? `${this.colorScheme}.css` 
+                : `${modes[0]}.css`;
+            
             try {
-                const cssContent = await invoke<string>('read_theme_css', { themeName: themeId });
+                const cssContent = await invoke<string>('read_theme_css', { 
+                    themeName: themeId,
+                    cssFile 
+                });
                 this.applyCustomThemeCSS(cssContent);
+                
+                // Apply the correct color scheme class for the theme
+                const scheme = cssFile.includes('light') ? 'light' : 'dark';
+                this.applyColorScheme(scheme);
             } catch (error) {
                 console.error(`Failed to load custom theme ${themeId}:`, error);
                 return;
@@ -177,10 +207,39 @@ export class ThemeManager {
 
     /**
      * Set color scheme (light/dark)
-     * This switches between built-in themes
+     * For custom themes that support both modes, this will reload the appropriate CSS
+     * For built-in themes, this switches between default-dark and default-light
      */
     async setColorScheme(scheme: ColorScheme): Promise<void> {
         console.log('[ThemeManager] setColorScheme START - scheme:', scheme);
+        
+        const currentThemeConfig = this.availableThemes.get(this.currentTheme);
+        const modes = currentThemeConfig?.modes || ['dark'];
+        
+        // If current theme is custom and supports the new scheme, reload its CSS
+        if (currentThemeConfig && !currentThemeConfig.builtIn && modes.includes(scheme)) {
+            const cssFile = `${scheme}.css`;
+            try {
+                const cssContent = await invoke<string>('read_theme_css', { 
+                    themeName: this.currentTheme,
+                    cssFile 
+                });
+                this.applyCustomThemeCSS(cssContent);
+                this.applyColorScheme(scheme);
+                
+                // Save to config
+                const config = await this.app.configManager.loadConfig<any>('app');
+                if (config) {
+                    config.colorScheme = scheme;
+                    await this.app.configManager.saveConfig('app', config);
+                }
+                return;
+            } catch (error) {
+                console.error(`Failed to load ${scheme} variant for ${this.currentTheme}:`, error);
+                // Fall through to default theme
+            }
+        }
+        
         // Apply the color scheme class
         this.applyColorScheme(scheme);
 

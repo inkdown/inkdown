@@ -1,0 +1,475 @@
+/* Themes Settings - Main Container */
+.themes-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Header with description and refresh button */
+.themes-settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.themes-settings-description {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+}
+
+/* Loading, Error, Empty States */
+.themes-settings-loading,
+.themes-settings-error,
+.themes-settings-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.themes-settings-loading .spin,
+.theme-detail-loading .spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Themes Grid */
+.themes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+/* Search and Filter Toolbar */
+.themes-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.themes-search {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+.themes-search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.themes-search-input {
+    width: 100%;
+    padding: 8px 12px 8px 34px;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    outline: none;
+    transition: border-color var(--transition-fast);
+}
+
+.themes-search-input:focus {
+    border-color: var(--color-primary);
+}
+
+.themes-search-input::placeholder {
+    color: var(--text-muted);
+}
+
+.themes-filters {
+    display: flex;
+    gap: 8px;
+}
+
+.themes-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.themes-filter-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.themes-filter-btn.active {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    background: var(--color-primary-alpha, rgba(59, 130, 246, 0.1));
+}
+
+.themes-results-count {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+}
+
+/* Theme Card */
+.theme-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    cursor: pointer;
+    text-align: left;
+    padding: 0;
+}
+
+.theme-card:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+/* Theme Card Screenshot */
+.theme-card-screenshot {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    background: var(--bg-tertiary);
+    overflow: hidden;
+}
+
+.theme-card-screenshot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.theme-card-screenshot-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark, var(--color-primary)));
+    color: white;
+    font-size: 32px;
+    font-weight: 600;
+}
+
+.theme-card-screenshot-placeholder.large {
+    font-size: 48px;
+}
+
+/* Installed Badge */
+.theme-card-installed-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    background: var(--color-success, #22c55e);
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: var(--radius-sm);
+}
+
+/* Theme Card Info */
+.theme-card-info {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.theme-card-name {
+    margin: 0;
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.theme-card-author {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+/* Theme Mode Badges */
+.theme-card-modes {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.theme-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+}
+
+.theme-mode-dark {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.theme-mode-light {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+/* ========================================
+   Theme Detail View
+   ======================================== */
+
+.theme-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-height: 100%;
+}
+
+/* Detail Header with Back Button */
+.theme-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.theme-detail-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.theme-detail-back:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+/* Loading and Error States */
+.theme-detail-loading,
+.theme-detail-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+/* Detail Content */
+.theme-detail-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Info Section (Screenshot + Meta) */
+.theme-detail-info {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 24px;
+}
+
+@media (max-width: 768px) {
+    .theme-detail-info {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Screenshot */
+.theme-detail-screenshot {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.theme-detail-screenshot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Meta Info */
+.theme-detail-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.theme-detail-name {
+    margin: 0;
+    font-size: 1.5em;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.theme-detail-author {
+    margin: 0;
+    font-size: var(--font-size-md);
+    color: var(--text-secondary);
+}
+
+.theme-detail-description {
+    margin: 8px 0 0 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* Info Grid */
+.theme-detail-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.theme-detail-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.theme-detail-info-item .label {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.theme-detail-info-item .value {
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+}
+
+.status-installed {
+    color: var(--color-success, #22c55e);
+}
+
+.status-not-installed {
+    color: var(--text-secondary);
+}
+
+/* Variants Section */
+.theme-detail-variants {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.theme-detail-variants .label {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.theme-detail-variants-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.theme-variant-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+/* Actions */
+.theme-detail-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.theme-detail-actions .ink-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.theme-detail-actions .ink-button svg {
+    flex-shrink: 0;
+}
+
+/* README Section */
+.theme-detail-readme {
+    padding-top: 20px;
+}
+
+.theme-detail-readme-content {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Override Preview component styles for embedded README */
+.theme-detail-readme-content .preview-container {
+    padding: 0;
+    background: transparent;
+}
+
+.theme-detail-readme-content .preview-content {
+    padding: 0;
+}
+
+/* Spin animation utility */
+.spin {
+    animation: spin 1s linear infinite;
+}

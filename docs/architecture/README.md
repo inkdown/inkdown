@@ -45,7 +45,9 @@ The Core package is the foundation of Inkdown. It exposes the main `App` class a
 *   **PluginManager**: Handles loading, enabling, and disabling plugins.
 *   **FileSystemManager**: A bridge to the Rust backend for file system operations.
 *   **EditorRegistry**: Manages editor instances and allows plugins to interact with the active editor.
-*   **ConfigManager**: Handles persistent configuration.
+*   **ConfigManager**: Handles persistent configuration storage (JSON files in app config directory).
+*   **ThemeManager**: Manages theme loading, switching, and CSS injection for both built-in and custom themes.
+*   **CommunityThemeManager**: Handles browsing, installing, and managing community themes from GitHub.
 
 ### Data Flow
 
@@ -53,6 +55,7 @@ The Core package is the foundation of Inkdown. It exposes the main `App` class a
 2.  **File Operations**: `Workspace` uses `FileSystemManager` to talk to the backend.
 3.  **UI Updates**: `WorkspaceUI` listens to `Workspace` events and updates the React state.
 4.  **Plugins**: Plugins interact with `App` to register commands, views, and settings.
+5.  **Themes**: `ThemeManager` loads theme preferences from `ConfigManager` and applies CSS.
 
 ```mermaid
 classDiagram
@@ -60,6 +63,9 @@ classDiagram
         +Workspace workspace
         +WorkspaceUI workspaceUI
         +PluginManager pluginManager
+        +ConfigManager configManager
+        +ThemeManager themeManager
+        +CommunityThemeManager communityThemeManager
         +init()
     }
 
@@ -80,7 +86,28 @@ classDiagram
         +enablePlugin()
     }
 
+    class ConfigManager {
+        +loadConfig()
+        +saveConfig()
+    }
+
+    class ThemeManager {
+        +setTheme()
+        +setColorScheme()
+        +getThemes()
+    }
+
     App --> Workspace
     App --> WorkspaceUI
     App --> PluginManager
+    App --> ConfigManager
+    App --> ThemeManager
 ```
+
+## Related Documentation
+
+- [Editor Architecture](./editor.md)
+- [Theme System](./theme-system.md)
+- [Configuration System](./config-system.md)
+- [Plugin System](../plugins/system.md)
+- [CSS Architecture](../styling/css-architecture.md)

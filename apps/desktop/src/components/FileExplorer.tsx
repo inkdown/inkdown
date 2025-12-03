@@ -28,6 +28,7 @@ import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BookmarkGroupModal } from './BookmarkGroupModal';
 import { CreateBookmarkGroupModal } from './CreateBookmarkGroupModal';
+import { MacTrafficLights } from './MacTrafficLights';
 import { useApp } from '../contexts/AppContext';
 import type { BookmarkGroup } from '@inkdown/core';
 import '../styles/FileExplorer.css';
@@ -92,6 +93,8 @@ export interface FileExplorerProps {
     onToggleSyncIgnore?: (path: string, ignored: boolean) => Promise<void>;
     /** Callback to check if path is ignored */
     isSyncIgnored?: (path: string) => boolean;
+    /** Whether to show macOS traffic lights (custom titlebar mode) */
+    useCustomTitleBar?: boolean;
 }
 
 type CreatingItem = {
@@ -203,6 +206,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     onBrowseWorkspace,
     onToggleSyncIgnore,
     isSyncIgnored,
+    useCustomTitleBar = false,
 }) => {
     const app = useApp();
     const [expandedDirs, setExpandedDirs] = useState<Set<string>>(() => {
@@ -443,7 +447,10 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
 
     // Close context menu on click outside
     useEffect(() => {
-        const handleClick = () => closeContextMenu();
+        const handleClick = () => {
+            closeContextMenu();
+            setSortMenuOpen(false);
+        };
         document.addEventListener('click', handleClick);
         return () => document.removeEventListener('click', handleClick);
     }, [closeContextMenu]);
@@ -1098,6 +1105,12 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                 <>
                     <div className="file-explorer">
                         <div className="file-explorer-header">
+                            {/* Traffic lights row - only on macOS with custom titlebar */}
+                            {useCustomTitleBar && (
+                                <div className="file-explorer-header-traffic-lights" data-tauri-drag-region>
+                                    <MacTrafficLights enabled={useCustomTitleBar} />
+                                </div>
+                            )}
                             <div className="file-explorer-header-top">
                                 <WorkspaceSwitcher
                                     currentWorkspace={rootPath}
@@ -1139,17 +1152,37 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                         >
                                             <FolderPlus size={18} />
                                         </button>
-                                        <button
-                                            className={`file-explorer-action ${sortOrder !== 'a-z' ? 'active' : ''}`}
-                                            onClick={() => setSortMenuOpen(!sortMenuOpen)}
-                                            title="Sort Options"
-                                        >
-                                            {sortOrder === 'a-z' ? (
-                                                <ArrowDownAZ size={18} />
-                                            ) : (
-                                                <ArrowUpAZ size={18} />
+                                        <div className="file-explorer-sort-container" onClick={(e) => e.stopPropagation()}>
+                                            <button
+                                                className={`file-explorer-action ${sortOrder !== 'a-z' ? 'active' : ''}`}
+                                                onClick={() => setSortMenuOpen(!sortMenuOpen)}
+                                                title="Sort Options"
+                                            >
+                                                {sortOrder === 'a-z' ? (
+                                                    <ArrowDownAZ size={18} />
+                                                ) : (
+                                                    <ArrowUpAZ size={18} />
+                                                )}
+                                            </button>
+                                            {sortMenuOpen && (
+                                                <div className="file-explorer-sort-menu">
+                                                    <div
+                                                        className="file-explorer-sort-item"
+                                                        onClick={() => handleSortChange('a-z')}
+                                                    >
+                                                        <span>Name (A to Z)</span>
+                                                        {sortOrder === 'a-z' && <Check size={16} />}
+                                                    </div>
+                                                    <div
+                                                        className="file-explorer-sort-item"
+                                                        onClick={() => handleSortChange('z-a')}
+                                                    >
+                                                        <span>Name (Z to A)</span>
+                                                        {sortOrder === 'z-a' && <Check size={16} />}
+                                                    </div>
+                                                </div>
                                             )}
-                                        </button>
+                                        </div>
                                     </>
                                 ) : (
                                     <>
@@ -1173,35 +1206,19 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                         </button>
                                     </>
                                 )}
-                                {sortMenuOpen && (
-                                    <div className="file-explorer-sort-menu">
-                                        <div
-                                            className="file-explorer-sort-item"
-                                            onClick={() => handleSortChange('a-z')}
-                                        >
-                                            <span>Name (A to Z)</span>
-                                            {sortOrder === 'a-z' && <Check size={18} />}
-                                        </div>
-                                        <div
-                                            className="file-explorer-sort-item"
-                                            onClick={() => handleSortChange('z-a')}
-                                        >
-                                            <span>Name (Z to A)</span>
-                                            {sortOrder === 'z-a' && <Check size={18} />}
-                                        </div>
-                                    </div>
+                                {viewMode === 'files' && (
+                                    <button
+                                        className="file-explorer-action"
+                                        onClick={handleExpandCollapseAll}
+                                        title={allDirsExpanded ? 'Collapse All' : 'Expand All'}
+                                    >
+                                        {allDirsExpanded ? (
+                                            <ChevronsUp size={16} />
+                                        ) : (
+                                            <ChevronsDown size={16} />
+                                        )}
+                                    </button>
                                 )}
-                                <button
-                                    className="file-explorer-action"
-                                    onClick={handleExpandCollapseAll}
-                                    title={allDirsExpanded ? 'Collapse All' : 'Expand All'}
-                                >
-                                    {allDirsExpanded ? (
-                                        <ChevronsUp size={16} />
-                                    ) : (
-                                        <ChevronsDown size={16} />
-                                    )}
-                                </button>
                             </div>
                         </div>
 

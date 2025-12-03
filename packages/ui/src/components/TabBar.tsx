@@ -91,6 +91,8 @@ export const TabBar: React.FC<TabBarProps> = ({
                     />
                 ))}
             </div>
+            {/* Draggable area after tabs */}
+            <div className="tab-bar-drag-area" data-tauri-drag-region />
             {windowControls && <div className="tab-bar-window-controls">{windowControls}</div>}
         </div>
     );

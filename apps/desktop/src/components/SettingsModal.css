@@ -181,6 +181,11 @@
     max-width: 550px;
 }
 
+/* Wide section for themes grid */
+.settings-section-wide {
+    max-width: 100%;
+}
+
 .settings-section h3 {
     margin: 0 0 6px;
     color: var(--text-primary);

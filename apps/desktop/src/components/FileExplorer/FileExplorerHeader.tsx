@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import type { RecentWorkspace } from '@inkdown/core';
 import type { SortOrder } from './types.js';
+import { MacTrafficLights } from '../MacTrafficLights';
 
 interface FileExplorerHeaderProps {
     // Top section
@@ -23,6 +24,8 @@ interface FileExplorerHeaderProps {
     onOpenSettings?: () => void;
     onWorkspaceSwitch?: (path: string) => void;
     onBrowseWorkspace?: () => void;
+    /** Whether to show macOS traffic lights */
+    useCustomTitleBar?: boolean;
 
     // Bottom section - Files mode
     sortOrder: SortOrder;
@@ -48,6 +51,7 @@ export const FileExplorerHeader = memo<FileExplorerHeaderProps>(({
     onOpenSettings,
     onWorkspaceSwitch,
     onBrowseWorkspace,
+    useCustomTitleBar,
     sortOrder,
     sortMenuOpen,
     allDirsExpanded,
@@ -62,6 +66,12 @@ export const FileExplorerHeader = memo<FileExplorerHeaderProps>(({
 }) => {
     return (
         <div className="file-explorer-header">
+            {/* Traffic lights row - only on macOS with custom titlebar */}
+            {useCustomTitleBar && (
+                <div className="file-explorer-header-traffic-lights" data-tauri-drag-region>
+                    <MacTrafficLights enabled={useCustomTitleBar} />
+                </div>
+            )}
             <div className="file-explorer-header-top">
                 <WorkspaceSwitcher
                     currentWorkspace={rootPath}

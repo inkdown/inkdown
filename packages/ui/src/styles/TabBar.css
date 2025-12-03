@@ -6,6 +6,7 @@
     overflow-x: auto;
     overflow-y: hidden;
     flex-shrink: 0;
+    -webkit-app-region: drag;
 }
 
 /* Sidebar toggle button */
@@ -23,6 +24,7 @@
     cursor: pointer;
     transition: all var(--transition-fast);
     flex-shrink: 0;
+    -webkit-app-region: no-drag;
 }
 
 .tab-bar-toggle:hover {
@@ -34,8 +36,9 @@
     display: flex;
     align-items: center;
     gap: 2px;
-    flex: 1;
+    flex-shrink: 1;
     min-width: 0;
+    -webkit-app-region: no-drag;
 }
 
 .tab {
@@ -52,6 +55,7 @@
     min-width: 80px;
     max-width: 200px;
     border-radius: 8px 8px 0 0;
+    -webkit-app-region: no-drag;
 }
 
 .tab:hover {
@@ -109,4 +113,13 @@
     height: 100%;
     flex-shrink: 0;
     margin-left: auto;
+    -webkit-app-region: no-drag;
+}
+
+/* Draggable area after tabs - fills remaining space */
+.tab-bar-drag-area {
+    flex: 1;
+    height: 100%;
+    min-width: 40px;
+    -webkit-app-region: drag;
 }
