@@ -12,6 +12,9 @@ export { App } from './App';
 export { Component } from './Component';
 export { ConfigManager } from './ConfigManager';
 export { CommunityThemeManager } from './CommunityThemeManager';
+export { CommunityPluginManager } from './CommunityPluginManager';
+export { DialogManager } from './DialogManager';
+export type { FileDialogOptions, FileFilter, FolderDialogOptions } from './DialogManager';
 export type {
     EditorSuggestContext,
     EditorSuggestTriggerInfo,
@@ -176,6 +179,17 @@ export type {
     BookmarksConfig,
     BookmarkEvents,
 } from './types/bookmarks';
+export type {
+    CommunityPlugin,
+    CommunityPluginCache,
+    CommunityPluginListing,
+    CommunityPluginManifest,
+    InstalledCommunityPlugin,
+    InstalledPluginsConfig,
+    PluginInstallResult,
+    PluginLoadResult,
+    PluginUpdateInfo,
+} from './types/community-plugin';
 // Icon utilities (only setIcon is exported - addIcon/hasIcon/getIcon are internal)
 export { setIcon } from './utils/icons';
 export type { Logger } from './utils/logger';

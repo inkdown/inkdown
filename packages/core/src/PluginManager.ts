@@ -83,6 +83,75 @@ export class PluginManager {
         if (info.isBuiltIn) {
             this.builtInPluginIds.add(info.manifest.id);
         }
+        this.logger.debug(`Registered plugin: ${info.manifest.id} (built-in: ${info.isBuiltIn})`);
+    }
+
+    /**
+     * Unregister a plugin (for community plugin removal)
+     * @param pluginId Plugin ID to unregister
+     */
+    unregisterPlugin(pluginId: string): void {
+        const plugin = this.plugins.get(pluginId);
+        if (plugin?.enabled) {
+            this.logger.warn(`Cannot unregister enabled plugin ${pluginId}. Disable it first.`);
+            return;
+        }
+
+        this.plugins.delete(pluginId);
+        this.registeredPlugins.delete(pluginId);
+        this.builtInPluginIds.delete(pluginId);
+        this.pluginConfigs.delete(pluginId);
+        this.enabledPlugins.delete(pluginId);
+
+        this.logger.info(`Unregistered plugin: ${pluginId}`);
+    }
+
+    /**
+     * Get registered plugin info
+     */
+    getPluginInfo(pluginId: string): PluginInfo | undefined {
+        return this.registeredPlugins.get(pluginId);
+    }
+
+    /**
+     * Get all registered plugin IDs
+     */
+    getRegisteredPluginIds(): string[] {
+        return Array.from(this.registeredPlugins.keys());
+    }
+
+    /**
+     * Get plugin manifest
+     */
+    getPluginManifest(pluginId: string): PluginManifest | undefined {
+        return this.registeredPlugins.get(pluginId)?.manifest;
+    }
+
+    /**
+     * Load and instantiate a single plugin (for dynamic loading)
+     */
+    async loadPlugin(pluginId: string): Promise<boolean> {
+        const info = this.registeredPlugins.get(pluginId);
+        if (!info) {
+            this.logger.error(`Plugin ${pluginId} not registered`);
+            return false;
+        }
+
+        if (this.plugins.has(pluginId)) {
+            this.logger.debug(`Plugin ${pluginId} already loaded`);
+            return true;
+        }
+
+        try {
+            const PluginClass = (await info.loader()).default;
+            const plugin = new PluginClass(this.app, info.manifest);
+            this.plugins.set(pluginId, plugin);
+            this.logger.info(`Loaded plugin: ${pluginId}`);
+            return true;
+        } catch (error) {
+            this.logger.error(`Failed to load plugin ${pluginId}`, error);
+            return false;
+        }
     }
 
     /**

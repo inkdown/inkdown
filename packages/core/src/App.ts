@@ -3,6 +3,8 @@ import { ConfigManager } from './ConfigManager';
 import type { EditorSuggest } from './components/EditorSuggest';
 import { injectNoticeStyles } from './components/Notice';
 import { CommunityThemeManager } from './CommunityThemeManager';
+import { CommunityPluginManager } from './CommunityPluginManager';
+import { DialogManager } from './DialogManager';
 import { EditorRegistry } from './EditorRegistry';
 import { EditorStateManager } from './EditorStateManager';
 import { FileSystemManager } from './filesystem/FileSystemManager';
@@ -33,6 +35,7 @@ export class App {
     pluginManager: PluginManager;
     themeManager: ThemeManager;
     communityThemeManager: CommunityThemeManager;
+    communityPluginManager: CommunityPluginManager;
     configManager: ConfigManager;
     shortcutManager: ShortcutManager;
     tabManager: TabManager;
@@ -47,6 +50,7 @@ export class App {
     markdownProcessor: MarkdownProcessorRegistry;
     editorStateManager: EditorStateManager;
     syncManager: SyncManager;
+    dialog: DialogManager;
 
     editorRegistry: EditorRegistry;
     fontManager: FontManager;
@@ -74,7 +78,9 @@ export class App {
         this.pluginManager = new PluginManager(this);
         this.themeManager = new ThemeManager(this);
         this.communityThemeManager = new CommunityThemeManager(this);
+        this.communityPluginManager = new CommunityPluginManager(this);
         this.shortcutManager = new ShortcutManager(this);
+        this.dialog = new DialogManager();
         this.tabManager = new TabManager(this);
 
         // Set App reference in FileSystemManager for event emission
@@ -130,14 +136,19 @@ export class App {
             await this.bookmarkManager.initialize();
             this.logger.debug('BookmarkManager initialized');
 
-            // 6. Load plugins
+            // 6. Initialize community plugin manager and load community plugins
+            await this.communityPluginManager.init();
+            await this.communityPluginManager.loadAllInstalledPlugins();
+            this.logger.debug('CommunityPluginManager initialized');
+
+            // 7. Load all plugins (built-in + community)
             await this.loadPlugins();
 
-            // 6. Initialize tab manager and restore tabs
+            // 8. Initialize tab manager and restore tabs
             await this.tabManager.init();
             this.logger.debug('TabManager initialized');
 
-            // 7. Initialize shortcut manager
+            // 9. Initialize shortcut manager
             await this.shortcutManager.init();
             this.logger.debug('ShortcutManager initialized');
 

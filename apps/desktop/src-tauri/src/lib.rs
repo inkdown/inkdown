@@ -193,6 +193,116 @@ fn read_theme_file(
 }
 
 // ============================================================================
+// COMMUNITY PLUGIN OPERATIONS
+// ============================================================================
+
+/// Ensure a directory exists (create if it doesn't)
+#[tauri::command]
+fn ensure_dir(path: String) -> Result<(), String> {
+    fs::create_dir_all(&path)
+        .map_err(|e| format!("Failed to create directory {}: {}", path, e))
+}
+
+/// Read a file from a community plugin directory
+#[tauri::command]
+fn read_plugin_file(
+    app: tauri::AppHandle,
+    plugin_id: String,
+    file_name: String,
+) -> Result<String, String> {
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|e| format!("Failed to get config directory: {}", e))?;
+    
+    let file_path = config_dir
+        .join("plugins")
+        .join(&plugin_id)
+        .join(&file_name);
+    
+    fs::read_to_string(&file_path)
+        .map_err(|e| format!("Failed to read plugin file {}/{}: {}", plugin_id, file_name, e))
+}
+
+/// Write a file to a community plugin directory
+#[tauri::command]
+fn write_plugin_file(
+    app: tauri::AppHandle,
+    plugin_id: String,
+    file_name: String,
+    content: String,
+) -> Result<(), String> {
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|e| format!("Failed to get config directory: {}", e))?;
+    
+    let plugin_dir = config_dir.join("plugins").join(&plugin_id);
+    
+    // Create plugin directory if it doesn't exist
+    fs::create_dir_all(&plugin_dir)
+        .map_err(|e| format!("Failed to create plugin directory: {}", e))?;
+    
+    let file_path = plugin_dir.join(&file_name);
+    
+    fs::write(&file_path, content)
+        .map_err(|e| format!("Failed to write plugin file {}: {}", file_name, e))
+}
+
+/// Delete a community plugin directory
+#[tauri::command]
+fn delete_plugin_dir(app: tauri::AppHandle, plugin_id: String) -> Result<(), String> {
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|e| format!("Failed to get config directory: {}", e))?;
+    
+    let plugin_dir = config_dir.join("plugins").join(&plugin_id);
+    
+    // Remove plugin directory if it exists
+    if plugin_dir.exists() {
+        fs::remove_dir_all(&plugin_dir)
+            .map_err(|e| format!("Failed to remove plugin directory: {}", e))?;
+    }
+    
+    Ok(())
+}
+
+/// List all installed community plugins (returns directory names)
+#[tauri::command]
+fn list_community_plugins(app: tauri::AppHandle) -> Result<Vec<String>, String> {
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|e| format!("Failed to get config directory: {}", e))?;
+    
+    let plugins_dir = config_dir.join("plugins");
+    
+    // Return empty list if plugins directory doesn't exist
+    if !plugins_dir.exists() {
+        return Ok(Vec::new());
+    }
+    
+    let mut plugins = Vec::new();
+    
+    let entries = fs::read_dir(&plugins_dir)
+        .map_err(|e| format!("Failed to read plugins directory: {}", e))?;
+    
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
+        let path = entry.path();
+        
+        if path.is_dir() {
+            if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                plugins.push(name.to_string());
+            }
+        }
+    }
+    
+    Ok(plugins)
+}
+
+// ============================================================================
 // FONT OPERATIONS
 // ============================================================================
 
@@ -602,6 +712,147 @@ fn path_exists(path: String) -> bool {
     PathBuf::from(&path).exists()
 }
 
+// ============================================================================
+// Dialog Commands - For file/folder selection dialogs
+// ============================================================================
+
+/// Options for file dialog
+#[derive(serde::Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+struct FileDialogOptions {
+    /// Dialog title
+    title: Option<String>,
+    /// Default path/directory
+    default_path: Option<String>,
+    /// File filters (e.g., [{ name: "PDF", extensions: ["pdf"] }])
+    filters: Option<Vec<FileFilter>>,
+    /// Default file name (for save dialog)
+    default_name: Option<String>,
+}
+
+#[derive(serde::Deserialize)]
+struct FileFilter {
+    name: String,
+    extensions: Vec<String>,
+}
+
+/// Open a save file dialog - returns the selected file path or null if cancelled
+#[tauri::command]
+async fn show_save_dialog(app: tauri::AppHandle, options: FileDialogOptions) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    
+    let mut dialog = app.dialog().file();
+    
+    if let Some(title) = options.title {
+        dialog = dialog.set_title(&title);
+    }
+    
+    if let Some(default_path) = options.default_path {
+        dialog = dialog.set_directory(&default_path);
+    }
+    
+    if let Some(default_name) = options.default_name {
+        dialog = dialog.set_file_name(&default_name);
+    }
+    
+    if let Some(filters) = options.filters {
+        for filter in filters {
+            let extensions: Vec<&str> = filter.extensions.iter().map(|s| s.as_str()).collect();
+            dialog = dialog.add_filter(&filter.name, &extensions);
+        }
+    }
+    
+    let result = dialog.blocking_save_file();
+    
+    match result {
+        Some(path) => Ok(Some(path.to_string())),
+        None => Ok(None),
+    }
+}
+
+/// Open a file selection dialog - returns the selected file path or null if cancelled
+#[tauri::command]
+async fn show_open_file_dialog(app: tauri::AppHandle, options: FileDialogOptions) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    
+    let mut dialog = app.dialog().file();
+    
+    if let Some(title) = options.title {
+        dialog = dialog.set_title(&title);
+    }
+    
+    if let Some(default_path) = options.default_path {
+        dialog = dialog.set_directory(&default_path);
+    }
+    
+    if let Some(filters) = options.filters {
+        for filter in filters {
+            let extensions: Vec<&str> = filter.extensions.iter().map(|s| s.as_str()).collect();
+            dialog = dialog.add_filter(&filter.name, &extensions);
+        }
+    }
+    
+    let result = dialog.blocking_pick_file();
+    
+    match result {
+        Some(path) => Ok(Some(path.to_string())),
+        None => Ok(None),
+    }
+}
+
+/// Open multiple file selection dialog - returns array of selected file paths
+#[tauri::command]
+async fn show_open_files_dialog(app: tauri::AppHandle, options: FileDialogOptions) -> Result<Vec<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    
+    let mut dialog = app.dialog().file();
+    
+    if let Some(title) = options.title {
+        dialog = dialog.set_title(&title);
+    }
+    
+    if let Some(default_path) = options.default_path {
+        dialog = dialog.set_directory(&default_path);
+    }
+    
+    if let Some(filters) = options.filters {
+        for filter in filters {
+            let extensions: Vec<&str> = filter.extensions.iter().map(|s| s.as_str()).collect();
+            dialog = dialog.add_filter(&filter.name, &extensions);
+        }
+    }
+    
+    let result = dialog.blocking_pick_files();
+    
+    match result {
+        Some(paths) => Ok(paths.iter().map(|p| p.to_string()).collect()),
+        None => Ok(vec![]),
+    }
+}
+
+/// Open a folder selection dialog - returns the selected folder path or null if cancelled
+#[tauri::command]
+async fn show_open_folder_dialog(app: tauri::AppHandle, options: FileDialogOptions) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    
+    let mut dialog = app.dialog().file();
+    
+    if let Some(title) = options.title {
+        dialog = dialog.set_title(&title);
+    }
+    
+    if let Some(default_path) = options.default_path {
+        dialog = dialog.set_directory(&default_path);
+    }
+    
+    let result = dialog.blocking_pick_folder();
+    
+    match result {
+        Some(path) => Ok(Some(path.to_string())),
+        None => Ok(None),
+    }
+}
+
 /// Apply window configuration (decorations) based on config file
 fn apply_window_config(app: &tauri::AppHandle) {
     use serde_json::Value;
@@ -655,6 +906,12 @@ pub fn run() {
             uninstall_community_theme,
             read_theme_file,
             list_system_fonts,
+            // Community plugin operations
+            ensure_dir,
+            read_plugin_file,
+            write_plugin_file,
+            delete_plugin_dir,
+            list_community_plugins,
             // File system operations
             read_directory,
             read_file,
@@ -666,7 +923,12 @@ pub fn run() {
             delete_path,
             move_path,
             copy_file,
-            path_exists
+            path_exists,
+            // Dialog operations
+            show_save_dialog,
+            show_open_file_dialog,
+            show_open_files_dialog,
+            show_open_folder_dialog
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

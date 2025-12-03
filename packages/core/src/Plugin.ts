@@ -189,7 +189,7 @@ export abstract class Plugin extends Component {
      */
     registerCommand(command: Command): void {
         this.commands.set(command.id, command);
-        this.app.shortcutManager.registerCommand(command);
+        this.app.shortcutManager.registerCommand(command, 'plugin', this.manifest.id);
     }
 
     /**

@@ -1,0 +1,35 @@
+{
+  "name": "inkdown-api",
+  "version": "0.1.1",
+  "description": "TypeScript definitions for Inkdown plugin development",
+  "author": "Inkdown Team",
+  "license": "MIT",
+  "homepage": "https://github.com/nicepkg/inkdown",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nicepkg/inkdown.git",
+    "directory": "packages/plugin-api"
+  },
+  "bugs": {
+    "url": "https://github.com/nicepkg/inkdown/issues"
+  },
+  "keywords": [
+    "inkdown",
+    "plugin",
+    "api",
+    "typescript",
+    "markdown",
+    "editor"
+  ],
+  "type": "module",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts"
+    }
+  },
+  "files": [
+    "src/index.d.ts",
+    "README.md"
+  ]
+}

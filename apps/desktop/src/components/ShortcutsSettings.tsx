@@ -184,6 +184,7 @@ export const ShortcutsSettings: React.FC = () => {
         file: 'File Operations',
         editor: 'Editor Formatting',
         app: 'Application',
+        plugins: 'Plugins',
         other: 'Other',
     };
 
@@ -201,11 +202,17 @@ export const ShortcutsSettings: React.FC = () => {
     // Group filtered shortcuts by category
     const filteredGroupedShortcuts = filteredShortcuts.reduce(
         (acc, shortcut) => {
-            const category = shortcut.id.includes(':')
-                ? shortcut.id.split(':')[0]
-                : shortcut.id.startsWith('switch-tab')
-                  ? 'tab-switching'
-                  : 'other';
+            // Plugin shortcuts go to "plugins" category
+            let category: string;
+            if (shortcut.source === 'plugin') {
+                category = 'plugins';
+            } else if (shortcut.id.includes(':')) {
+                category = shortcut.id.split(':')[0];
+            } else if (shortcut.id.startsWith('switch-tab')) {
+                category = 'tab-switching';
+            } else {
+                category = 'other';
+            }
 
             if (!acc[category]) acc[category] = [];
             acc[category].push(shortcut);
@@ -236,7 +243,7 @@ export const ShortcutsSettings: React.FC = () => {
             ) : (
                 Object.entries(filteredGroupedShortcuts)
                     .sort(([a], [b]) => {
-                        const order = ['tab', 'tab-switching', 'file', 'editor', 'app', 'other'];
+                        const order = ['tab', 'tab-switching', 'file', 'editor', 'app', 'plugins', 'other'];
                         return order.indexOf(a) - order.indexOf(b);
                     })
                     .map(([category, categoryShortcuts]) => (

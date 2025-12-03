@@ -12,6 +12,7 @@ Welcome to the Inkdown developer documentation. Here you will find everything yo
 
 ### Plugin Development
 *   [**Plugin System**](./plugins/system.md): How plugins work, lifecycle, and capabilities.
+*   [**Community Plugins**](./plugins/community-plugins.md): Creating, installing, and publishing community plugins.
 *   [**UI Components**](./plugins/ui-components.md): Using the UI package and CSS variables in plugins.
 *   [**Built-in Plugins**](./built-in-plugins.md): Overview of core plugins included with Inkdown.
 

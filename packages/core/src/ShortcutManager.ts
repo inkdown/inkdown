@@ -244,6 +244,25 @@ export class ShortcutManager {
     }
 
     /**
+     * Convert Hotkey[] format to string[] format
+     * e.g., [{ modifiers: ['Mod', 'Shift'], key: 'p' }] -> ['Mod', 'Shift', 'P']
+     */
+    private convertHotkeysToKeys(hotkeys: Array<{ modifiers: string[]; key: string }>): string[] {
+        if (!hotkeys || hotkeys.length === 0) return [];
+        
+        // Use the first hotkey definition
+        const hotkey = hotkeys[0];
+        if (!hotkey) return [];
+        
+        const keys: string[] = [...(hotkey.modifiers || [])];
+        if (hotkey.key) {
+            // Normalize key to uppercase for consistency
+            keys.push(hotkey.key.length === 1 ? hotkey.key.toUpperCase() : hotkey.key);
+        }
+        return keys;
+    }
+
+    /**
      * Register a command (called by plugins)
      * Core commands have priority over plugin commands
      */
@@ -252,17 +271,37 @@ export class ShortcutManager {
         source: 'core' | 'plugin' = 'plugin',
         pluginId?: string,
     ): void {
+        console.log(`[ShortcutManager] registerCommand called:`, {
+            commandId: command.id,
+            commandName: command.name,
+            source,
+            pluginId,
+            hotkey: command.hotkey,
+            hotkeys: command.hotkeys,
+        });
+        
         this.commands.set(command.id, command);
 
         // Get default keys from our defaults or from command
+        // Support both hotkey (string[]) and hotkeys (Hotkey[]) formats
         const defaultConfig = this.defaultShortcuts[command.id];
-        const defaultKeys = defaultConfig?.keys || command.hotkey || [];
+        let defaultKeys = defaultConfig?.keys || command.hotkey || [];
+        
+        // Convert hotkeys format if hotkey is empty but hotkeys exists
+        if (defaultKeys.length === 0 && command.hotkeys && command.hotkeys.length > 0) {
+            defaultKeys = this.convertHotkeysToKeys(command.hotkeys);
+            console.log(`[ShortcutManager] Converted hotkeys to:`, defaultKeys);
+        }
+
+        console.log(`[ShortcutManager] defaultKeys:`, defaultKeys);
 
         if (defaultKeys.length > 0) {
             const existingShortcut = this.shortcuts.get(command.id);
+            console.log(`[ShortcutManager] existingShortcut:`, existingShortcut);
             if (!existingShortcut) {
                 // Use user override if available, otherwise default
                 const effectiveKeys = this.getEffectiveKeys(command.id, defaultKeys);
+                console.log(`[ShortcutManager] Registering shortcut with effectiveKeys:`, effectiveKeys);
 
                 this.registerShortcut(
                     command.id,
