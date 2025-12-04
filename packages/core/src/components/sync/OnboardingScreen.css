@@ -7,7 +7,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-background);
+    background: var(--bg-primary);
     z-index: 9999;
 }
 
@@ -35,7 +35,7 @@
 
 .onboarding-header p {
     font-size: 16px;
-    color: var(--color-text-muted);
+    color: var(--text-muted);
     margin: 0;
 }
 
@@ -47,42 +47,42 @@
 
 .onboarding-button {
     padding: 14px 24px;
-    border-radius: 8px;
+    border-radius: var(--radius-lg);
     font-size: 15px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--transition-fast);
     border: none;
     outline: none;
 }
 
 .onboarding-button.primary {
-    background: var(--color-accent);
-    color: white;
+    background: var(--color-primary);
+    color: var(--button-primary-text);
 }
 
 .onboarding-button.primary:hover:not(:disabled) {
-    background: var(--color-accent-hover, var(--color-accent));
+    background: var(--color-primary-hover);
     transform: translateY(-1px);
 }
 
 .onboarding-button.secondary {
-    background: var(--color-hover);
-    color: var(--color-text);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
 }
 
 .onboarding-button.secondary:hover:not(:disabled) {
-    background: var(--color-border);
+    background: var(--border-color);
 }
 
 .onboarding-button.ghost {
     background: transparent;
-    color: var(--color-text-muted);
+    color: var(--text-muted);
 }
 
 .onboarding-button.ghost:hover:not(:disabled) {
-    color: var(--color-text);
-    background: var(--color-hover);
+    color: var(--text-primary);
+    background: var(--background-modifier-hover);
 }
 
 .onboarding-button:disabled {
@@ -96,8 +96,8 @@
 
 /* Form Styles */
 .onboarding-form-container {
-    background: var(--color-background);
-    border-radius: 12px;
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
     padding: 40px;
     max-width: 400px;
     width: 100%;
@@ -111,15 +111,15 @@
     font-size: 24px;
     font-weight: 600;
     margin: 0;
-    color: var(--color-text);
+    color: var(--text-primary);
 }
 
 .onboarding-error {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    color: var(--color-danger);
     padding: 12px;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     margin-bottom: 20px;
     font-size: 14px;
 }
@@ -130,51 +130,55 @@
     gap: 20px;
 }
 
-.form-group {
+.onboarding-form .form-group {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.form-group label {
+.onboarding-form .form-group label {
     font-size: 14px;
     font-weight: 500;
-    color: var(--color-text);
+    color: var(--text-primary);
 }
 
-.form-group input {
+.onboarding-form .form-group input {
     padding: 12px 16px;
-    border-radius: 6px;
-    border: 1px solid var(--color-border);
-    background: var(--color-background);
-    color: var(--color-text);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text-primary);
     font-size: 15px;
-    transition: all 0.15s ease;
+    transition: all var(--transition-fast);
 }
 
-.form-group input:focus {
+.onboarding-form .form-group input:focus {
     outline: none;
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: var(--input-focus-border);
+    box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.15);
 }
 
-.form-group input:disabled {
+.onboarding-form .form-group input:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.onboarding-form .form-group input::placeholder {
+    color: var(--text-muted);
 }
 
 .onboarding-back-button {
     margin-top: 20px;
     background: none;
     border: none;
-    color: var(--color-text-muted);
+    color: var(--text-muted);
     cursor: pointer;
     font-size: 14px;
-    transition: color 0.15s ease;
+    transition: color var(--transition-fast);
 }
 
 .onboarding-back-button:hover:not(:disabled) {
-    color: var(--color-text);
+    color: var(--text-primary);
 }
 
 .onboarding-back-button:disabled {

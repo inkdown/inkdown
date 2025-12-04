@@ -12,6 +12,7 @@
     },
     "dependencies": {
         "@inkdown/core": "workspace:*",
+        "@inkdown/native-tauri": "workspace:*",
         "@inkdown/plugins": "workspace:*",
         "@inkdown/ui": "workspace:*",
         "@lezer/highlight": "catalog:",

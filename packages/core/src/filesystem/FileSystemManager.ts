@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { native } from '../native';
 
 export interface FileNode {
     name: string;
@@ -10,8 +10,8 @@ export interface FileNode {
 }
 
 /**
- * FileSystemManager - Manages file system operations via Tauri
- * Cross-platform safe file operations
+ * FileSystemManager - Manages file system operations
+ * Uses native abstraction layer for cross-platform support
  */
 export class FileSystemManager {
     private watchers: Map<string, () => void> = new Map();
@@ -30,8 +30,7 @@ export class FileSystemManager {
      */
     async readDirectory(path: string, recursive = false): Promise<FileNode[]> {
         try {
-            const nodes = await invoke<any[]>('read_directory', { path, recursive });
-            return nodes.map(this.convertFileNode);
+            return await native.fs.readDirectory(path, recursive);
         } catch (error) {
             console.error('Failed to read directory:', error);
             throw error;
@@ -43,7 +42,7 @@ export class FileSystemManager {
      */
     async readFile(path: string): Promise<string> {
         try {
-            return await invoke<string>('read_file', { path });
+            return await native.fs.readFile(path);
         } catch (error) {
             console.error('Failed to read file:', error);
             throw error;
@@ -55,7 +54,7 @@ export class FileSystemManager {
      */
     async writeFile(path: string, content: string): Promise<void> {
         try {
-            await invoke('write_file', { path, content });
+            await native.fs.writeFile(path, content);
 
             // Emit file:created event through workspace
             if (this._app?.workspace) {
@@ -73,7 +72,13 @@ export class FileSystemManager {
      */
     async writeFileBinary(path: string, base64Content: string): Promise<void> {
         try {
-            await invoke('write_file_binary', { path, data: base64Content });
+            // Convert base64 to Uint8Array
+            const binary = atob(base64Content);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            await native.fs.writeFileBinary(path, bytes);
 
             // Emit file:created event through workspace
             if (this._app?.workspace) {
@@ -90,7 +95,7 @@ export class FileSystemManager {
      */
     async createFile(path: string): Promise<void> {
         try {
-            await invoke('create_file', { path });
+            await native.fs.writeFile(path, '');
         } catch (error) {
             console.error('Failed to create file:', error);
             throw error;
@@ -102,7 +107,7 @@ export class FileSystemManager {
      */
     async createDirectory(path: string): Promise<void> {
         try {
-            await invoke('create_directory', { path });
+            await native.fs.createDirectory(path);
 
             // Emit directory:created event through workspace
             if (this._app?.workspace) {
@@ -119,7 +124,7 @@ export class FileSystemManager {
      */
     async rename(oldPath: string, newPath: string): Promise<void> {
         try {
-            await invoke('rename_path', { oldPath, newPath });
+            await native.fs.rename(oldPath, newPath);
         } catch (error) {
             console.error('Failed to rename:', error);
             throw error;
@@ -131,7 +136,7 @@ export class FileSystemManager {
      */
     async delete(path: string): Promise<void> {
         try {
-            await invoke('delete_path', { path });
+            await native.fs.delete(path);
         } catch (error) {
             console.error('Failed to delete:', error);
             throw error;
@@ -143,7 +148,7 @@ export class FileSystemManager {
      */
     async move(source: string, destination: string): Promise<void> {
         try {
-            await invoke('move_path', { source, destination });
+            await native.fs.move(source, destination);
         } catch (error) {
             console.error('Failed to move:', error);
             throw error;
@@ -155,26 +160,12 @@ export class FileSystemManager {
      */
     async exists(path: string): Promise<boolean> {
         try {
-            return await invoke<boolean>('path_exists', { path });
+            return await native.fs.exists(path);
         } catch (error) {
             console.error('Failed to check path existence:', error);
             return false;
         }
     }
-
-    /**
-     * Convert backend FileNode to frontend format
-     */
-    private convertFileNode = (node: any): FileNode => {
-        return {
-            name: node.name,
-            path: node.path,
-            isDirectory: node.is_directory,
-            children: node.children?.map(this.convertFileNode),
-            size: node.size,
-            modified: node.modified,
-        };
-    };
 
     /**
      * Watch a directory for changes (placeholder for future implementation)

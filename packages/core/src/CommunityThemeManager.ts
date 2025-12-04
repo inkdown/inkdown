@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { native } from './native';
 import type { App } from './App';
 import type {
     CommunityTheme,
@@ -255,28 +255,16 @@ export class CommunityThemeManager {
                 }
                 const cssContent = await cssResponse.text();
 
-                await invoke('install_community_theme_file', {
-                    themeName: themeDirName,
-                    fileName: cssFile,
-                    content: cssContent,
-                });
+                await native.fs.installCommunityThemeFile(themeDirName, cssFile, cssContent);
             }
 
             // Save manifest.json
             const manifestJson = JSON.stringify(theme.manifest, null, 2);
-            await invoke('install_community_theme_file', {
-                themeName: themeDirName,
-                fileName: 'manifest.json',
-                content: manifestJson,
-            });
+            await native.fs.installCommunityThemeFile(themeDirName, 'manifest.json', manifestJson);
 
             // Save README
             if (theme.readme) {
-                await invoke('install_community_theme_file', {
-                    themeName: themeDirName,
-                    fileName: 'README.md',
-                    content: theme.readme,
-                });
+                await native.fs.installCommunityThemeFile(themeDirName, 'README.md', theme.readme);
             }
 
             // Update installed themes record
@@ -319,9 +307,7 @@ export class CommunityThemeManager {
             const themeDirName = themeId.split('/').pop() || themeId.replace('/', '-');
 
             // Remove theme directory via Tauri command
-            await invoke('uninstall_community_theme', {
-                themeName: themeDirName,
-            });
+            await native.fs.uninstallCommunityTheme(themeDirName);
 
             // Remove from installed themes
             this.installedThemes.delete(themeId);

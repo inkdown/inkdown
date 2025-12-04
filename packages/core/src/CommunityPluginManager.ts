@@ -14,7 +14,7 @@
  *         └── styles.css       # Optional styles
  */
 
-import { invoke } from '@tauri-apps/api/core';
+import { native } from './native';
 import type { App } from './App';
 import type {
     CommunityPlugin,
@@ -74,7 +74,7 @@ export class CommunityPluginManager {
     async init(): Promise<void> {
         try {
             // Get plugins directory from config
-            const configDir = await invoke<string>('get_config_dir');
+            const configDir = await native.config.getConfigDir();
             this.pluginsDir = `${configDir}/plugins`;
 
             // Ensure plugins directory exists
@@ -95,7 +95,7 @@ export class CommunityPluginManager {
      */
     private async ensurePluginsDir(): Promise<void> {
         try {
-            await invoke('ensure_dir', { path: this.pluginsDir });
+            await native.fs.ensureDir(this.pluginsDir);
         } catch (error) {
             this.logger.error('Failed to create plugins directory', error);
         }
@@ -246,7 +246,7 @@ export class CommunityPluginManager {
             const pluginDir = `${this.pluginsDir}/${id}`;
 
             // Create plugin directory
-            await invoke('ensure_dir', { path: pluginDir });
+            await native.fs.ensureDir(pluginDir);
 
             // Fetch and save plugin files from latest release
             const releaseUrl = `${GITHUB_API_BASE}/repos/${repo}/releases/latest`;
@@ -269,22 +269,14 @@ export class CommunityPluginManager {
                 if (asset) {
                     // Download from release asset
                     const content = await this.downloadAsset(asset.browser_download_url);
-                    await invoke('write_plugin_file', {
-                        pluginId: id,
-                        fileName,
-                        content,
-                    });
+                    await native.fs.writePluginFile(id, fileName, content);
                 } else if (requiredFiles.includes(fileName)) {
                     // Try to get from repo root for required files
                     const rawUrl = `${GITHUB_RAW_BASE}/${repo}/HEAD/${fileName}`;
                     const response = await fetch(rawUrl);
                     if (response.ok) {
                         const content = await response.text();
-                        await invoke('write_plugin_file', {
-                            pluginId: id,
-                            fileName,
-                            content,
-                        });
+                        await native.fs.writePluginFile(id, fileName, content);
                     } else {
                         throw new Error(`Required file ${fileName} not found`);
                     }
@@ -349,7 +341,7 @@ export class CommunityPluginManager {
             this.app.pluginManager.unregisterPlugin(pluginId);
 
             // Delete plugin files
-            await invoke('delete_plugin_dir', { pluginId });
+            await native.fs.deletePluginDir(pluginId);
 
             // Remove from installed plugins
             this.installedPlugins.delete(pluginId);
@@ -437,25 +429,16 @@ export class CommunityPluginManager {
     async loadInstalledPlugin(pluginId: string): Promise<boolean> {
         try {
             // Read manifest
-            const manifestContent = await invoke<string>('read_plugin_file', {
-                pluginId,
-                fileName: 'manifest.json',
-            });
+            const manifestContent = await native.fs.readPluginFile(pluginId, 'manifest.json');
             const manifest: CommunityPluginManifest = JSON.parse(manifestContent);
 
             // Read main.js
-            const mainJs = await invoke<string>('read_plugin_file', {
-                pluginId,
-                fileName: 'main.js',
-            });
+            const mainJs = await native.fs.readPluginFile(pluginId, 'main.js');
 
             // Try to read optional styles.css
             let pluginCss: string | null = null;
             try {
-                pluginCss = await invoke<string>('read_plugin_file', {
-                    pluginId,
-                    fileName: 'styles.css',
-                });
+                pluginCss = await native.fs.readPluginFile(pluginId, 'styles.css');
             } catch {
                 // styles.css is optional
             }

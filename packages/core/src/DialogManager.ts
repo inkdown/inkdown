@@ -2,10 +2,10 @@
  * DialogManager - System file/folder dialog management
  *
  * Provides native file/folder selection dialogs using the system's file explorer.
- * Works with Tauri backend for native dialogs.
+ * Works with native platform backend for dialogs.
  */
 
-import { invoke } from '@tauri-apps/api/core';
+import { native } from './native';
 
 // ============================================================================
 // Types
@@ -72,9 +72,19 @@ export class DialogManager {
      * ```
      */
     async showSaveDialog(options: FileDialogOptions = {}): Promise<string | null> {
+        if (!native.supportsModule('dialog')) {
+            console.warn('Dialog module not available');
+            return null;
+        }
+        
         try {
-            const result = await invoke<string | null>('show_save_dialog', { options });
-            return result;
+            const result = await native.dialog!.showSaveDialog?.({
+                title: options.title,
+                defaultPath: options.defaultPath,
+                defaultName: options.defaultName,
+                filters: options.filters,
+            });
+            return result ?? null;
         } catch (error) {
             console.error('Failed to show save dialog:', error);
             throw error;
@@ -99,9 +109,18 @@ export class DialogManager {
      * ```
      */
     async showOpenFileDialog(options: FileDialogOptions = {}): Promise<string | null> {
+        if (!native.supportsModule('dialog')) {
+            console.warn('Dialog module not available');
+            return null;
+        }
+        
         try {
-            const result = await invoke<string | null>('show_open_file_dialog', { options });
-            return result;
+            const result = await native.dialog!.showOpenFileDialog?.({
+                title: options.title,
+                defaultPath: options.defaultPath,
+                filters: options.filters,
+            });
+            return result ?? null;
         } catch (error) {
             console.error('Failed to show open file dialog:', error);
             throw error;
@@ -126,9 +145,18 @@ export class DialogManager {
      * ```
      */
     async showOpenFilesDialog(options: FileDialogOptions = {}): Promise<string[]> {
+        if (!native.supportsModule('dialog')) {
+            console.warn('Dialog module not available');
+            return [];
+        }
+        
         try {
-            const result = await invoke<string[]>('show_open_files_dialog', { options });
-            return result;
+            const result = await native.dialog!.showOpenFilesDialog?.({
+                title: options.title,
+                defaultPath: options.defaultPath,
+                filters: options.filters,
+            });
+            return result ?? [];
         } catch (error) {
             console.error('Failed to show open files dialog:', error);
             throw error;
@@ -152,9 +180,17 @@ export class DialogManager {
      * ```
      */
     async showOpenFolderDialog(options: FolderDialogOptions = {}): Promise<string | null> {
+        if (!native.supportsModule('dialog')) {
+            console.warn('Dialog module not available');
+            return null;
+        }
+        
         try {
-            const result = await invoke<string | null>('show_open_folder_dialog', { options });
-            return result;
+            const result = await native.dialog!.showOpenFolderDialog?.({
+                title: options.title,
+                defaultPath: options.defaultPath,
+            });
+            return result ?? null;
         } catch (error) {
             console.error('Failed to show open folder dialog:', error);
             throw error;

@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { native } from './native';
 import type { App } from './App';
 import type { ColorScheme, ThemeConfig } from './types/theme';
 
@@ -71,13 +71,11 @@ export class ThemeManager {
      */
     private async loadCustomThemes(): Promise<void> {
         try {
-            const themes = await invoke<string[]>('list_custom_themes');
+            const themes = await native.fs.listCustomThemes();
 
             for (const themeName of themes) {
                 try {
-                    const manifestContent = await invoke<string>('read_theme_manifest', {
-                        themeName,
-                    });
+                    const manifestContent = await native.fs.readThemeManifest(themeName);
                     const manifest = JSON.parse(manifestContent);
                     const themeConfig: ThemeConfig = {
                         id: themeName,
@@ -145,10 +143,7 @@ export class ThemeManager {
                 : `${modes[0]}.css`;
             
             try {
-                const cssContent = await invoke<string>('read_theme_css', { 
-                    themeName: themeId,
-                    cssFile 
-                });
+                const cssContent = await native.fs.readThemeCss(themeId, cssFile);
                 this.applyCustomThemeCSS(cssContent);
                 
                 // Apply the correct color scheme class for the theme
@@ -220,10 +215,7 @@ export class ThemeManager {
         if (currentThemeConfig && !currentThemeConfig.builtIn && modes.includes(scheme)) {
             const cssFile = `${scheme}.css`;
             try {
-                const cssContent = await invoke<string>('read_theme_css', { 
-                    themeName: this.currentTheme,
-                    cssFile 
-                });
+                const cssContent = await native.fs.readThemeCss(this.currentTheme, cssFile);
                 this.applyCustomThemeCSS(cssContent);
                 this.applyColorScheme(scheme);
                 

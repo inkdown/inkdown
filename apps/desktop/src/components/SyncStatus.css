@@ -11,12 +11,12 @@
 }
 
 .sync-status-item:hover {
-    color: var(--text-normal);
+    color: var(--text-primary);
     background-color: var(--bg-hover);
 }
 
 .sync-status-item.error {
-    color: var(--text-error);
+    color: var(--color-danger);
 }
 
 .sync-status-item .spin {
@@ -26,7 +26,7 @@
 .sync-status-item .sync-count {
     font-size: 10px;
     background-color: var(--bg-active);
-    color: var(--text-normal);
+    color: var(--text-primary);
     padding: 0 4px;
     border-radius: 4px;
     min-width: 16px;

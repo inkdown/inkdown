@@ -82,7 +82,6 @@ export function OnboardingScreen({ app, onComplete }: OnboardingScreenProps) {
             <div className="onboarding-screen">
                 <div className="onboarding-content">
                     <div className="onboarding-header">
-                        <div className="onboarding-icon">🗒️</div>
                         <h1>Inkdown</h1>
                         <p>Your markdown notes, synchronized</p>
                     </div>

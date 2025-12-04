@@ -6,6 +6,7 @@
     "types": "./src/index.ts",
     "exports": {
         ".": "./src/index.ts",
+        "./native": "./src/native/index.ts",
         "./types": "./src/types/index.ts",
         "./styles": "./src/styles/index.css",
         "./styles/themes/dark": "./src/styles/themes/default-dark.css",

@@ -1,5 +1,5 @@
 import type { App as InkdownApp, PluginSettingTab, FileNode, WindowConfig } from '@inkdown/core';
-import { Button, Link, Select, Setting, Slider, TextInput, Toggle } from '@inkdown/ui';
+import { Button, Select, Setting, Slider, TextInput, Toggle } from '@inkdown/ui';
 import { Cloud, FolderOpen, Keyboard, Palette, Paintbrush, Puzzle, RefreshCw, Settings as SettingsIcon, Trash2, Type, X } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
@@ -137,6 +137,7 @@ interface AppConfig {
 interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onShowLoginScreen?: () => void;
 }
 
 type SettingsTab = 'general' | 'appearance' | 'editor' | 'shortcuts' | 'plugins' | string;
@@ -211,7 +212,7 @@ const PluginSettingTabContent: React.FC<{
 /**
  * Settings Modal Component - Modal-based settings interface with sidebar
  */
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onShowLoginScreen }) => {
     const app = useApp();
     const { currentTheme, colorScheme, setTheme, setColorScheme, themes } = useTheme();
     const [config, saveConfig] = useConfig<AppConfig>('app');
@@ -1040,13 +1041,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                             name="Account"
                                             description="Not logged in"
                                         >
-                                            <Link
-                                                href="https://sync.inkdown.app/login"
-                                                external
-                                                app={app}
+                                            <Button
+                                                variant="primary"
+                                                size="small"
+                                                onClick={() => {
+                                                    onClose();
+                                                    onShowLoginScreen?.();
+                                                }}
                                             >
                                                 Login to Sync →
-                                            </Link>
+                                            </Button>
                                         </Setting>
                                     )}
                                 </div>

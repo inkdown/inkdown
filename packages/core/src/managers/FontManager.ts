@@ -1,9 +1,9 @@
-import { invoke } from '@tauri-apps/api/core';
+import { native } from '../native';
 import { createLogger } from '../utils/logger';
 
 /**
  * FontManager - Manages system fonts
- * Provides access to system fonts via Tauri backend
+ * Provides access to system fonts via native platform
  */
 export class FontManager {
     private availableFonts: string[] = [];
@@ -11,7 +11,7 @@ export class FontManager {
     private logger = createLogger('FontManager');
 
     /**
-     * Load system fonts from the backend
+     * Load system fonts from the native platform
      * Returns cached fonts if already loaded
      */
     async loadSystemFonts(): Promise<string[]> {
@@ -20,16 +20,24 @@ export class FontManager {
             return this.availableFonts;
         }
 
+        // Check if font module is available
+        if (!native.supportsModule('font')) {
+            this.logger.info('Font module not available, using fallback fonts');
+            this.availableFonts = this.getFallbackFonts();
+            this.fontsLoaded = true;
+            return this.availableFonts;
+        }
+
         try {
             this.logger.info('Loading system fonts...');
-            const fonts = await invoke<string[]>('list_system_fonts');
+            const fonts = await native.font!.listSystemFonts();
             this.availableFonts = fonts;
             this.fontsLoaded = true;
             this.logger.info(`Loaded ${fonts.length} system fonts`);
             return fonts;
         } catch (error) {
             this.logger.error('Failed to load system fonts, using fallback', error);
-            // Fallback to common fonts if Tauri command fails
+            // Fallback to common fonts if native command fails
             this.availableFonts = this.getFallbackFonts();
             this.fontsLoaded = true;
             return this.availableFonts;

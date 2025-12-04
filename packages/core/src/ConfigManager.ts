@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { native } from './native';
 import { createLogger } from './utils/logger';
 
 /**
@@ -17,11 +17,11 @@ export class ConfigManager {
 
     /**
      * Initialize the config manager
-     * Gets the config directory from Tauri
+     * Gets the config directory from native platform
      */
     async init(): Promise<void> {
         try {
-            this.configDir = await invoke<string>('get_config_dir');
+            this.configDir = await native.config.getConfigDir();
             this.logger.info(`Config directory: ${this.configDir}`);
         } catch (error) {
             this.logger.error('Failed to get config directory', error);
@@ -128,12 +128,12 @@ export class ConfigManager {
     }
 
     /**
-     * Load from JSON file via Tauri
+     * Load from JSON file via native platform
      */
     private async loadFromFile<T>(configName: string): Promise<T> {
         const fileName = `${configName}.json`;
         try {
-            const content = await invoke<string>('read_config_file', { fileName });
+            const content = await native.config.readConfigFile(fileName);
             return JSON.parse(content) as T;
         } catch (error) {
             this.logger.error(`Failed to load ${fileName}`, error);
@@ -142,14 +142,14 @@ export class ConfigManager {
     }
 
     /**
-     * Save to JSON file via Tauri
+     * Save to JSON file via native platform
      */
     private async saveToFile<T>(configName: string, data: T): Promise<void> {
         const fileName = `${configName}.json`;
         const content = JSON.stringify(data, null, 2);
         try {
             this.logger.debug(`Writing ${fileName} (${content.length} bytes)...`);
-            await invoke('write_config_file', { fileName, content });
+            await native.config.writeConfigFile(fileName, content);
             this.logger.debug(`Successfully wrote ${fileName} to disk`);
         } catch (error) {
             this.logger.error(`Failed to write ${fileName}:`, error);

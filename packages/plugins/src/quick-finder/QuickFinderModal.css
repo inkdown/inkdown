@@ -103,7 +103,7 @@
 .quick-finder-error {
     padding: 40px 20px;
     text-align: center;
-    color: var(--text-error, #dc2626);
+    color: var(--color-danger, #dc2626);
     font-size: 14px;
 }
 

@@ -900,7 +900,11 @@ const AppContent: React.FC = () => {
             </div>
 
             {/* Settings Modal */}
-            <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+            <SettingsModal 
+                isOpen={settingsOpen} 
+                onClose={() => setSettingsOpen(false)}
+                onShowLoginScreen={() => setNeedsOnboarding(true)}
+            />
 
             {/* Bookmark Modal */}
             <BookmarkGroupModal
