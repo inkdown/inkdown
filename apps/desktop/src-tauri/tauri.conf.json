@@ -16,8 +16,15 @@
                 "title": "inkdown",
                 "width": 800,
                 "height": 600,
-                "decorations": false,
-                "transparent": true
+                "decorations": true,
+                "transparent": true,
+                "shadow": true,
+                "titleBarStyle": "Overlay",
+                "hiddenTitle": true,
+                "trafficLightPosition": {
+                    "x": 13,
+                    "y": 13
+                }
             }
         ],
         "security": {

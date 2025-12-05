@@ -20,6 +20,7 @@ import { TauriClipboard } from './TauriClipboard';
 import { TauriPlatform } from './TauriPlatform';
 import { TauriExport } from './TauriExport';
 import { TauriFont } from './TauriFont';
+import { TauriMenu } from './TauriMenu';
 
 /**
  * Register all Tauri native adapters
@@ -33,6 +34,7 @@ export function registerTauriAdapters(): void {
     dialog: new TauriDialog(),
     clipboard: new TauriClipboard(),
     font: new TauriFont(),
+    menu: new TauriMenu(),
   });
 }
 
@@ -44,3 +46,4 @@ export { TauriClipboard } from './TauriClipboard';
 export { TauriPlatform } from './TauriPlatform';
 export { TauriExport } from './TauriExport';
 export { TauriFont } from './TauriFont';
+export { TauriMenu } from './TauriMenu';

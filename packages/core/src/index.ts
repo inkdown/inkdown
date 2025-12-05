@@ -84,8 +84,8 @@ export type { DataWriteOptions } from './managers/FileManager';
 export { FileManager } from './managers/FileManager';
 export type { FilesConfig } from './managers/FilesConfigManager';
 export { FilesConfigManager, DEFAULT_FILES_CONFIG } from './managers/FilesConfigManager';
-export type { WindowConfig } from './managers/WindowConfigManager';
-export { WindowConfigManager, DEFAULT_WINDOW_CONFIG } from './managers/WindowConfigManager';
+export type { WindowConfig, WindowState } from './managers/WindowConfigManager';
+export { WindowConfigManager, DEFAULT_WINDOW_CONFIG, DEFAULT_WINDOW_STATE } from './managers/WindowConfigManager';
 export type {
     BlockCache,
     CachedMetadata,

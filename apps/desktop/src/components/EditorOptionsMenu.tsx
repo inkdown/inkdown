@@ -13,7 +13,8 @@ import {
     Trash2,
 } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { native, type MenuItem } from '@inkdown/core/native';
 import './EditorOptionsMenu.css';
 
 export type ViewMode = 'editor' | 'side-by-side' | 'preview';
@@ -70,17 +71,121 @@ export const EditorOptionsMenu: React.FC<EditorOptionsMenuProps> = ({
         setIsOpen(false);
     };
 
+    const handleButtonClick = useCallback(async (event: React.MouseEvent) => {
+        // Try native menu first
+        if (native.supportsModule('menu')) {
+            const button = event.currentTarget as HTMLElement;
+            const rect = button.getBoundingClientRect();
+
+            const items: MenuItem[] = [
+                // View Mode section
+                {
+                    id: 'view-mode',
+                    type: 'submenu',
+                    text: 'View Mode',
+                    items: [
+                        {
+                            id: 'view-editor',
+                            type: 'checkbox',
+                            text: 'Editor Only',
+                            checked: viewMode === 'editor',
+                            action: () => onViewModeChange('editor'),
+                        },
+                        {
+                            id: 'view-side-by-side',
+                            type: 'checkbox',
+                            text: 'Side by Side',
+                            checked: viewMode === 'side-by-side',
+                            action: () => onViewModeChange('side-by-side'),
+                        },
+                        {
+                            id: 'view-preview',
+                            type: 'checkbox',
+                            text: 'Preview Only',
+                            checked: viewMode === 'preview',
+                            action: () => onViewModeChange('preview'),
+                        },
+                    ],
+                },
+                { type: 'separator' },
+                // File actions
+                {
+                    id: 'rename',
+                    type: 'normal',
+                    text: 'Rename Note',
+                    action: onRename,
+                },
+                {
+                    id: 'add-bookmark',
+                    type: 'normal',
+                    text: 'Add to Bookmarks',
+                    action: onAddBookmark,
+                },
+                {
+                    id: 'move-to',
+                    type: 'normal',
+                    text: 'Move Note To...',
+                    action: onMoveTo,
+                },
+                {
+                    id: 'make-copy',
+                    type: 'normal',
+                    text: 'Make a Copy',
+                    action: onMakeCopy,
+                },
+                {
+                    id: 'delete',
+                    type: 'normal',
+                    text: 'Delete Note',
+                    action: onDelete,
+                },
+                { type: 'separator' },
+                // Path actions
+                {
+                    id: 'copy-path',
+                    type: 'normal',
+                    text: 'Copy Path',
+                    action: onCopyPath,
+                },
+                {
+                    id: 'copy-relative-path',
+                    type: 'normal',
+                    text: 'Copy Relative Path',
+                    action: onCopyRelativePath,
+                },
+                {
+                    id: 'show-in-explorer',
+                    type: 'normal',
+                    text: 'Show in System Explorer',
+                    action: onShowInExplorer,
+                },
+            ];
+
+            await native.menu?.showContextMenu({
+                items,
+                position: {
+                    x: Math.round(rect.right),
+                    y: Math.round(rect.bottom + 4),
+                },
+            });
+        } else {
+            // Fall back to React menu
+            setIsOpen(!isOpen);
+        }
+    }, [viewMode, isOpen, onViewModeChange, onRename, onAddBookmark, onDelete, onMoveTo, onMakeCopy, onCopyPath, onCopyRelativePath, onShowInExplorer]);
+
     return (
         <div className="editor-options-menu" ref={menuRef}>
             <button
                 className={`editor-options-button ${isOpen ? 'active' : ''}`}
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={handleButtonClick}
                 title="Options"
             >
                 <MoreVertical size={20} />
             </button>
 
-            {isOpen && (
+            {/* Fallback React menu when native menus not supported */}
+            {!native.supportsModule('menu') && isOpen && (
                 <div className="editor-options-dropdown">
                     <div className="editor-options-section">
                         <div className="editor-options-label">View Mode</div>

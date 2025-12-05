@@ -40,6 +40,14 @@ export type {
   IProcessControl,
   IExport,
   IFont,
+  IMenu,
+  MenuItem,
+  NormalMenuItem,
+  SeparatorMenuItem,
+  CheckboxMenuItem,
+  SubmenuMenuItem,
+  ContextMenuOptions,
+  MenuPosition,
 } from './interfaces';
 
 // Types

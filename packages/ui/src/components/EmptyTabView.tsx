@@ -1,4 +1,4 @@
-import { FolderOpen, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import type React from 'react';
 import '../styles/EmptyTabView.css';
 
@@ -25,12 +25,6 @@ export const EmptyTabView: React.FC<EmptyTabViewProps> = ({ onNewFile, onOpenFil
                             New Note
                         </button>
                     )}
-                    {onOpenFile && (
-                        <button className="empty-tab-button secondary" onClick={onOpenFile}>
-                            <FolderOpen size={18} />
-                            Open File
-                        </button>
-                    )}
                 </div>
 
                 <div className="empty-tab-shortcuts">
@@ -40,7 +34,7 @@ export const EmptyTabView: React.FC<EmptyTabViewProps> = ({ onNewFile, onOpenFil
                     </div>
                     <div className="shortcut">
                         <kbd>Ctrl</kbd> + <kbd>O</kbd>
-                        <span>Open file</span>
+                        <span>Open workspace</span>
                     </div>
                 </div>
             </div>

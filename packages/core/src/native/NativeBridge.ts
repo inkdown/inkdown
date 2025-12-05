@@ -25,6 +25,7 @@ import type { IClipboard } from './interfaces/IClipboard';
 import type { IPlatform } from './interfaces/IPlatform';
 import type { IExport } from './interfaces/IExport';
 import type { IFont } from './interfaces/IFont';
+import type { IMenu } from './interfaces/IMenu';
 import type { PlatformFeature } from './types';
 
 // ============================================================================
@@ -39,6 +40,7 @@ export interface NativeModules {
   dialog?: IDialog;
   clipboard?: IClipboard;
   font?: IFont;
+  menu?: IMenu;
 }
 
 type ModuleName = keyof NativeModules;
@@ -142,6 +144,10 @@ class NativeBridge {
     return this.modules.font;
   }
 
+  get menu(): IMenu | undefined {
+    return this.modules.menu;
+  }
+
   // ============================================================================
   // Feature Detection
   // ============================================================================
@@ -149,7 +155,7 @@ class NativeBridge {
   /**
    * Check if an optional module is available
    */
-  supportsModule(module: 'dialog' | 'clipboard' | 'font'): boolean {
+  supportsModule(module: 'dialog' | 'clipboard' | 'font' | 'menu'): boolean {
     return this.hasModule(module);
   }
 

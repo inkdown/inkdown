@@ -1,4 +1,5 @@
 import type { FileNode, RecentWorkspace } from '@inkdown/core';
+import { native, type MenuItem } from '@inkdown/core/native';
 import { WorkspaceSwitcher } from '@inkdown/ui';
 import {
     ArrowDownAZ,
@@ -28,10 +29,14 @@ import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BookmarkGroupModal } from './BookmarkGroupModal';
 import { CreateBookmarkGroupModal } from './CreateBookmarkGroupModal';
-import { MacTrafficLights } from './MacTrafficLights';
 import { useApp } from '../contexts/AppContext';
 import type { BookmarkGroup } from '@inkdown/core';
 import '../styles/FileExplorer.css';
+
+/**
+ * Platform detection
+ */
+const isMacOS = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
 export type SelectedItem = {
     path: string;
@@ -307,6 +312,44 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         [onSortOrderChange],
     );
 
+    const handleSortButtonClick = useCallback(
+        async (event: React.MouseEvent) => {
+            // Try native menu first
+            if (native.supportsModule('menu')) {
+                const items: MenuItem[] = [
+                    {
+                        id: 'sort-a-z',
+                        type: 'checkbox',
+                        text: 'Name (A to Z)',
+                        checked: sortOrder === 'a-z',
+                        action: () => handleSortChange('a-z'),
+                    },
+                    {
+                        id: 'sort-z-a',
+                        type: 'checkbox',
+                        text: 'Name (Z to A)',
+                        checked: sortOrder === 'z-a',
+                        action: () => handleSortChange('z-a'),
+                    },
+                ];
+
+                const button = event.currentTarget as HTMLElement;
+                const rect = button.getBoundingClientRect();
+                await native.menu?.showContextMenu({
+                    items,
+                    position: {
+                        x: Math.round(rect.left),
+                        y: Math.round(rect.bottom + 4),
+                    },
+                });
+            } else {
+                // Fall back to React menu
+                setSortMenuOpen(!sortMenuOpen);
+            }
+        },
+        [sortOrder, sortMenuOpen, handleSortChange],
+    );
+
     // Check if all bookmark groups are expanded
     const allBookmarkGroupsExpanded = useMemo(() => {
         if (bookmarkGroups.length === 0) return true;
@@ -423,22 +466,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             }
         },
         [lastClickPath, lastClickTime, toggleDirectory, onFileSelect],
-    );
-
-    const handleContextMenu = useCallback(
-        (e: React.MouseEvent, path: string, isDirectory: boolean) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            // If right-clicking on a selected item, keep the selection
-            // Otherwise, select only this item
-            if (!selectedPaths.has(path)) {
-                setSelectedPaths(new Set([path]));
-            }
-
-            setContextMenu({ x: e.clientX, y: e.clientY, path, isDirectory });
-        },
-        [selectedPaths],
     );
 
     const closeContextMenu = useCallback(() => {
@@ -659,6 +686,152 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         [selectedPaths, files, closeContextMenu, requestDelete],
     );
 
+    const handleContextMenu = useCallback(
+        async (e: React.MouseEvent, path: string, isDirectory: boolean) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // If right-clicking on a selected item, keep the selection
+            // Otherwise, select only this item
+            if (!selectedPaths.has(path)) {
+                setSelectedPaths(new Set([path]));
+            }
+
+            // Try native menu first
+            if (native.supportsModule('menu')) {
+                const fileName = path.split('/').pop() || '';
+                const currentSelectionCount = selectedPaths.has(path) ? selectedPaths.size : 1;
+                
+                const items: MenuItem[] = [
+                    {
+                        id: 'new-file',
+                        type: 'normal',
+                        text: 'New File',
+                        action: () => startCreateFile(isDirectory ? path : undefined),
+                    },
+                    {
+                        id: 'new-folder',
+                        type: 'normal',
+                        text: 'New Folder',
+                        action: () => startCreateDirectory(isDirectory ? path : undefined),
+                    },
+                    { type: 'separator' },
+                    {
+                        id: 'rename',
+                        type: 'normal',
+                        text: 'Rename',
+                        action: () => startRename(path),
+                    },
+                ];
+                
+                // Add bookmark option for files only
+                if (!isDirectory) {
+                    items.push({
+                        id: 'add-bookmark',
+                        type: 'normal',
+                        text: 'Add to Bookmarks',
+                        action: () => {
+                            setBookmarkFilePath(path);
+                            setBookmarkFileName(fileName);
+                            setBookmarkModalOpen(true);
+                        },
+                    });
+                }
+                
+                // Move To...
+                if (onMoveTo) {
+                    items.push({
+                        id: 'move-to',
+                        type: 'normal',
+                        text: 'Move To...',
+                        action: () => onMoveTo(path),
+                    });
+                }
+                
+                // Make a Copy
+                if (onCopyFile) {
+                    items.push({
+                        id: 'copy-file',
+                        type: 'normal',
+                        text: 'Make a Copy',
+                        action: () => onCopyFile(path),
+                    });
+                }
+                
+                // Delete
+                items.push({
+                    id: 'delete',
+                    type: 'normal',
+                    text: currentSelectionCount > 1 && selectedPaths.has(path) 
+                        ? `Delete (${currentSelectionCount})`
+                        : 'Delete',
+                    action: () => deleteFromContextMenu(path, isDirectory),
+                });
+                
+                items.push({ type: 'separator' });
+                
+                // Copy Path
+                if (onCopyPath) {
+                    items.push({
+                        id: 'copy-path',
+                        type: 'normal',
+                        text: 'Copy Path',
+                        action: () => onCopyPath(path),
+                    });
+                }
+                
+                // Copy Relative Path
+                if (onCopyRelativePath) {
+                    items.push({
+                        id: 'copy-relative-path',
+                        type: 'normal',
+                        text: 'Copy Relative Path',
+                        action: () => onCopyRelativePath(path),
+                    });
+                }
+                
+                // Show in Explorer
+                if (onShowInExplorer) {
+                    items.push({
+                        id: 'show-in-explorer',
+                        type: 'normal',
+                        text: 'Show in System Explorer',
+                        action: () => onShowInExplorer(path),
+                    });
+                }
+                
+                // Sync options
+                if (onToggleSyncIgnore && isSyncIgnored) {
+                    items.push({ type: 'separator' });
+                    if (isSyncIgnored(path)) {
+                        items.push({
+                            id: 'include-in-sync',
+                            type: 'normal',
+                            text: 'Include in Sync',
+                            action: () => onToggleSyncIgnore(path, false),
+                        });
+                    } else {
+                        items.push({
+                            id: 'exclude-from-sync',
+                            type: 'normal',
+                            text: 'Exclude from Sync',
+                            action: () => onToggleSyncIgnore(path, true),
+                        });
+                    }
+                }
+
+                await native.menu?.showContextMenu({
+                    items,
+                    position: { x: e.clientX, y: e.clientY },
+                });
+            } else {
+                // Fall back to React menu
+                setContextMenu({ x: e.clientX, y: e.clientY, path, isDirectory });
+            }
+        },
+        [selectedPaths, onMoveTo, onCopyFile, onCopyPath, onCopyRelativePath, onShowInExplorer, onToggleSyncIgnore, isSyncIgnored, startCreateFile, startCreateDirectory, startRename, deleteFromContextMenu],
+    );
+
     // Drag handlers with multi-select support
     const handleDragStart = useCallback(
         (e: React.DragEvent, path: string) => {
@@ -764,12 +937,37 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     );
 
     // Handle right-click on root area
-    const handleRootContextMenu = useCallback((e: React.MouseEvent) => {
+    const handleRootContextMenu = useCallback(async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         setSelectedPaths(new Set()); // Clear selection when clicking root
-        setContextMenu({ x: e.clientX, y: e.clientY, path: null, isDirectory: true, isRoot: true });
-    }, []);
+
+        // Try native menu first
+        if (native.supportsModule('menu')) {
+            const items: MenuItem[] = [
+                {
+                    id: 'new-file',
+                    type: 'normal',
+                    text: 'New File',
+                    action: () => startCreateFile(rootPath),
+                },
+                {
+                    id: 'new-folder',
+                    type: 'normal',
+                    text: 'New Folder',
+                    action: () => startCreateDirectory(rootPath),
+                },
+            ];
+
+            await native.menu?.showContextMenu({
+                items,
+                position: { x: e.clientX, y: e.clientY },
+            });
+        } else {
+            // Fall back to React menu
+            setContextMenu({ x: e.clientX, y: e.clientY, path: null, isDirectory: true, isRoot: true });
+        }
+    }, [rootPath, startCreateFile, startCreateDirectory]);
 
     // Handle drag over root area
     const handleRootDragOver = useCallback((e: React.DragEvent) => {
@@ -1104,94 +1302,111 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             {!isCollapsed && (
                 <>
                     <div className="file-explorer">
-                        <div className="file-explorer-header">
-                            {/* Traffic lights row - only on macOS with custom titlebar */}
-                            {useCustomTitleBar && (
-                                <div className="file-explorer-header-traffic-lights" data-tauri-drag-region>
-                                    <MacTrafficLights enabled={useCustomTitleBar} />
+                        <div className={`file-explorer-header ${useCustomTitleBar && isMacOS ? 'with-traffic-lights' : ''}`}>
+                            {/* Main header row - workspace + settings */}
+                            <div className="file-explorer-header-main" data-tauri-drag-region>
+                                <div className="file-explorer-header-workspace">
+                                    <WorkspaceSwitcher
+                                        currentWorkspace={rootPath}
+                                        recentWorkspaces={recentWorkspaces}
+                                        onSelect={onWorkspaceSwitch || (() => { })}
+                                        onBrowse={onBrowseWorkspace || (() => { })}
+                                    />
                                 </div>
-                            )}
-                            <div className="file-explorer-header-top">
-                                <WorkspaceSwitcher
-                                    currentWorkspace={rootPath}
-                                    recentWorkspaces={recentWorkspaces}
-                                    onSelect={onWorkspaceSwitch || (() => { })}
-                                    onBrowse={onBrowseWorkspace || (() => { })}
-                                />
-                                <button
-                                    className={`file-explorer-action ${viewMode === 'bookmarks' ? 'active' : ''}`}
-                                    onClick={() => setViewMode(viewMode === 'files' ? 'bookmarks' : 'files')}
-                                    title={viewMode === 'files' ? 'Show Bookmarks' : 'Show Files'}
-                                >
-                                    <Bookmark size={18} />
-                                </button>
-                                {onOpenSettings && (
+                                <div className="file-explorer-header-actions">
                                     <button
-                                        className="file-explorer-action"
-                                        onClick={onOpenSettings}
-                                        title="Settings (Ctrl+,)"
+                                        className={`file-explorer-action ${viewMode === 'bookmarks' ? 'active' : ''}`}
+                                        onClick={() => setViewMode(viewMode === 'files' ? 'bookmarks' : 'files')}
+                                        title={viewMode === 'files' ? 'Show Bookmarks' : 'Show Files'}
                                     >
-                                        <Settings size={18} />
+                                        <Bookmark size={16} />
                                     </button>
-                                )}
+                                    {onOpenSettings && (
+                                        <button
+                                            className="file-explorer-action"
+                                            onClick={onOpenSettings}
+                                            title="Settings"
+                                        >
+                                            <Settings size={16} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                            <div className="file-explorer-header-bottom">
+                            
+                            {/* Toolbar row - file/bookmark actions */}
+                            <div className="file-explorer-toolbar">
                                 {viewMode === 'files' ? (
                                     <>
-                                        <button
-                                            className="file-explorer-action"
-                                            onClick={() => startCreateFile()}
-                                            title="New File"
-                                        >
-                                            <Plus size={18} />
-                                        </button>
-                                        <button
-                                            className="file-explorer-action"
-                                            onClick={() => startCreateDirectory()}
-                                            title="New Folder"
-                                        >
-                                            <FolderPlus size={18} />
-                                        </button>
-                                        <div className="file-explorer-sort-container" onClick={(e) => e.stopPropagation()}>
+                                        <div className="file-explorer-toolbar-group">
                                             <button
-                                                className={`file-explorer-action ${sortOrder !== 'a-z' ? 'active' : ''}`}
-                                                onClick={() => setSortMenuOpen(!sortMenuOpen)}
-                                                title="Sort Options"
+                                                className="file-explorer-action"
+                                                onClick={() => startCreateFile()}
+                                                title="New File"
                                             >
-                                                {sortOrder === 'a-z' ? (
-                                                    <ArrowDownAZ size={18} />
+                                                <Plus size={16} />
+                                            </button>
+                                            <button
+                                                className="file-explorer-action"
+                                                onClick={() => startCreateDirectory()}
+                                                title="New Folder"
+                                            >
+                                                <FolderPlus size={16} />
+                                            </button>
+                                        </div>
+                                        <div className="file-explorer-toolbar-separator" />
+                                        <div className="file-explorer-toolbar-group">
+                                            <div className="file-explorer-sort-container" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                    className={`file-explorer-action ${sortOrder !== 'a-z' ? 'active' : ''}`}
+                                                    onClick={handleSortButtonClick}
+                                                    title="Sort Options"
+                                                >
+                                                    {sortOrder === 'a-z' ? (
+                                                        <ArrowDownAZ size={16} />
+                                                    ) : (
+                                                        <ArrowUpAZ size={16} />
+                                                    )}
+                                                </button>
+                                                {!native.supportsModule('menu') && sortMenuOpen && (
+                                                    <div className="file-explorer-sort-menu">
+                                                        <div
+                                                            className="file-explorer-sort-item"
+                                                            onClick={() => handleSortChange('a-z')}
+                                                        >
+                                                            <span>Name (A to Z)</span>
+                                                            {sortOrder === 'a-z' && <Check size={16} />}
+                                                        </div>
+                                                        <div
+                                                            className="file-explorer-sort-item"
+                                                            onClick={() => handleSortChange('z-a')}
+                                                        >
+                                                            <span>Name (Z to A)</span>
+                                                            {sortOrder === 'z-a' && <Check size={16} />}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button
+                                                className="file-explorer-action"
+                                                onClick={handleExpandCollapseAll}
+                                                title={allDirsExpanded ? 'Collapse All' : 'Expand All'}
+                                            >
+                                                {allDirsExpanded ? (
+                                                    <ChevronsUp size={16} />
                                                 ) : (
-                                                    <ArrowUpAZ size={18} />
+                                                    <ChevronsDown size={16} />
                                                 )}
                                             </button>
-                                            {sortMenuOpen && (
-                                                <div className="file-explorer-sort-menu">
-                                                    <div
-                                                        className="file-explorer-sort-item"
-                                                        onClick={() => handleSortChange('a-z')}
-                                                    >
-                                                        <span>Name (A to Z)</span>
-                                                        {sortOrder === 'a-z' && <Check size={16} />}
-                                                    </div>
-                                                    <div
-                                                        className="file-explorer-sort-item"
-                                                        onClick={() => handleSortChange('z-a')}
-                                                    >
-                                                        <span>Name (Z to A)</span>
-                                                        {sortOrder === 'z-a' && <Check size={16} />}
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
                                     </>
                                 ) : (
-                                    <>
+                                    <div className="file-explorer-toolbar-group">
                                         <button
                                             className="file-explorer-action"
                                             onClick={() => setCreateGroupModalOpen(true)}
                                             title="New Bookmark Group"
                                         >
-                                            <FolderPlus size={18} />
+                                            <FolderPlus size={16} />
                                         </button>
                                         <button
                                             className="file-explorer-action"
@@ -1204,20 +1419,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                                 <ChevronsDown size={16} />
                                             )}
                                         </button>
-                                    </>
-                                )}
-                                {viewMode === 'files' && (
-                                    <button
-                                        className="file-explorer-action"
-                                        onClick={handleExpandCollapseAll}
-                                        title={allDirsExpanded ? 'Collapse All' : 'Expand All'}
-                                    >
-                                        {allDirsExpanded ? (
-                                            <ChevronsUp size={16} />
-                                        ) : (
-                                            <ChevronsDown size={16} />
-                                        )}
-                                    </button>
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -1281,7 +1483,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                     )}
                         </div>
 
-                        {contextMenu && (
+                        {/* Fallback React context menu when native menus not supported */}
+                        {!native.supportsModule('menu') && contextMenu && (
                             <div
                                 className="context-menu"
                                 style={{ left: contextMenu.x, top: contextMenu.y }}

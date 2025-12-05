@@ -34,14 +34,14 @@ export class RenameModal extends Modal {
         // and preserve the original extension on submit.
 
         // Create container for input
-        const container = contentEl.createDiv('rename-modal-container');
+        const container = contentEl.createDiv();
         container.style.display = 'flex';
         container.style.flexDirection = 'column';
         container.style.gap = '16px';
         container.style.padding = '8px 0';
 
         // Input field
-        const inputContainer = container.createDiv('input-container');
+        const inputContainer = container.createDiv();
 
         // Label if not markdown
         if (extension && extension !== '.md') {
@@ -80,7 +80,7 @@ export class RenameModal extends Modal {
         });
 
         // Buttons
-        const buttonContainer = container.createDiv('modal-button-container');
+        const buttonContainer = container.createDiv();
         buttonContainer.style.display = 'flex';
         buttonContainer.style.justifyContent = 'flex-end';
         buttonContainer.style.gap = '8px';

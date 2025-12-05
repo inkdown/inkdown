@@ -7,13 +7,12 @@ import {
     Check,
     ChevronsDown,
     ChevronsUp,
+    FilePlus,
     FolderPlus,
-    Plus,
     Settings,
 } from 'lucide-react';
 import type { RecentWorkspace } from '@inkdown/core';
 import type { SortOrder } from './types.js';
-import { MacTrafficLights } from '../MacTrafficLights';
 
 interface FileExplorerHeaderProps {
     // Top section
@@ -64,104 +63,113 @@ export const FileExplorerHeader = memo<FileExplorerHeaderProps>(({
     onCreateBookmarkGroup,
     onExpandCollapseAllBookmarks,
 }) => {
+    const isMacOS = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const hasMacTitleBar = useCustomTitleBar && isMacOS;
+    
     return (
-        <div className="file-explorer-header">
-            {/* Traffic lights row - only on macOS with custom titlebar */}
-            {useCustomTitleBar && (
-                <div className="file-explorer-header-traffic-lights" data-tauri-drag-region>
-                    <MacTrafficLights enabled={useCustomTitleBar} />
+        <div className={`file-explorer-header ${hasMacTitleBar ? 'with-traffic-lights' : ''}`}>
+            {/* Main header row - workspace + settings */}
+            <div className="file-explorer-header-main" data-tauri-drag-region>
+                <div className="file-explorer-header-workspace">
+                    <WorkspaceSwitcher
+                        currentWorkspace={rootPath}
+                        recentWorkspaces={recentWorkspaces}
+                        onSelect={onWorkspaceSwitch || (() => {})}
+                        onBrowse={onBrowseWorkspace || (() => {})}
+                    />
                 </div>
-            )}
-            <div className="file-explorer-header-top">
-                <WorkspaceSwitcher
-                    currentWorkspace={rootPath}
-                    recentWorkspaces={recentWorkspaces}
-                    onSelect={onWorkspaceSwitch || (() => {})}
-                    onBrowse={onBrowseWorkspace || (() => {})}
-                />
-                <button
-                    className={`file-explorer-action ${viewMode === 'bookmarks' ? 'active' : ''}`}
-                    onClick={() => onViewModeChange(viewMode === 'files' ? 'bookmarks' : 'files')}
-                    title={viewMode === 'files' ? 'Show Bookmarks' : 'Show Files'}
-                >
-                    <Bookmark size={18} />
-                </button>
-                {onOpenSettings && (
+                <div className="file-explorer-header-actions">
                     <button
-                        className="file-explorer-action"
-                        onClick={onOpenSettings}
-                        title="Settings (Ctrl+,)"
+                        className={`file-explorer-action ${viewMode === 'bookmarks' ? 'active' : ''}`}
+                        onClick={() => onViewModeChange(viewMode === 'files' ? 'bookmarks' : 'files')}
+                        title={viewMode === 'files' ? 'Show Bookmarks' : 'Show Files'}
                     >
-                        <Settings size={18} />
+                        <Bookmark size={16} />
                     </button>
-                )}
+                    {onOpenSettings && (
+                        <button
+                            className="file-explorer-action"
+                            onClick={onOpenSettings}
+                            title="Settings"
+                        >
+                            <Settings size={16} />
+                        </button>
+                    )}
+                </div>
             </div>
-            <div className="file-explorer-header-bottom">
+            
+            {/* Toolbar row - contextual actions */}
+            <div className="file-explorer-toolbar">
                 {viewMode === 'files' ? (
                     <>
-                        <button
-                            className="file-explorer-action"
-                            onClick={onCreateFile}
-                            title="New File"
-                        >
-                            <Plus size={18} />
-                        </button>
-                        <button
-                            className="file-explorer-action"
-                            onClick={onCreateDirectory}
-                            title="New Folder"
-                        >
-                            <FolderPlus size={18} />
-                        </button>
-                        <button
-                            className={`file-explorer-action ${sortOrder !== 'a-z' ? 'active' : ''}`}
-                            onClick={onToggleSortMenu}
-                            title="Sort Options"
-                        >
-                            {sortOrder === 'a-z' ? (
-                                <ArrowDownAZ size={18} />
-                            ) : (
-                                <ArrowUpAZ size={18} />
-                            )}
-                        </button>
-                        {sortMenuOpen && (
-                            <div className="file-explorer-sort-menu">
-                                <div
-                                    className="file-explorer-sort-item"
-                                    onClick={() => onSortChange('a-z')}
-                                >
-                                    <span>Name (A to Z)</span>
-                                    {sortOrder === 'a-z' && <Check size={18} />}
+                        <div className="file-explorer-toolbar-group">
+                            <button
+                                className="file-explorer-action"
+                                onClick={onCreateFile}
+                                title="New File"
+                            >
+                                <FilePlus size={16} />
+                            </button>
+                            <button
+                                className="file-explorer-action"
+                                onClick={onCreateDirectory}
+                                title="New Folder"
+                            >
+                                <FolderPlus size={16} />
+                            </button>
+                        </div>
+                        <div className="file-explorer-toolbar-separator" />
+                        <div className="file-explorer-toolbar-group">
+                            <button
+                                className={`file-explorer-action ${sortOrder !== 'a-z' ? 'active' : ''}`}
+                                onClick={onToggleSortMenu}
+                                title="Sort Options"
+                            >
+                                {sortOrder === 'a-z' ? (
+                                    <ArrowDownAZ size={16} />
+                                ) : (
+                                    <ArrowUpAZ size={16} />
+                                )}
+                            </button>
+                            {sortMenuOpen && (
+                                <div className="file-explorer-sort-menu">
+                                    <div
+                                        className="file-explorer-sort-item"
+                                        onClick={() => onSortChange('a-z')}
+                                    >
+                                        <span>Name (A to Z)</span>
+                                        {sortOrder === 'a-z' && <Check size={16} />}
+                                    </div>
+                                    <div
+                                        className="file-explorer-sort-item"
+                                        onClick={() => onSortChange('z-a')}
+                                    >
+                                        <span>Name (Z to A)</span>
+                                        {sortOrder === 'z-a' && <Check size={16} />}
+                                    </div>
                                 </div>
-                                <div
-                                    className="file-explorer-sort-item"
-                                    onClick={() => onSortChange('z-a')}
-                                >
-                                    <span>Name (Z to A)</span>
-                                    {sortOrder === 'z-a' && <Check size={18} />}
-                                </div>
-                            </div>
-                        )}
-                        <button
-                            className="file-explorer-action"
-                            onClick={onExpandCollapseAll}
-                            title={allDirsExpanded ? 'Collapse All' : 'Expand All'}
-                        >
-                            {allDirsExpanded ? (
-                                <ChevronsUp size={16} />
-                            ) : (
-                                <ChevronsDown size={16} />
                             )}
-                        </button>
+                            <button
+                                className="file-explorer-action"
+                                onClick={onExpandCollapseAll}
+                                title={allDirsExpanded ? 'Collapse All' : 'Expand All'}
+                            >
+                                {allDirsExpanded ? (
+                                    <ChevronsUp size={16} />
+                                ) : (
+                                    <ChevronsDown size={16} />
+                                )}
+                            </button>
+                        </div>
                     </>
                 ) : (
-                    <>
+                    <div className="file-explorer-toolbar-group">
                         <button
                             className="file-explorer-action"
                             onClick={onCreateBookmarkGroup}
                             title="New Bookmark Group"
                         >
-                            <FolderPlus size={18} />
+                            <FolderPlus size={16} />
                         </button>
                         <button
                             className="file-explorer-action"
@@ -174,7 +182,7 @@ export const FileExplorerHeader = memo<FileExplorerHeaderProps>(({
                                 <ChevronsDown size={16} />
                             )}
                         </button>
-                    </>
+                    </div>
                 )}
             </div>
         </div>

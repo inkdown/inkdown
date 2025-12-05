@@ -865,14 +865,29 @@ fn apply_window_config(app: &tauri::AppHandle) {
             if let Ok(config) = serde_json::from_str::<Value>(&content) {
                 if let Some(custom_titlebar) = config.get("customTitleBar").and_then(|v| v.as_bool()) {
                     if let Some(window) = app.get_webview_window("main") {
-                        // Apply decorations setting
-                        let _ = window.set_decorations(!custom_titlebar);
-                        
-                        // On macOS, set titlebar style for better integration
-                        #[cfg(target_os = "macos")]
                         if custom_titlebar {
-                            use tauri::TitleBarStyle;
-                            let _ = window.set_title_bar_style(TitleBarStyle::Overlay);
+                            // Custom titlebar: use Overlay style for native rounded corners on macOS
+                            #[cfg(target_os = "macos")]
+                            {
+                                use tauri::TitleBarStyle;
+                                let _ = window.set_title_bar_style(TitleBarStyle::Overlay);
+                                // Traffic light position is set in tauri.conf.json
+                            }
+                            
+                            // On Windows/Linux, disable decorations for custom titlebar
+                            #[cfg(not(target_os = "macos"))]
+                            {
+                                let _ = window.set_decorations(false);
+                            }
+                        } else {
+                            // Native titlebar: use default decorations
+                            let _ = window.set_decorations(true);
+                            
+                            #[cfg(target_os = "macos")]
+                            {
+                                use tauri::TitleBarStyle;
+                                let _ = window.set_title_bar_style(TitleBarStyle::Visible);
+                            }
                         }
                     }
                 }

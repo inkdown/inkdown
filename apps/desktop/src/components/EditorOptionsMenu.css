@@ -24,6 +24,7 @@
     color: var(--text-primary);
 }
 
+/* Fallback React dropdown styles (kept for non-native platforms) */
 .editor-options-dropdown {
     position: absolute;
     top: 100%;

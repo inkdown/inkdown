@@ -5,7 +5,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import './components/EditorModes.css';
 import type { FileNode, RecentWorkspace, SyncConfig } from '@inkdown/core';
 import { OnboardingScreen, WorkspaceHistory } from '@inkdown/core';
-import { EmptyTabView, Preview, StatusBar, TabBar, WorkspaceSelector, WorkspaceLinkDialog, type WorkspaceLinkWorkspace } from '@inkdown/ui';
+import { EmptyTabView, Preview, StatusBar, TabBar, WorkspaceSelector, WorkspaceLinkDialog } from '@inkdown/ui';
 import { invoke } from '@tauri-apps/api/core';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { ask, open as openDialog } from '@tauri-apps/plugin-dialog';
@@ -16,6 +16,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { useEditorState } from './hooks/useEditorState';
 import { useFontSettings } from './hooks/useFontSettings';
 import { useTabManager } from './hooks/useTabManager';
+import { useWindowState } from './hooks/useWindowState';
 import './styles/FileExplorer.css';
 import { Editor, registerEditorCommands, DEFAULT_EDITOR_CONFIG } from '@inkdown/core';
 import type { EditorConfig } from '@inkdown/core';
@@ -61,6 +62,9 @@ const AppContent: React.FC = () => {
 
     // Initialize font settings from config/localStorage
     useFontSettings();
+
+    // Initialize window state persistence (save/restore size and position)
+    useWindowState(app);
 
     // Load window configuration (must load early for title bar)
     useEffect(() => {

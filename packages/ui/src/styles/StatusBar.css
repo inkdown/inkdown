@@ -3,8 +3,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 4px 16px;
-    background: var(--bg-secondary);
-    border-top: 1px solid var(--border-color);
+    /*background: var(--bg-secondary);*/
+    /*border-top: 1px solid var(--border-color);*/
     height: 28px;
     font-size: var(--font-size-xs);
     color: var(--text-secondary);
