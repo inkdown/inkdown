@@ -501,6 +501,20 @@
     font-size: var(--font-size-xs);
 }
 
+/* Bookmark group color indicator */
+.bookmark-group-color-indicator {
+    width: 4px;
+    height: 16px;
+    border-radius: 2px;
+    margin-right: 6px;
+    flex-shrink: 0;
+}
+
+.file-node-item.bookmark-group {
+    display: flex;
+    align-items: center;
+}
+
 /* Active state for bookmark button */
 .file-explorer-action.active {
     background: var(--bg-secondary);

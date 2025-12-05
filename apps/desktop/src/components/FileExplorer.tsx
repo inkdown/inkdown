@@ -936,7 +936,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         [onMove, onMoveMultiple, onRefresh],
     );
 
-    // Handle right-click on root area
+    // Handle right-click on root area (files view)
     const handleRootContextMenu = useCallback(async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -968,6 +968,32 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             setContextMenu({ x: e.clientX, y: e.clientY, path: null, isDirectory: true, isRoot: true });
         }
     }, [rootPath, startCreateFile, startCreateDirectory]);
+
+    // Handle right-click on bookmarks area
+    const handleBookmarksContextMenu = useCallback(async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Try native menu first
+        if (native.supportsModule('menu')) {
+            const items: MenuItem[] = [
+                {
+                    id: 'new-bookmark-group',
+                    type: 'normal',
+                    text: 'New Bookmark Group',
+                    action: () => setCreateGroupModalOpen(true),
+                },
+            ];
+
+            await native.menu?.showContextMenu({
+                items,
+                position: { x: e.clientX, y: e.clientY },
+            });
+        } else {
+            // For bookmarks, just open the modal directly
+            setCreateGroupModalOpen(true);
+        }
+    }, []);
 
     // Handle drag over root area
     const handleRootDragOver = useCallback((e: React.DragEvent) => {
@@ -1243,7 +1269,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         return (
             <div key={group.id} className="file-node">
                 <div
-                    className="file-node-item directory"
+                    className="file-node-item directory bookmark-group"
                     style={{ paddingLeft: '8px' }}
                     onClick={() => {
                         setExpandedBookmarkGroups((prev) => {
@@ -1257,6 +1283,12 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                         });
                     }}
                 >
+                    {group.color && (
+                        <span 
+                            className="bookmark-group-color-indicator"
+                            style={{ backgroundColor: group.color }}
+                        />
+                    )}
                     <span className="file-node-icon">
                         {isExpanded ? <FolderOpen size={16} /> : <Folder size={16} />}
                     </span>
@@ -1427,12 +1459,12 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                         <div
                             className={`file-explorer-content ${dragOverPath === '__root__' ? 'drag-over' : ''}`}
                             onClick={handleContentClick}
-                            onContextMenu={handleRootContextMenu}
-                            onDragOver={handleRootDragOver}
-                            onDragLeave={handleRootDragLeave}
-                            onDrop={handleRootDrop}
+                            onContextMenu={viewMode === 'files' ? handleRootContextMenu : handleBookmarksContextMenu}
+                            onDragOver={viewMode === 'files' ? handleRootDragOver : undefined}
+                            onDragLeave={viewMode === 'files' ? handleRootDragLeave : undefined}
+                            onDrop={viewMode === 'files' ? handleRootDrop : undefined}
                         >
-                            {creatingItem && creatingItem.parentPath === rootPath && (
+                            {viewMode === 'files' && creatingItem && creatingItem.parentPath === rootPath && (
                                 <div className="file-node">
                                     <div
                                         className="file-node-item creating"

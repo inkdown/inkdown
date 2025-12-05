@@ -2,6 +2,18 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import './CreateBookmarkGroupModal.css';
 
+// Preset colors for quick selection
+const PRESET_COLORS = [
+    '#ef4444', // Red
+    '#f97316', // Orange
+    '#eab308', // Yellow
+    '#22c55e', // Green
+    '#14b8a6', // Teal
+    '#3b82f6', // Blue
+    '#8b5cf6', // Purple
+    '#ec4899', // Pink
+];
+
 interface CreateBookmarkGroupModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -15,14 +27,15 @@ export const CreateBookmarkGroupModal: React.FC<CreateBookmarkGroupModalProps> =
 }) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [color, setColor] = useState('');
+    const [color, setColor] = useState('#3b82f6'); // Default blue
     const inputRef = useRef<HTMLInputElement>(null);
+    const colorInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (isOpen) {
             setName('');
             setDescription('');
-            setColor('');
+            setColor('#3b82f6');
             // Focus input after modal opens
             setTimeout(() => {
                 inputRef.current?.focus();
@@ -43,6 +56,10 @@ export const CreateBookmarkGroupModal: React.FC<CreateBookmarkGroupModalProps> =
         if (e.key === 'Escape') {
             onClose();
         }
+    };
+
+    const handleColorPickerClick = () => {
+        colorInputRef.current?.click();
     };
 
     if (!isOpen) return null;
@@ -94,14 +111,50 @@ export const CreateBookmarkGroupModal: React.FC<CreateBookmarkGroupModalProps> =
                         </div>
 
                         <div className="create-bookmark-group-form-group">
-                            <label htmlFor="group-color">Color (optional)</label>
-                            <input
-                                id="group-color"
-                                type="text"
-                                value={color}
-                                onChange={(e) => setColor(e.target.value)}
-                                placeholder="e.g., #3b82f6, blue, rgb(59, 130, 246)"
-                            />
+                            <label>Group Color</label>
+                            <div className="color-picker-container">
+                                <div className="color-presets">
+                                    {PRESET_COLORS.map((presetColor) => (
+                                        <button
+                                            key={presetColor}
+                                            type="button"
+                                            className={`color-preset ${color === presetColor ? 'selected' : ''}`}
+                                            style={{ backgroundColor: presetColor }}
+                                            onClick={() => setColor(presetColor)}
+                                            title={presetColor}
+                                        />
+                                    ))}
+                                    <button
+                                        type="button"
+                                        className="color-preset custom"
+                                        onClick={handleColorPickerClick}
+                                        title="Choose custom color"
+                                    >
+                                        <span>+</span>
+                                    </button>
+                                </div>
+                                <div className="color-picker-row">
+                                    <div 
+                                        className="color-preview"
+                                        style={{ backgroundColor: color }}
+                                        onClick={handleColorPickerClick}
+                                    />
+                                    <input
+                                        ref={colorInputRef}
+                                        type="color"
+                                        value={color}
+                                        onChange={(e) => setColor(e.target.value)}
+                                        className="color-input-native"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={color}
+                                        onChange={(e) => setColor(e.target.value)}
+                                        className="color-input-text"
+                                        placeholder="#3b82f6"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
