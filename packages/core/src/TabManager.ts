@@ -306,6 +306,21 @@ export class TabManager {
     }
 
     /**
+     * Update a tab's file path (used when renaming files)
+     * @param oldPath The old file path
+     * @param newPath The new file path
+     */
+    async updateTabFilePath(oldPath: string, newPath: string): Promise<void> {
+        const tab = this.tabs.find((t) => t.filePath === oldPath);
+        if (tab) {
+            tab.filePath = newPath;
+            tab.title = this.getTitleFromPath(newPath);
+            this.notifyTabChange(tab.id);
+            await this.saveTabs();
+        }
+    }
+
+    /**
      * Save tabs to config
      * Only saves tabs with valid filePaths (not empty tabs)
      */

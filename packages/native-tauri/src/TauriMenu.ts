@@ -17,21 +17,35 @@ import type {
 } from '@inkdown/core/native';
 
 export class TauriMenu implements IMenu {
+    // Track if a menu is currently being shown to prevent duplicate calls
+    private isShowingMenu = false;
+
     /**
      * Show a native context menu at the specified position
      */
     async showContextMenu(options: ContextMenuOptions): Promise<void> {
-        const menuItems = await this.buildMenuItems(options.items);
-        
-        const menu = await Menu.new({
-            items: menuItems,
-        });
+        // Prevent multiple simultaneous menu creations
+        if (this.isShowingMenu) {
+            return;
+        }
 
-        // Show at position or at cursor
-        if (options.position) {
-            await menu.popup(new LogicalPosition(options.position.x, options.position.y));
-        } else {
-            await menu.popup();
+        this.isShowingMenu = true;
+
+        try {
+            const menuItems = await this.buildMenuItems(options.items);
+            
+            const menu = await Menu.new({
+                items: menuItems,
+            });
+
+            // Show at position or at cursor
+            if (options.position) {
+                await menu.popup(new LogicalPosition(options.position.x, options.position.y));
+            } else {
+                await menu.popup();
+            }
+        } finally {
+            this.isShowingMenu = false;
         }
     }
 

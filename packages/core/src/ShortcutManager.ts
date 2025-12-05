@@ -39,8 +39,9 @@ const DEFAULT_SHORTCUTS: DefaultShortcuts = {
 
     // App
     'app:open-settings': { keys: ['Mod', ','], name: 'Open Settings' },
-    'app:toggle-sidebar': { keys: ['Mod', '\\\\'], name: 'Toggle Sidebar' },
+    'app:toggle-sidebar': { keys: ['Mod', '\\'], name: 'Toggle Sidebar' },
     'app:toggle-view-mode': { keys: ['Mod', 'E'], name: 'Toggle View Mode' },
+    'app:open-workspace': { keys: ['Mod', 'Shift', 'O'], name: 'Open Workspace' },
 };
 
 /**
@@ -217,9 +218,30 @@ export class ShortcutManager {
                 id: 'file:new-note',
                 name: 'New Note',
                 hotkey: ['Mod', 'N'],
-                callback: () => {
-                    // This will be implemented by the desktop app
-                    console.log('New note command - to be implemented by app');
+                callback: async () => {
+                    try {
+                        // Create a new note using FilesConfigManager
+                        const newNotePath = await this.app.filesConfigManager.createNewNote();
+                        
+                        // Open the new note in a tab
+                        await this.app.tabManager.openTab(newNotePath);
+                        
+                        // Trigger file-create event to refresh file tree
+                        const filename = newNotePath.split('/').pop() || 'Untitled.md';
+                        this.app.workspace._onFileCreate({
+                            path: newNotePath,
+                            name: filename,
+                            basename: filename.replace(/\.md$/, ''),
+                            extension: 'md',
+                            stat: {
+                                size: 0,
+                                mtime: Date.now(),
+                                ctime: Date.now(),
+                            },
+                        });
+                    } catch (error) {
+                        console.error('Failed to create new note:', error);
+                    }
                 },
             },
             'core',

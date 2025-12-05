@@ -157,6 +157,50 @@ export class FilesConfigManager {
     }
 
     /**
+     * Create a new note with a unique name
+     * Uses the configured default location and generates "Untitled", "Untitled 1", etc.
+     * @returns The full path of the created note
+     */
+    async createNewNote(): Promise<string> {
+        await this.loadConfig();
+
+        const workspacePath = this.app.fileSystemManager.getWorkspacePath();
+        if (!workspacePath) {
+            throw new Error('No workspace opened');
+        }
+
+        // Determine target directory
+        let targetDir = workspacePath;
+        if (this.config.newNotesLocation === 'folder' && this.config.newNotesFolder) {
+            targetDir = this.app.fileSystemManager.joinPath(
+                workspacePath,
+                this.config.newNotesFolder
+            );
+            await this.ensureDirectoryExists(targetDir);
+        }
+
+        // Generate unique filename
+        const baseName = 'Untitled';
+        let filename = `${baseName}.md`;
+        let counter = 1;
+
+        // Check for existing files and find unique name
+        while (await this.app.fileSystemManager.exists(
+            this.app.fileSystemManager.joinPath(targetDir, filename)
+        )) {
+            filename = `${baseName} ${counter}.md`;
+            counter++;
+        }
+
+        const fullPath = this.app.fileSystemManager.joinPath(targetDir, filename);
+
+        // Create the file with empty content
+        await this.app.fileSystemManager.writeFile(fullPath, '');
+
+        return fullPath;
+    }
+
+    /**
      * Ensure a directory exists, creating it if necessary
      */
     private async ensureDirectoryExists(path: string): Promise<void> {

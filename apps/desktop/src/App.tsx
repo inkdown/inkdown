@@ -314,9 +314,51 @@ const AppContent: React.FC = () => {
             'core',
         );
 
+        // Register app:open-workspace command
+        app.shortcutManager.registerCommand(
+            {
+                id: 'app:open-workspace',
+                name: 'Open Workspace',
+                hotkey: ['Mod', 'Shift', 'O'],
+                callback: async () => {
+                    const selected = await openDialog({
+                        directory: true,
+                        multiple: false,
+                        title: 'Select Workspace Folder',
+                    });
+
+                    if (selected) {
+                        // Switch to the selected workspace
+                        const path = selected as string;
+                        setRootPath(path);
+
+                        // Sync workspace path to core
+                        app.fileSystemManager.setWorkspacePath(path);
+                        await app.workspace.refreshFileTree();
+
+                        // Reset expanded dirs when changing workspace
+                        setExpandedDirs([]);
+
+                        // Add to recent workspaces and save to config
+                        const config = await app.configManager.loadConfig<AppConfig>('app');
+                        const updated = WorkspaceHistory.addWorkspace(
+                            config.recentWorkspaces || [],
+                            path
+                        );
+                        setRecentWorkspaces(updated);
+                        config.recentWorkspaces = updated;
+                        config.lastWorkspace = path;
+                        await app.configManager.saveConfig('app', config);
+                    }
+                },
+            },
+            'core',
+        );
+
         return () => {
             app.shortcutManager.unregisterCommand('app:open-settings');
             app.shortcutManager.unregisterCommand('app:toggle-sidebar');
+            app.shortcutManager.unregisterCommand('app:open-workspace');
         };
     }, [app]);
 
@@ -505,15 +547,22 @@ const AppContent: React.FC = () => {
     const handleRename = useCallback(
         async (oldPath: string, newName: string) => {
             try {
-                const file = app.workspace.getAbstractFileByPath(oldPath);
-                if (!file) {
-                    throw new Error(`File not found: ${oldPath}`);
-                }
-
                 const parentDir = oldPath.substring(0, oldPath.lastIndexOf('/'));
                 const newPath = `${parentDir}/${newName}`;
 
-                await app.fileManager.renameFile(file, newPath);
+                // Check if file exists on disk before trying to rename
+                const exists = await app.fileSystemManager.exists(oldPath);
+                if (!exists) {
+                    // File doesn't exist yet (new unsaved file), create it first
+                    await app.fileSystemManager.writeFile(oldPath, '');
+                }
+
+                // Use FileSystemManager directly to avoid cache dependency
+                await app.fileSystemManager.rename(oldPath, newPath);
+                
+                // Update the tab if the renamed file is open
+                await app.tabManager.updateTabFilePath(oldPath, newPath);
+                
                 await loadFiles();
             } catch (error) {
                 console.error('Failed to rename:', error);
@@ -840,10 +889,12 @@ const AppContent: React.FC = () => {
                                 onViewModeChange={handleViewModeChange}
                                 onRename={() => {
                                     if (activeTab?.filePath) {
-                                        const currentName = activeTab.filePath.split('/').pop() || '';
+                                        // Capture filePath immediately to avoid closure issues
+                                        const filePath = activeTab.filePath;
+                                        const currentName = filePath.split('/').pop() || '';
 
                                         const modal = new RenameModal(app, currentName, (newName) => {
-                                            handleRename(activeTab.filePath!, newName);
+                                            handleRename(filePath, newName);
                                         });
                                         modal.open();
                                     }
@@ -905,10 +956,7 @@ const AppContent: React.FC = () => {
                     {/* Content Area */}
                     <div className="app-content">
                         {activeTab && !activeTab.filePath ? (
-                            <EmptyTabView
-                                onNewFile={() => openTab('', { openInNewTab: true })}
-                                onOpenFile={() => handleFileSelect('', true)}
-                            />
+                            <EmptyTabView/>
                         ) : isLoadingContent ? (
                             <div className="app-loading-content">
                                 <div className="loading-spinner" />

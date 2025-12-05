@@ -672,7 +672,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
         const newConfig = { ...filesConfig, [key]: value };
         setFilesConfig(newConfig);
         try {
-            await app.configManager.saveConfig('files', newConfig);
+            // Use FilesConfigManager to save - this ensures the internal cache is updated
+            await app.filesConfigManager.saveConfig(newConfig);
         } catch (error) {
             console.error('Failed to save files config:', error);
         }
