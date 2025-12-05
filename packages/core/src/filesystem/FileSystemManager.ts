@@ -228,6 +228,9 @@ export class FileSystemManager {
 
     setWorkspacePath(path: string): void {
         this.workspacePath = path;
+        if (this._app?.workspace) {
+            this._app.workspace.trigger('workspace:ready', path);
+        }
     }
 
     getWorkspacePath(): string | null {

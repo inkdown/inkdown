@@ -1,6 +1,6 @@
 import type { App as InkdownApp, PluginSettingTab, FileNode, WindowConfig } from '@inkdown/core';
-import { Button, Select, Setting, Slider, TextInput, Toggle } from '@inkdown/ui';
-import { Cloud, FolderOpen, Keyboard, Palette, Paintbrush, Puzzle, RefreshCw, Settings as SettingsIcon, Trash2, Type, X } from 'lucide-react';
+import { Button, Select, Setting, Slider, TextInput, Toggle, WorkspaceLinkDialog, type WorkspaceLinkWorkspace } from '@inkdown/ui';
+import { Cloud, FolderOpen, Keyboard, Palette, Paintbrush, Puzzle, RefreshCw, Settings as SettingsIcon, Trash2, Type, X, Link, Unlink } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useApp } from '../contexts/AppContext';
@@ -39,7 +39,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
     useEffect(() => {
         const trimmedValue = (value || '').trim();
         if (trimmedValue) {
-            const filtered = suggestions.filter(s => 
+            const filtered = suggestions.filter(s =>
                 s.toLowerCase().includes(trimmedValue.toLowerCase())
             ).slice(0, 8); // Limit to 8 suggestions
             setFilteredSuggestions(filtered);
@@ -67,7 +67,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
-                setSelectedIndex(prev => 
+                setSelectedIndex(prev =>
                     prev < filteredSuggestions.length - 1 ? prev + 1 : prev
                 );
                 break;
@@ -228,6 +228,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
     // Sync Settings State
     const [ignoredPatterns, setIgnoredPatterns] = useState<string[]>([]);
     const [newPattern, setNewPattern] = useState('');
+    const [showWorkspaceDialog, setShowWorkspaceDialog] = useState(false);
+    const [linkedWorkspace, setLinkedWorkspace] = useState<WorkspaceLinkWorkspace | null>(null);
 
     // Editor Settings State
     const [editorConfig, setEditorConfig] = useState<EditorConfig>({
@@ -287,7 +289,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 if (appConfig?.workspace) {
                     const files = await app.fileSystemManager.readDirectory(appConfig.workspace, true);
                     const folders: string[] = [];
-                    
+
                     const collectFolders = (nodes: FileNode[]) => {
                         for (const node of nodes) {
                             if (node.isDirectory) {
@@ -300,7 +302,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                             }
                         }
                     };
-                    
+
                     collectFolders(files);
                     setWorkspaceFolders(folders.sort());
                 }
@@ -342,6 +344,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 // Load ignore patterns
                 const patterns = app.syncManager.selectiveSync.getIgnorePatterns();
                 setIgnoredPatterns(patterns);
+
+                // Load linked workspace
+                const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
+                if (currentWorkspaceId) {
+                    try {
+                        const allWorkspaces = await app.syncManager.listWorkspaces();
+                        const linked = allWorkspaces.find(w => w.id === currentWorkspaceId);
+                        if (linked) {
+                            setLinkedWorkspace(linked);
+                        }
+                    } catch (err) {
+                        console.error('Failed to load linked workspace:', err);
+                    }
+                }
             } catch (error) {
                 console.error('Failed to load sync data:', error);
             }
@@ -479,6 +495,52 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
     const handleRemovePattern = async (pattern: string) => {
         await app.syncManager.selectiveSync.removeIgnorePattern(pattern);
         setIgnoredPatterns(app.syncManager.selectiveSync.getIgnorePatterns());
+    };
+
+    const handleLinkWorkspace = async (workspaceId: string) => {
+        if (!config?.workspace) return;
+        try {
+            await app.syncManager.linkWorkspace(config.workspace, workspaceId);
+            const allWorkspaces = await app.syncManager.listWorkspaces();
+            const linked = allWorkspaces.find(w => w.id === workspaceId);
+            if (linked) {
+                setLinkedWorkspace(linked);
+            }
+            // Force re-render of sync status
+            forceUpdate(v => v + 1);
+        } catch (error) {
+            console.error('Failed to link workspace:', error);
+            alert('Failed to link workspace. Please try again.');
+        }
+    };
+
+    const handleCreateAndLinkWorkspace = async (name: string) => {
+        if (!config?.workspace) return;
+        try {
+            const newWorkspace = await app.syncManager.createWorkspace(name);
+            await app.syncManager.linkWorkspace(config.workspace, newWorkspace.id);
+            setLinkedWorkspace(newWorkspace);
+            // Force re-render of sync status
+            forceUpdate(v => v + 1);
+        } catch (error) {
+            console.error('Failed to create and link workspace:', error);
+            alert('Failed to create workspace. Please try again.');
+        }
+    };
+
+    const handleUnlinkWorkspace = async () => {
+        if (!config?.workspace) return;
+        if (window.confirm('Are you sure you want to unlink this folder from the remote workspace? Local files will not be deleted.')) {
+            try {
+                await app.syncManager.unlinkWorkspace(config.workspace);
+                setLinkedWorkspace(null);
+                // Force re-render of sync status
+                forceUpdate(v => v + 1);
+            } catch (error) {
+                console.error('Failed to unlink workspace:', error);
+                alert('Failed to unlink workspace.');
+            }
+        }
     };
 
     // Regular functions (not hooks)
@@ -708,6 +770,51 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                         >
                                             <Trash2 size={14} />
                                             Clear Cache
+                                        </Button>
+                                    </Setting>
+
+                                    <h3>Developer Tools</h3>
+                                    <Setting
+                                        name="Factory Reset"
+                                        description="⚠️ TESTING ONLY: Clears ALL app data (config, cache, sync data, IndexedDB) and redirects to onboarding. Cannot be undone!"
+                                    >
+                                        <Button
+                                            variant="danger"
+                                            size="small"
+                                            onClick={async () => {
+                                                if (!window.confirm('⚠️ FACTORY RESET ⚠️\n\nThis will:\n• Delete ALL localStorage data\n• Delete ALL IndexedDB databases\n• Clear sync tokens and encryption keys\n• Return to onboarding\n\nYour local markdown files will NOT be deleted.\n\nContinue?')) {
+                                                    return;
+                                                }
+
+                                                try {
+                                                    // 1. Clear ALL localStorage
+                                                    localStorage.clear();
+                                                    console.log('[FactoryReset] Cleared localStorage');
+
+                                                    // 2. Clear ALL IndexedDB databases
+                                                    const databases = await indexedDB.databases();
+                                                    for (const db of databases) {
+                                                        if (db.name) {
+                                                            indexedDB.deleteDatabase(db.name);
+                                                            console.log(`[FactoryReset] Deleted IndexedDB: ${db.name}`);
+                                                        }
+                                                    }
+
+                                                    // 3. Clear sessionStorage too
+                                                    sessionStorage.clear();
+                                                    console.log('[FactoryReset] Cleared sessionStorage');
+
+                                                    // 4. Close modal and reload app (will show onboarding since no config)
+                                                    onClose();
+                                                    window.location.reload();
+                                                } catch (error) {
+                                                    console.error('[FactoryReset] Failed:', error);
+                                                    alert('Factory reset failed. Check console.');
+                                                }
+                                            }}
+                                        >
+                                            <Trash2 size={14} />
+                                            Factory Reset
                                         </Button>
                                     </Setting>
                                 </div>
@@ -958,6 +1065,45 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                                 </Button>
                                             </Setting>
 
+                                            <Setting
+                                                name="Workspace Link"
+                                                description={linkedWorkspace
+                                                    ? `Linked to workspace: ${linkedWorkspace.name}`
+                                                    : "Link this folder to a remote workspace to sync notes"}
+                                            >
+                                                {linkedWorkspace ? (
+                                                    <div className="workspace-link-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                                        <span className="workspace-badge" style={{
+                                                            fontSize: 12,
+                                                            padding: '2px 8px',
+                                                            background: 'var(--accent-bg)',
+                                                            color: 'var(--accent-color)',
+                                                            borderRadius: 4
+                                                        }}>
+                                                            {linkedWorkspace.name}
+                                                        </span>
+                                                        <Button
+                                                            variant="secondary"
+                                                            size="small"
+                                                            onClick={handleUnlinkWorkspace}
+                                                            title="Unlink workspace"
+                                                        >
+                                                            <Unlink size={14} style={{ marginRight: 4 }} />
+                                                            Unlink
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <Button
+                                                        variant="primary"
+                                                        size="small"
+                                                        onClick={() => setShowWorkspaceDialog(true)}
+                                                    >
+                                                        <Link size={14} style={{ marginRight: 6 }} />
+                                                        Link Workspace
+                                                    </Button>
+                                                )}
+                                            </Setting>
+
                                             {isSyncEnabled && (
                                                 <Setting
                                                     name="Local Database"
@@ -1098,6 +1244,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 mode={encryptionMode}
                 onConfirm={handleEncryptionConfirm}
                 onCancel={() => setShowEncryptionModal(false)}
+            />
+            {/* Workspace Link Dialog */}
+            <WorkspaceLinkDialog
+                isOpen={showWorkspaceDialog}
+                onClose={() => setShowWorkspaceDialog(false)}
+                onLink={handleLinkWorkspace}
+                onCreateAndLink={handleCreateAndLinkWorkspace}
+                listWorkspaces={() => app.syncManager.listWorkspaces()}
+                localPath={config?.workspace}
             />
         </>
     );

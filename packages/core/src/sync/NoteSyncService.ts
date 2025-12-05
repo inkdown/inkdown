@@ -7,6 +7,9 @@ import type {
     UpdateNoteRequest,
     SyncResponse,
     NoteChange,
+    ManifestResponse,
+    LocalNoteInfo,
+    BatchDiffResponse,
 } from './types';
 
 export class NoteSyncService {
@@ -195,5 +198,86 @@ export class NoteSyncService {
 
         const result = await response.json();
         return result;
+    }
+
+    /**
+     * Get compact manifest of all notes for efficient comparison
+     * Returns only id, hash, version, updated_at, is_deleted
+     * @param workspaceId Optional workspace ID to filter notes
+     */
+    async getManifest(workspaceId?: string): Promise<ManifestResponse> {
+        const token = this.tokenManager.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const url = workspaceId
+            ? `${this.baseURL}/sync/manifest?workspace_id=${workspaceId}`
+            : `${this.baseURL}/sync/manifest`;
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Failed to get manifest: ${error}`);
+        }
+
+        const result = await response.json();
+        // Server wraps response in { success, data } structure
+        const data = result.data || result;
+
+        // Validate and provide defaults for the response
+        return {
+            notes: Array.isArray(data?.notes) ? data.notes : [],
+            sync_time: data?.sync_time || new Date().toISOString(),
+        };
+    }
+
+    /**
+     * Send local note state and get sync actions needed
+     * Efficient batch comparison - single request instead of N requests
+     * @param workspaceId Workspace ID to scope the comparison
+     * @param localNotes Local note state for comparison
+     */
+    async batchDiff(workspaceId: string, localNotes: LocalNoteInfo[]): Promise<BatchDiffResponse> {
+        const token = this.tokenManager.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const deviceId = this.deviceManager.getDeviceId();
+        if (!deviceId) throw new Error('Device not registered');
+
+        const response = await fetch(`${this.baseURL}/sync/batch-diff`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                workspace_id: workspaceId,
+                device_id: deviceId,
+                local_notes: localNotes,
+            }),
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Failed to batch diff: ${error}`);
+        }
+
+        const result = await response.json();
+        // Server wraps response in { success, data } structure
+        const data = result.data || result;
+
+        // Validate and provide defaults
+        return {
+            to_download: Array.isArray(data?.to_download) ? data.to_download : [],
+            to_upload: Array.isArray(data?.to_upload) ? data.to_upload : [],
+            to_delete: Array.isArray(data?.to_delete) ? data.to_delete : [],
+            conflicts: Array.isArray(data?.conflicts) ? data.conflicts : [],
+            sync_time: data?.sync_time || new Date().toISOString(),
+        };
     }
 }

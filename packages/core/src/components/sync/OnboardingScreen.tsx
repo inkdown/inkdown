@@ -30,7 +30,7 @@ export function OnboardingScreen({ app, onComplete }: OnboardingScreenProps) {
         setError(null);
 
         try {
-            await app.syncManager.login(email, password, true);
+            await app.syncManager.login(email, password);
             await app.configManager.saveConfig('sync', {
                 onboardingCompleted: true,
                 enabled: true,

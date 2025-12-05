@@ -412,6 +412,62 @@ export class EncryptionManager {
     }
 
     /**
+     * Encrypt text content with nonce embedded in the output
+     * Format: [12 bytes nonce][encrypted data]
+     * This is self-contained and doesn't require separate nonce storage
+     */
+    async encryptBlob(content: string): Promise<string> {
+        if (!this.masterKey) {
+            throw new Error('Master key not initialized. Call setupEncryption or syncKeys first.');
+        }
+
+        const encoder = new TextEncoder();
+        const data = encoder.encode(content);
+        const nonce = this.generateNonce();
+
+        const encryptedBuffer = await crypto.subtle.encrypt(
+            { name: 'AES-GCM', iv: nonce as any },
+            this.masterKey,
+            data
+        );
+
+        // Concatenate nonce + encrypted data
+        const combined = new Uint8Array(nonce.length + encryptedBuffer.byteLength);
+        combined.set(nonce, 0);
+        combined.set(new Uint8Array(encryptedBuffer), nonce.length);
+
+        return this.arrayBufferToBase64(combined);
+    }
+
+    /**
+     * Decrypt blob that has nonce embedded at the start
+     * Format: [12 bytes nonce][encrypted data]
+     */
+    async decryptBlob(encryptedBlob: string): Promise<string> {
+        if (!this.masterKey) {
+            throw new Error('Master key not initialized');
+        }
+
+        const combined = this.base64ToArrayBuffer(encryptedBlob);
+        
+        if (combined.byteLength < 12) {
+            throw new Error('Invalid encrypted blob: too short');
+        }
+
+        const nonce = combined.slice(0, 12);
+        const encryptedData = combined.slice(12);
+
+        const decryptedBuffer = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: nonce as any },
+            this.masterKey,
+            encryptedData as any
+        );
+
+        const decoder = new TextDecoder();
+        return decoder.decode(decryptedBuffer);
+    }
+
+    /**
      * Decrypt encrypted content
      */
     async decrypt(encryptedData: EncryptedData): Promise<string> {

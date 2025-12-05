@@ -30,6 +30,8 @@ export interface SyncConfig {
     enabled?: boolean;
     localDbName?: string;
     serverUrl?: string;
+    workspaceLinks?: WorkspaceLink[];
+    currentWorkspaceId?: string;
 }
 
 // ============================================
@@ -40,6 +42,7 @@ export type NoteType = 'file' | 'directory';
 
 export interface NoteResponse {
     id: string;
+    workspace_id?: string;
     parent_id?: string | null;
     type: NoteType;
     encrypted_title: string;
@@ -72,6 +75,7 @@ export interface NoteSync {
 }
 
 export interface CreateNoteRequest {
+    workspace_id: string;
     parent_id?: string | null;
     type: NoteType;
     encrypted_title: string;
@@ -266,4 +270,131 @@ export interface NoteResponse {
 
 export interface NotesListResponse {
     data: Note[];
+}
+
+// ============================================
+// Manifest & Batch Diff Types (Efficient Sync)
+// ============================================
+
+/**
+ * Compact note entry for efficient sync comparison
+ */
+export interface ManifestEntry {
+    id: string;
+    content_hash: string;
+    version: number;
+    updated_at: string;
+    is_deleted: boolean;
+}
+
+/**
+ * Response from /sync/manifest endpoint
+ */
+export interface ManifestResponse {
+    notes: ManifestEntry[];
+    sync_time: string;
+}
+
+/**
+ * Local note info sent to server for comparison
+ */
+export interface LocalNoteInfo {
+    id: string;
+    content_hash: string;
+    version: number;
+}
+
+/**
+ * Request body for /sync/batch-diff endpoint
+ */
+export interface BatchDiffRequest {
+    workspace_id: string;
+    device_id: string;
+    local_notes: LocalNoteInfo[];
+}
+
+/**
+ * Conflict information from batch diff
+ */
+export interface ConflictInfo {
+    note_id: string;
+    local_hash: string;
+    server_hash: string;
+    local_version: number;
+    server_version: number;
+}
+
+/**
+ * Response from /sync/batch-diff endpoint
+ */
+export interface BatchDiffResponse {
+    to_download: NoteResponse[];  // Server has newer version
+    to_upload: string[];          // Client has newer version (note IDs)
+    to_delete: string[];          // Deleted on server (note IDs)
+    conflicts: ConflictInfo[];    // Need manual resolution
+    sync_time: string;
+}
+
+/**
+ * Result of sync verification
+ */
+export interface SyncVerificationResult {
+    synced: number;
+    pending: number;
+    conflicts: number;
+    total: number;
+    lastCheck: Date;
+}
+
+// ============================================
+// Workspace Types (Multi-Workspace Support)
+// ============================================
+
+/**
+ * Remote workspace that can be synced with a local directory
+ */
+export interface Workspace {
+    id: string;
+    name: string;
+    created_at: string;
+    updated_at: string;
+    is_default: boolean;
+    note_count?: number;
+}
+
+/**
+ * Request to create a new workspace
+ */
+export interface CreateWorkspaceRequest {
+    name: string;
+}
+
+/**
+ * Request to update a workspace
+ */
+export interface UpdateWorkspaceRequest {
+    name?: string;
+}
+
+/**
+ * Link between local directory path and remote workspace
+ */
+export interface WorkspaceLink {
+    localPath: string;
+    remoteWorkspaceId: string;
+    linkedAt: string;
+}
+
+/**
+ * Response from workspace list endpoint
+ */
+export interface WorkspacesListResponse {
+    data: Workspace[];
+}
+
+/**
+ * Response from workspace get endpoint
+ */
+export interface WorkspaceResponse {
+    data: Workspace;
 }

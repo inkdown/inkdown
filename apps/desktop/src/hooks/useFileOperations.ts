@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import type { App } from '@inkdown/core';
+import { invoke } from '@tauri-apps/api/core';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { ask, open as openDialog } from '@tauri-apps/plugin-dialog';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
@@ -8,7 +9,7 @@ import type { SelectedItem } from '../components/FileExplorer';
 export const useFileOperations = (
     app: App,
     rootPath: string,
-    onFileSelect?: (filePath: string, openInNewTab?: boolean) => Promise<void>
+    _onFileSelect?: (filePath: string, openInNewTab?: boolean) => Promise<void>
 ) => {
     const handleCreateFile = useCallback(
         async (parentPath: string) => {
@@ -35,7 +36,15 @@ export const useFileOperations = (
     const handleRename = useCallback(
         async (oldPath: string, newName: string) => {
             try {
-                await app.fileSystemManager.rename(oldPath, newName);
+                const file = app.workspace.getAbstractFileByPath(oldPath);
+                if (!file) {
+                    throw new Error(`File not found: ${oldPath}`);
+                }
+
+                const parentDir = oldPath.substring(0, oldPath.lastIndexOf('/'));
+                const newPath = `${parentDir}/${newName}`;
+
+                await app.fileManager.renameFile(file, newPath);
             } catch (error) {
                 console.error('Failed to rename:', error);
             }
@@ -44,9 +53,13 @@ export const useFileOperations = (
     );
 
     const handleDelete = useCallback(
-        async (path: string, isDirectory: boolean) => {
+        async (path: string, _isDirectory: boolean) => {
             try {
-                await app.fileSystemManager.delete(path, isDirectory);
+                const file = app.workspace.getAbstractFileByPath(path);
+                if (!file) {
+                    throw new Error(`File not found in workspace cache: ${path}`);
+                }
+                await app.fileManager.trashFile(file);
             } catch (error) {
                 console.error('Failed to delete:', error);
             }
@@ -57,8 +70,14 @@ export const useFileOperations = (
     const handleDeleteMultiple = useCallback(
         async (paths: Array<{ path: string; isDirectory: boolean }>) => {
             try {
-                for (const { path, isDirectory } of paths) {
-                    await app.fileSystemManager.delete(path, isDirectory);
+                for (const { path } of paths) {
+                    const file = app.workspace.getAbstractFileByPath(path);
+                    if (file) {
+                        await app.fileManager.trashFile(file);
+                    } else {
+                        console.warn(`File not found in workspace cache: ${path}`);
+                        await app.fileSystemManager.delete(path);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to delete multiple items:', error);
@@ -119,12 +138,15 @@ export const useFileOperations = (
     const handleCopyFile = useCallback(
         async (sourcePath: string) => {
             try {
-                await app.fileSystemManager.copyFile(sourcePath);
+                // Get the parent directory of the source file
+                const parentDir = sourcePath.substring(0, sourcePath.lastIndexOf('/'));
+                // The backend copy_file command will automatically handle naming with " (copy)" suffix
+                await invoke('copy_file', { source: sourcePath, destination: parentDir });
             } catch (error) {
                 console.error('Failed to copy file:', error);
             }
         },
-        [app]
+        []
     );
 
     const handleCopyPath = useCallback(async (path: string) => {
@@ -158,17 +180,17 @@ export const useFileOperations = (
     const handleToggleSyncIgnore = useCallback(
         async (path: string, ignored: boolean) => {
             try {
-                if (!app.syncService) {
-                    console.warn('Sync service not available');
+                if (!app.syncManager) {
+                    console.warn('Sync manager not available');
                     return;
                 }
 
                 const relativePath = path.replace(rootPath + '/', '');
 
                 if (ignored) {
-                    await app.syncService.addIgnorePattern(relativePath);
+                    await app.syncManager.selectiveSync.addIgnorePath(relativePath);
                 } else {
-                    await app.syncService.removeIgnorePattern(relativePath);
+                    await app.syncManager.selectiveSync.removeIgnorePath(relativePath);
                 }
             } catch (error) {
                 console.error('Failed to toggle sync ignore:', error);

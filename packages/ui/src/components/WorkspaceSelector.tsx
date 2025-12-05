@@ -37,7 +37,6 @@ export const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
         <div className="workspace-selector">
             <div className="workspace-selector-content">
                 <div className="workspace-selector-logo">
-                    <span className="logo-icon">📝</span>
                     <h1>Inkdown</h1>
                 </div>
 

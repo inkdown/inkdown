@@ -7,7 +7,8 @@ import { EncryptionManager } from '../sync/EncryptionManager';
 import { SyncEngine } from '../sync/SyncEngine';
 import { SelectiveSyncManager } from '../sync/SelectiveSyncManager';
 import { TokenRefreshService } from '../sync/TokenRefreshService';
-import type { SyncConfig } from '../sync/types';
+import { WorkspaceSyncService } from '../sync/WorkspaceSyncService';
+import type { SyncConfig, Workspace, WorkspaceLink } from '../sync/types';
 import { loggers } from '../utils/logger';
 
 /**
@@ -30,6 +31,9 @@ export class SyncManager {
     private baseURL: string = 'http://localhost:8080/api/v1';
     private wsURL: string = 'ws://localhost:8080/ws';
     private enabled: boolean = false;
+    private workspaceSyncService: WorkspaceSyncService | null = null;
+    private currentWorkspaceId: string | undefined;
+    private workspaceLinks: WorkspaceLink[] = [];
 
     constructor(app: App) {
         this.app = app;
@@ -63,6 +67,10 @@ export class SyncManager {
         this.deviceManager.setBaseURL(this.baseURL);
         this.encryptionManager.setBaseURL(this.baseURL);
 
+        // Load workspace links from config
+        this.workspaceLinks = config?.workspaceLinks || [];
+        this.currentWorkspaceId = config?.currentWorkspaceId;
+
         // Initialize selective sync
         await this.selectiveSync.init();
 
@@ -90,7 +98,12 @@ export class SyncManager {
 
                 if (restored) {
                     this.logger.info('Encryption session restored, starting sync');
-                    await this.startSync();
+                    this.logger.info('Encryption session restored, starting sync');
+                    // Do not await startSync here, as it waits for workspace to be ready
+                    // and workspace readiness depends on App.init completing and UI mounting
+                    this.startSync().catch(err => {
+                        this.logger.error('Failed to start sync in background:', err);
+                    });
                 } else {
                     this.logger.warn('Encryption session not found - user needs to unlock');
                     // Emit event for UI to show unlock prompt
@@ -170,10 +183,21 @@ export class SyncManager {
             return;
         }
 
+        // Wait for workspace to be ready (files loaded)
+        if (!this.app.workspace.getRoot()) {
+            this.logger.info('Waiting for workspace to be ready...');
+            await new Promise<void>((resolve) => {
+                const ref = this.app.workspace.on('workspace:ready', () => {
+                    ref.unload();
+                    resolve();
+                });
+            });
+            this.logger.info('Workspace ready, proceeding with sync start');
+        }
+
         try {
             this.logger.info('Creating SyncEngine...');
 
-            // Create and configure sync engine
             this.syncEngine = new SyncEngine(
                 this.app,
                 this.baseURL,
@@ -181,6 +205,11 @@ export class SyncManager {
                 this.encryptionManager,
                 this.localDatabase
             );
+
+            // Set workspace ID if available
+            if (this.currentWorkspaceId) {
+                this.syncEngine.setWorkspaceId(this.currentWorkspaceId);
+            }
 
             // Inject TokenRefreshService into WebSocketService
             this.syncEngine.getWebSocketService().setTokenRefreshService(this.tokenRefresh);
@@ -310,6 +339,14 @@ export class SyncManager {
         this.encryptionManager.clearStorage(); // Clear keys from storage
         this.stopSync();
 
+        // Clear local sync data to prevent orphaned mappings on next login
+        try {
+            await this.localDatabase.clear();
+            this.logger.info('Local sync data cleared');
+        } catch (error) {
+            this.logger.warn('Failed to clear local sync data:', error);
+        }
+
         if (disableSync) {
             await this.disable();
         }
@@ -361,5 +398,125 @@ export class SyncManager {
      */
     isEnabled(): boolean {
         return this.enabled;
+    }
+
+    // ============================================
+    // Workspace Management
+    // ============================================
+
+    /**
+     * Get WorkspaceSyncService instance (creates if needed)
+     */
+    getWorkspaceSyncService(): WorkspaceSyncService {
+        if (!this.workspaceSyncService) {
+            this.workspaceSyncService = new WorkspaceSyncService(
+                this.baseURL,
+                () => Promise.resolve(this.tokenManager.getToken())
+            );
+        }
+        return this.workspaceSyncService;
+    }
+
+    /**
+     * List all workspaces for the user
+     */
+    async listWorkspaces(): Promise<Workspace[]> {
+        return this.getWorkspaceSyncService().listWorkspaces();
+    }
+
+    /**
+     * Create a new workspace
+     */
+    async createWorkspace(name: string): Promise<Workspace> {
+        return this.getWorkspaceSyncService().createWorkspace({ name });
+    }
+
+    /**
+     * Link a local directory path to a remote workspace
+     */
+    async linkWorkspace(localPath: string, workspaceId: string): Promise<void> {
+        // Remove any existing link for this path
+        this.workspaceLinks = this.workspaceLinks.filter(l => l.localPath !== localPath);
+
+        // Add new link
+        const link: WorkspaceLink = {
+            localPath,
+            remoteWorkspaceId: workspaceId,
+            linkedAt: new Date().toISOString(),
+        };
+        this.workspaceLinks.push(link);
+
+        // Set as current workspace
+        this.currentWorkspaceId = workspaceId;
+
+        // Save to config
+        await this.saveConfig({
+            workspaceLinks: this.workspaceLinks,
+            currentWorkspaceId: workspaceId,
+        });
+
+        // Update sync engine if running
+        if (this.syncEngine) {
+            this.syncEngine.setWorkspaceId(workspaceId);
+        }
+
+        this.logger.info(`Linked workspace ${workspaceId} to ${localPath}`);
+    }
+
+    /**
+     * Unlink a local directory from its workspace
+     */
+    async unlinkWorkspace(localPath: string): Promise<void> {
+        this.workspaceLinks = this.workspaceLinks.filter(l => l.localPath !== localPath);
+
+        // If we unlinked the current workspace, clear it
+        const link = this.workspaceLinks.find(l => l.localPath === localPath);
+        if (link?.remoteWorkspaceId === this.currentWorkspaceId) {
+            this.currentWorkspaceId = undefined;
+            if (this.syncEngine) {
+                this.syncEngine.setWorkspaceId(undefined);
+            }
+        }
+
+        await this.saveConfig({
+            workspaceLinks: this.workspaceLinks,
+            currentWorkspaceId: this.currentWorkspaceId,
+        });
+
+        this.logger.info(`Unlinked workspace from ${localPath}`);
+    }
+
+    /**
+     * Get the workspace link for a local path
+     */
+    getWorkspaceLink(localPath: string): WorkspaceLink | undefined {
+        return this.workspaceLinks.find(l => l.localPath === localPath);
+    }
+
+    /**
+     * Get all workspace links
+     */
+    getWorkspaceLinks(): WorkspaceLink[] {
+        return [...this.workspaceLinks];
+    }
+
+    /**
+     * Get current workspace ID
+     */
+    getCurrentWorkspaceId(): string | undefined {
+        return this.currentWorkspaceId;
+    }
+
+    /**
+     * Set the current workspace ID
+     */
+    async setCurrentWorkspaceId(workspaceId: string | undefined): Promise<void> {
+        this.currentWorkspaceId = workspaceId;
+
+        await this.saveConfig({ currentWorkspaceId: workspaceId });
+
+        if (this.syncEngine) {
+            this.syncEngine.setWorkspaceId(workspaceId);
+        }
     }
 }

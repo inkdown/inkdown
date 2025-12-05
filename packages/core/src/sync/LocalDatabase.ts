@@ -1,12 +1,33 @@
 import { loggers } from '../utils/logger';
 
 /**
+ * In-memory cache for fast lookups
+ */
+interface LocalDatabaseCache {
+    pathToNoteId: Map<string, string>;
+    noteIdToPath: Map<string, string>;
+    contentHashes: Map<string, string>;
+    versions: Map<string, number>;
+    initialized: boolean;
+}
+
+/**
  * LocalDatabase - Manages IndexedDB for offline note caching
+ * Uses in-memory cache for fast lookups
  */
 export class LocalDatabase {
     private logger = loggers.sync || loggers.app;
     private db?: IDBDatabase;
     private dbName: string = 'inkdown-sync-cache';
+    
+    // In-memory cache for fast lookups
+    private cache: LocalDatabaseCache = {
+        pathToNoteId: new Map(),
+        noteIdToPath: new Map(),
+        contentHashes: new Map(),
+        versions: new Map(),
+        initialized: false,
+    };
 
     /**
      * Initialize local database
@@ -26,9 +47,17 @@ export class LocalDatabase {
                 reject(request.error);
             };
 
-            request.onsuccess = () => {
+            request.onsuccess = async () => {
                 this.db = request.result;
                 this.logger.debug(`IndexedDB opened: ${this.dbName}`);
+                
+                // Load cache from DB
+                try {
+                    await this.loadCache();
+                } catch (error) {
+                    this.logger.error('Failed to load cache:', error);
+                }
+                
                 resolve();
             };
 
@@ -69,6 +98,96 @@ export class LocalDatabase {
                 }
             };
         });
+    }
+
+    /**
+     * Load all mappings and versions into memory cache
+     */
+    private async loadCache(): Promise<void> {
+        this.logger.debug('Loading cache from IndexedDB...');
+        
+        // Clear existing cache
+        this.cache.pathToNoteId.clear();
+        this.cache.noteIdToPath.clear();
+        this.cache.contentHashes.clear();
+        this.cache.versions.clear();
+
+        // Load path mappings
+        const mappings = await this.getAllPathMappings();
+        for (const mapping of mappings) {
+            this.cache.pathToNoteId.set(mapping.path, mapping.noteId);
+            this.cache.noteIdToPath.set(mapping.noteId, mapping.path);
+        }
+
+        // Load versions and hashes
+        const versions = await this.getAllNoteVersions();
+        for (const v of versions) {
+            if (v.version !== undefined) {
+                this.cache.versions.set(v.path, v.version);
+            }
+            if (v.contentHash) {
+                this.cache.contentHashes.set(v.path, v.contentHash);
+            }
+        }
+
+        this.cache.initialized = true;
+        this.logger.debug(`Cache loaded: ${this.cache.pathToNoteId.size} mappings, ${this.cache.versions.size} versions`);
+    }
+
+    /**
+     * Invalidate and reload cache
+     */
+    async reloadCache(): Promise<void> {
+        await this.loadCache();
+    }
+
+    /**
+     * Get noteId by path (uses cache for speed)
+     */
+    async getNoteIdByPath(path: string): Promise<string | undefined> {
+        // Try cache first
+        if (this.cache.initialized) {
+            return this.cache.pathToNoteId.get(path);
+        }
+        // Fallback to DB
+        const mapping = await this.getPathMapping(path);
+        return mapping?.noteId;
+    }
+
+    /**
+     * Get path by noteId (uses cache for speed)
+     */
+    async getPathByNoteId(noteId: string): Promise<string | undefined> {
+        // Try cache first
+        if (this.cache.initialized) {
+            return this.cache.noteIdToPath.get(noteId);
+        }
+        // Fallback to DB query
+        return this._getPathByNoteIdFromDB(noteId);
+    }
+
+    /**
+     * Get content hash by path (uses cache for speed)
+     */
+    async getContentHash(path: string): Promise<string | undefined> {
+        // Try cache first
+        if (this.cache.initialized) {
+            return this.cache.contentHashes.get(path);
+        }
+        // Fallback to DB
+        return this._getContentHashFromDB(path);
+    }
+
+    /**
+     * Get note version by path (uses cache for speed)
+     */
+    async getNoteVersion(path: string): Promise<number | undefined> {
+        // Try cache first
+        if (this.cache.initialized) {
+            return this.cache.versions.get(path);
+        }
+        // Fallback to DB
+        return this._getNoteVersionFromDB(path);
     }
 
     /**
@@ -210,7 +329,7 @@ export class LocalDatabase {
     // ========== Path Mapping Methods ==========
 
     /**
-     * Save path to noteId mapping
+     * Save path to noteId mapping (updates cache)
      */
     async savePathMapping(path: string, noteId: string): Promise<void> {
         if (!this.db) throw new Error('Database not initialized');
@@ -221,6 +340,9 @@ export class LocalDatabase {
             const request = store.put({ path, noteId, updatedAt: new Date() });
 
             request.onsuccess = () => {
+                // Update cache
+                this.cache.pathToNoteId.set(path, noteId);
+                this.cache.noteIdToPath.set(noteId, path);
                 this.logger.debug(`Path mapping saved: ${path} → ${noteId}`);
                 resolve();
             };
@@ -232,7 +354,7 @@ export class LocalDatabase {
     }
 
     /**
-     * Get path mapping by path
+     * Get path mapping by path (internal, for DB access)
      */
     async getPathMapping(path: string): Promise<{ path: string; noteId: string } | undefined> {
         if (!this.db) throw new Error('Database not initialized');
@@ -251,17 +373,9 @@ export class LocalDatabase {
     }
 
     /**
-     * Get noteId by path
+     * Get path by noteId from DB (internal fallback)
      */
-    async getNoteIdByPath(path: string): Promise<string | undefined> {
-        const mapping = await this.getPathMapping(path);
-        return mapping?.noteId;
-    }
-
-    /**
-     * Get path by noteId
-     */
-    async getPathByNoteId(noteId: string): Promise<string | undefined> {
+    private async _getPathByNoteIdFromDB(noteId: string): Promise<string | undefined> {
         if (!this.db) throw new Error('Database not initialized');
 
         return new Promise((resolve, reject) => {
@@ -279,10 +393,13 @@ export class LocalDatabase {
     }
 
     /**
-     * Delete path mapping
+     * Delete path mapping (updates cache)
      */
     async deletePathMapping(path: string): Promise<void> {
         if (!this.db) throw new Error('Database not initialized');
+
+        // Get noteId before deleting to update cache
+        const noteId = this.cache.pathToNoteId.get(path);
 
         return new Promise((resolve, reject) => {
             const transaction = this.db!.transaction(['pathMappings'], 'readwrite');
@@ -290,6 +407,11 @@ export class LocalDatabase {
             const request = store.delete(path);
 
             request.onsuccess = () => {
+                // Update cache
+                this.cache.pathToNoteId.delete(path);
+                if (noteId) {
+                    this.cache.noteIdToPath.delete(noteId);
+                }
                 this.logger.debug(`Path mapping deleted: ${path}`);
                 resolve();
             };
@@ -325,7 +447,7 @@ export class LocalDatabase {
     // ========== Note Version Methods ==========
 
     /**
-     * Save note version with content hash
+     * Save note version with content hash (updates cache)
      */
     async saveNoteVersion(path: string, version: number, noteId: string, contentHash?: string): Promise<void> {
         if (!this.db) throw new Error('Database not initialized');
@@ -336,6 +458,11 @@ export class LocalDatabase {
             const request = store.put({ path, version, noteId, contentHash, updatedAt: new Date() });
 
             request.onsuccess = () => {
+                // Update cache
+                this.cache.versions.set(path, version);
+                if (contentHash) {
+                    this.cache.contentHashes.set(path, contentHash);
+                }
                 this.logger.debug(`Note version saved: ${path} → v${version}`);
                 resolve();
             };
@@ -347,9 +474,9 @@ export class LocalDatabase {
     }
 
     /**
-     * Get note version by path
+     * Get note version from DB (internal fallback)
      */
-    async getNoteVersion(path: string): Promise<number | undefined> {
+    private async _getNoteVersionFromDB(path: string): Promise<number | undefined> {
         if (!this.db) throw new Error('Database not initialized');
 
         return new Promise((resolve, reject) => {
@@ -366,9 +493,9 @@ export class LocalDatabase {
     }
 
     /**
-     * Get content hash by path
+     * Get content hash from DB (internal fallback)
      */
-    async getContentHash(path: string): Promise<string | undefined> {
+    private async _getContentHashFromDB(path: string): Promise<string | undefined> {
         if (!this.db) throw new Error('Database not initialized');
 
         return new Promise((resolve, reject) => {
@@ -385,7 +512,7 @@ export class LocalDatabase {
     }
 
     /**
-     * Update content hash for a path
+     * Update content hash for a path (updates cache)
      */
     async updateContentHash(path: string, contentHash: string): Promise<void> {
         if (!this.db) throw new Error('Database not initialized');
@@ -402,6 +529,8 @@ export class LocalDatabase {
                     existing.updatedAt = new Date();
                     const putRequest = store.put(existing);
                     putRequest.onsuccess = () => {
+                        // Update cache
+                        this.cache.contentHashes.set(path, contentHash);
                         this.logger.debug(`Content hash updated for: ${path}`);
                         resolve();
                     };
@@ -410,6 +539,8 @@ export class LocalDatabase {
                     // Create new entry if doesn't exist
                     const putRequest = store.put({ path, contentHash, updatedAt: new Date() });
                     putRequest.onsuccess = () => {
+                        // Update cache
+                        this.cache.contentHashes.set(path, contentHash);
                         this.logger.debug(`Content hash created for: ${path}`);
                         resolve();
                     };
@@ -421,7 +552,7 @@ export class LocalDatabase {
     }
 
     /**
-     * Delete note version
+     * Delete note version (updates cache)
      */
     async deleteNoteVersion(path: string): Promise<void> {
         if (!this.db) throw new Error('Database not initialized');
@@ -432,6 +563,9 @@ export class LocalDatabase {
             const request = store.delete(path);
 
             request.onsuccess = () => {
+                // Update cache
+                this.cache.versions.delete(path);
+                this.cache.contentHashes.delete(path);
                 this.logger.debug(`Note version deleted: ${path}`);
                 resolve();
             };
@@ -445,7 +579,7 @@ export class LocalDatabase {
     /**
      * Get all note versions
      */
-    async getAllNoteVersions(): Promise<{ path: string; version: number; noteId: string }[]> {
+    async getAllNoteVersions(): Promise<{ path: string; version: number; noteId: string; contentHash?: string }[]> {
         if (!this.db) throw new Error('Database not initialized');
 
         return new Promise((resolve, reject) => {

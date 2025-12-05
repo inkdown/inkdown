@@ -110,6 +110,8 @@ export { LocalDatabase } from './sync/LocalDatabase';
 export { TokenManager } from './sync/TokenManager';
 export { DeviceManager } from './sync/DeviceManager';
 export { EncryptionManager } from './sync/EncryptionManager';
+export { getSyncLogger, SyncLogger } from './sync/SyncLogger';
+export type { SyncLogEntry, SyncConflict, SyncLogLevel } from './sync/SyncLogger';
 export * from './sync/types';
 export type {
     MarkdownCodeBlockProcessor,

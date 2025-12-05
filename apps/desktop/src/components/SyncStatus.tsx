@@ -1,17 +1,65 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { CloudOff, RefreshCw, AlertCircle, Check } from 'lucide-react';
+import { SyncStatusIndicator, type SyncStatus as UISyncStatus } from '@inkdown/ui';
+import type { SyncVerificationResult } from '@inkdown/core/sync/types';
+import { SyncModal } from './SyncModal';
 import './SyncStatus.css';
 
-type SyncState = 'idle' | 'syncing' | 'error' | 'offline';
+type SyncState = UISyncStatus;
 
-export const SyncStatus: React.FC = () => {
+export const SyncStatus: React.FC<{ onLinkWorkspace?: () => void }> = ({ onLinkWorkspace }) => {
     const app = useApp();
     const [status, setStatus] = useState<SyncState>('idle');
     const [pendingCount, setPendingCount] = useState(0);
+    const [conflictCount, setConflictCount] = useState(0);
     const [lastError, setLastError] = useState<string | null>(null);
     const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
     const [isEnabled, setIsEnabled] = useState(false);
+    const [verificationResult, setVerificationResult] = useState<SyncVerificationResult | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [workspaceName, setWorkspaceName] = useState<string | undefined>(undefined);
+
+    const loadWorkspaceName = useCallback(async () => {
+        const currentId = app.syncManager.getCurrentWorkspaceId();
+        if (currentId) {
+            try {
+                const workspaces = await app.syncManager.listWorkspaces();
+                const current = workspaces.find(w => w.id === currentId);
+                if (current) {
+                    setWorkspaceName(current.name);
+                }
+            } catch (error) {
+                console.error('Failed to load workspace name:', error);
+            }
+        } else {
+            setWorkspaceName(undefined);
+        }
+    }, [app.syncManager]);
+
+    // Verify sync status periodically
+    const verifySyncStatus = useCallback(async () => {
+        const syncEngine = app.syncManager.syncEngine;
+        if (!syncEngine || !app.syncManager.isEnabled()) return;
+
+        try {
+            const result = await syncEngine.verifySyncStatus();
+            setVerificationResult(result);
+
+            // Update status based on verification
+            if (result.conflicts > 0) {
+                setStatus('conflict');
+                setConflictCount(result.conflicts);
+            } else if (result.pending > 0) {
+                setStatus('pending');
+                setPendingCount(result.pending);
+            } else {
+                setStatus('idle');
+                setPendingCount(0);
+            }
+        } catch (error) {
+            console.error('Failed to verify sync status:', error);
+        }
+    }, [app]);
 
     useEffect(() => {
         // Initial state check
@@ -21,7 +69,6 @@ export const SyncStatus: React.FC = () => {
 
             if (enabled && app.syncManager.syncEngine) {
                 setPendingCount(app.syncManager.syncEngine.getPendingChanges());
-                // Use isSyncing() for active sync status, not isActive() which means engine is running
                 setStatus(app.syncManager.syncEngine.isSyncing() ? 'syncing' : 'idle');
 
                 // Load last sync time
@@ -29,8 +76,12 @@ export const SyncStatus: React.FC = () => {
                 if (config?.lastSyncTime) {
                     setLastSyncTime(new Date(config.lastSyncTime));
                 }
+
+                loadWorkspaceName();
+
+                // Verify actual sync status after initial check
+                setTimeout(() => verifySyncStatus(), 2000);
             } else if (enabled) {
-                // Sync is enabled but engine not started yet
                 setStatus('idle');
             } else {
                 setStatus('offline');
@@ -49,9 +100,9 @@ export const SyncStatus: React.FC = () => {
         };
 
         const handleSyncComplete = () => {
-            setStatus('idle');
             setLastSyncTime(new Date());
-            setPendingCount(0);
+            // Verify status after sync completes to ensure accuracy
+            verifySyncStatus();
         };
 
         const handleSyncError = (error: any) => {
@@ -62,16 +113,27 @@ export const SyncStatus: React.FC = () => {
 
         const handleCountChange = (count: number) => {
             setPendingCount(count);
+            if (count > 0 && status !== 'syncing') {
+                setStatus('pending');
+            }
         };
 
         const handleRemoteUpdate = () => {
             setLastSyncTime(new Date());
         };
 
-        // Register event listeners
-        // Note: We need to cast to any because EventRef type might not be perfectly inferred here
-        // or we can just use the internal 'on' method if exposed properly.
-        // Since SyncEngine extends Events, we can use .on()
+        const handleStatusVerified = (result: SyncVerificationResult) => {
+            setVerificationResult(result);
+            if (result.conflicts > 0) {
+                setStatus('conflict');
+                setConflictCount(result.conflicts);
+            } else if (result.pending > 0 && status !== 'syncing') {
+                setStatus('pending');
+                setPendingCount(result.pending);
+            } else if (status !== 'syncing') {
+                setStatus('idle');
+            }
+        };
 
         const refs = [
             syncEngine.on('sync-start', handleSyncStart),
@@ -79,47 +141,66 @@ export const SyncStatus: React.FC = () => {
             syncEngine.on('sync-error', handleSyncError),
             syncEngine.on('sync-count-change', handleCountChange),
             syncEngine.on('sync-remote-update', handleRemoteUpdate),
+            syncEngine.on('sync-status-verified', handleStatusVerified),
         ];
+
+        // Periodic verification (every 2 minutes)
+        const verifyInterval = setInterval(verifySyncStatus, 120000);
 
         return () => {
             refs.forEach(ref => ref.unload());
+            clearInterval(verifyInterval);
         };
-    }, [app, app.syncManager.syncEngine, app.syncManager.isEnabled()]); // Re-run if sync engine instance changes
+    }, [app, app.syncManager.syncEngine, app.syncManager.isEnabled(), verifySyncStatus, loadWorkspaceName]);
+
+    // Handle click to open sync modal
+    const handleClick = () => {
+        if (!app.syncManager.isEnabled()) return;
+
+        const currentId = app.syncManager.getCurrentWorkspaceId();
+        if (!currentId && onLinkWorkspace) {
+            onLinkWorkspace();
+            return;
+        }
+
+        setIsModalOpen(true);
+    };
 
     if (!isEnabled) {
         return null;
     }
 
-    let icon;
     let tooltip = '';
-    let className = 'sync-status-item';
-
-    switch (status) {
-        case 'syncing':
-            icon = <RefreshCw size={14} className="spin" />;
-            tooltip = `Syncing... ${pendingCount > 0 ? `${pendingCount} files pending` : ''}`;
-            className += ' syncing';
-            break;
-        case 'error':
-            icon = <AlertCircle size={14} className="error" />;
-            tooltip = `Sync Error: ${lastError}`;
-            className += ' error';
-            break;
-        case 'offline':
-            icon = <CloudOff size={14} />;
-            tooltip = 'Sync Offline';
-            break;
-        case 'idle':
-        default:
-            icon = pendingCount > 0 ? <RefreshCw size={14} /> : <Check size={14} />;
-            tooltip = `Synced. Last sync: ${lastSyncTime ? lastSyncTime.toLocaleTimeString() : 'Never'}`;
-            break;
+    if (status === 'synced' || status === 'idle') {
+        tooltip = verificationResult
+            ? `Synced (${verificationResult.synced}/${verificationResult.total}). Last: ${lastSyncTime ? lastSyncTime.toLocaleTimeString() : 'Never'}`
+            : `Synced. Last: ${lastSyncTime ? lastSyncTime.toLocaleTimeString() : 'Never'}`;
+    } else if (status === 'syncing') {
+        tooltip = `Syncing... ${pendingCount > 0 ? `${pendingCount} files pending` : ''}`;
+    } else if (status === 'error') {
+        tooltip = `Sync Error: ${lastError}`;
+    } else if (status === 'offline') {
+        tooltip = 'Sync Offline';
+    } else if (status === 'conflict') {
+        tooltip = `${conflictCount} conflict${conflictCount > 1 ? 's' : ''} detected. Click to sync.`;
+    } else if (status === 'pending') {
+        tooltip = `${pendingCount} file${pendingCount > 1 ? 's' : ''} pending sync. Click to sync now.`;
     }
 
     return (
-        <div className={className} title={tooltip}>
-            {icon}
-            {pendingCount > 0 && <span className="sync-count">{pendingCount}</span>}
-        </div>
+        <>
+            <SyncStatusIndicator
+                status={status}
+                workspaceName={workspaceName}
+                pendingCount={pendingCount || conflictCount}
+                errorMessage={lastError || undefined}
+                tooltip={tooltip}
+                onClick={handleClick}
+            />
+            <SyncModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+            />
+        </>
     );
 };

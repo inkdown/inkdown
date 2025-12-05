@@ -5,7 +5,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import './components/EditorModes.css';
 import type { FileNode, RecentWorkspace, SyncConfig } from '@inkdown/core';
 import { OnboardingScreen, WorkspaceHistory } from '@inkdown/core';
-import { EmptyTabView, Preview, StatusBar, TabBar, WorkspaceSelector } from '@inkdown/ui';
+import { EmptyTabView, Preview, StatusBar, TabBar, WorkspaceSelector, WorkspaceLinkDialog, type WorkspaceLinkWorkspace } from '@inkdown/ui';
 import { invoke } from '@tauri-apps/api/core';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { ask, open as openDialog } from '@tauri-apps/plugin-dialog';
@@ -57,6 +57,7 @@ const AppContent: React.FC = () => {
     const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
     const [bookmarkFilePath, setBookmarkFilePath] = useState<string>('');
     const [bookmarkFileName, setBookmarkFileName] = useState<string>('');
+    const [showWorkspaceLinkDialog, setShowWorkspaceLinkDialog] = useState(false);
 
     // Initialize font settings from config/localStorage
     useFontSettings();
@@ -336,6 +337,36 @@ const AppContent: React.FC = () => {
         config.workspace = path;
         config.expandedDirs = [];
         await app.configManager.saveConfig('app', config);
+
+        // Check if we need to link a remote workspace
+        if (app.syncManager.isEnabled()) {
+            const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
+            if (!currentWorkspaceId) {
+                setShowWorkspaceLinkDialog(true);
+            }
+        }
+    };
+
+    const handleLinkWorkspace = async (workspaceId: string) => {
+        if (!rootPath) return;
+        try {
+            await app.syncManager.linkWorkspace(rootPath, workspaceId);
+            // Force refresh of sync status if needed
+        } catch (error) {
+            console.error('Failed to link workspace:', error);
+            alert('Failed to link workspace. Please try again.');
+        }
+    };
+
+    const handleCreateAndLinkWorkspace = async (name: string) => {
+        if (!rootPath) return;
+        try {
+            const newWorkspace = await app.syncManager.createWorkspace(name);
+            await app.syncManager.linkWorkspace(rootPath, newWorkspace.id);
+        } catch (error) {
+            console.error('Failed to create and link workspace:', error);
+            alert('Failed to create workspace. Please try again.');
+        }
     };
 
     // Handler to persist expanded directories
@@ -419,9 +450,9 @@ const AppContent: React.FC = () => {
         const handleFileCreate = () => {
             loadFiles();
         };
-        
+
         app.workspace.on('file-create', handleFileCreate);
-        
+
         return () => {
             app.workspace.off('file-create', handleFileCreate);
         };
@@ -470,9 +501,15 @@ const AppContent: React.FC = () => {
     const handleRename = useCallback(
         async (oldPath: string, newName: string) => {
             try {
+                const file = app.workspace.getAbstractFileByPath(oldPath);
+                if (!file) {
+                    throw new Error(`File not found: ${oldPath}`);
+                }
+
                 const parentDir = oldPath.substring(0, oldPath.lastIndexOf('/'));
                 const newPath = `${parentDir}/${newName}`;
-                await app.fileSystemManager.rename(oldPath, newPath);
+
+                await app.fileManager.renameFile(file, newPath);
                 await loadFiles();
             } catch (error) {
                 console.error('Failed to rename:', error);
@@ -484,7 +521,13 @@ const AppContent: React.FC = () => {
     const handleDelete = useCallback(
         async (path: string, _isDirectory: boolean) => {
             try {
-                await app.fileSystemManager.delete(path);
+                const file = app.workspace.getAbstractFileByPath(path);
+                if (file) {
+                    await app.fileManager.trashFile(file);
+                } else {
+                    // Fallback if not in cache
+                    await app.fileSystemManager.delete(path);
+                }
                 await loadFiles();
             } catch (error) {
                 console.error('Failed to delete:', error);
@@ -497,7 +540,14 @@ const AppContent: React.FC = () => {
         async (paths: Array<{ path: string; isDirectory: boolean }>) => {
             try {
                 // Delete in parallel for better performance
-                await Promise.all(paths.map((item) => app.fileSystemManager.delete(item.path)));
+                await Promise.all(paths.map(async (item) => {
+                    const file = app.workspace.getAbstractFileByPath(item.path);
+                    if (file) {
+                        await app.fileManager.trashFile(file);
+                    } else {
+                        await app.fileSystemManager.delete(item.path);
+                    }
+                }));
                 await loadFiles();
             } catch (error) {
                 console.error('Failed to delete multiple:', error);
@@ -724,195 +774,205 @@ const AppContent: React.FC = () => {
             <div className="app-workspace">
                 {/* File Explorer with integrated resize and toggle */}
                 <FileExplorer
-                rootPath={rootPath}
-                activeFilePath={activeTab?.filePath || null}
-                files={files}
-                initialExpandedDirs={expandedDirs}
-                onExpandedDirsChange={handleExpandedDirsChange}
-                onFileSelect={handleFileSelect}
-                onCreateFile={handleCreateFile}
-                onCreateDirectory={handleCreateDirectory}
-                onRename={handleRename}
-                onDelete={handleDelete}
-                onDeleteMultiple={handleDeleteMultiple}
-                onMove={handleMove}
-                onMoveMultiple={handleMoveMultiple}
-                onCopyFile={handleCopyFile}
-                onMoveTo={handleMoveTo}
-                onCopyPath={handleCopyPath}
-                onCopyRelativePath={handleCopyRelativePath}
-                onShowInExplorer={handleShowInExplorer}
-                onRequestDeleteConfirm={handleRequestDeleteConfirm}
-                onRefresh={loadFiles}
-                isCollapsed={sidebarCollapsed}
-                width={sidebarWidth}
-                onCollapsedChange={handleSidebarCollapsedChange}
-                onWidthChange={handleSidebarWidthChange}
-                onOpenSettings={() => setSettingsOpen(true)}
-                initialSortOrder={sortOrder}
-                onSortOrderChange={handleSortOrderChange}
-                recentWorkspaces={recentWorkspaces}
-                onWorkspaceSwitch={handleWorkspaceSelected}
-                onBrowseWorkspace={handleOpenDialog}
-                onToggleSyncIgnore={handleToggleSyncIgnore}
-                isSyncIgnored={isSyncIgnored}
-                useCustomTitleBar={useCustomTitleBar}
-            />
-
-            {/* Main Content */}
-            <div className="app-main">
-                {/* Tab Bar */}
-                <TabBar
-                    tabs={tabs}
-                    activeTabId={activeTabId}
-                    onTabSelect={setActiveTab}
-                    onTabClose={closeTab}
-                    sidebarCollapsed={sidebarCollapsed}
-                    onToggleSidebar={() => handleSidebarCollapsedChange(!sidebarCollapsed)}
-                    windowControls={
-                        useCustomTitleBar ? (
-                            <WindowControls
-                                workspaceName={rootPath ? rootPath.split('/').pop() || 'Inkdown' : 'Inkdown'}
-                            />
-                        ) : undefined
-                    }
+                    rootPath={rootPath}
+                    activeFilePath={activeTab?.filePath || null}
+                    files={files}
+                    initialExpandedDirs={expandedDirs}
+                    onExpandedDirsChange={handleExpandedDirsChange}
+                    onFileSelect={handleFileSelect}
+                    onCreateFile={handleCreateFile}
+                    onCreateDirectory={handleCreateDirectory}
+                    onRename={handleRename}
+                    onDelete={handleDelete}
+                    onDeleteMultiple={handleDeleteMultiple}
+                    onMove={handleMove}
+                    onMoveMultiple={handleMoveMultiple}
+                    onCopyFile={handleCopyFile}
+                    onMoveTo={handleMoveTo}
+                    onCopyPath={handleCopyPath}
+                    onCopyRelativePath={handleCopyRelativePath}
+                    onShowInExplorer={handleShowInExplorer}
+                    onRequestDeleteConfirm={handleRequestDeleteConfirm}
+                    onRefresh={loadFiles}
+                    isCollapsed={sidebarCollapsed}
+                    width={sidebarWidth}
+                    onCollapsedChange={handleSidebarCollapsedChange}
+                    onWidthChange={handleSidebarWidthChange}
+                    onOpenSettings={() => setSettingsOpen(true)}
+                    initialSortOrder={sortOrder}
+                    onSortOrderChange={handleSortOrderChange}
+                    recentWorkspaces={recentWorkspaces}
+                    onWorkspaceSwitch={handleWorkspaceSelected}
+                    onBrowseWorkspace={handleOpenDialog}
+                    onToggleSyncIgnore={handleToggleSyncIgnore}
+                    isSyncIgnored={isSyncIgnored}
+                    useCustomTitleBar={useCustomTitleBar}
                 />
 
-                {/* Toolbar replaced by EditorOptionsMenu */}
-                {activeTab?.filePath && (
-                    <div style={{ position: 'relative' }}>
-                        <EditorOptionsMenu
-                            viewMode={viewMode}
-                            onViewModeChange={handleViewModeChange}
-                            onRename={() => {
-                                if (activeTab?.filePath) {
-                                    const currentName = activeTab.filePath.split('/').pop() || '';
-
-                                    const modal = new RenameModal(app, currentName, (newName) => {
-                                        handleRename(activeTab.filePath!, newName);
-                                    });
-                                    modal.open();
-                                }
-                            }}
-                            onAddBookmark={() => {
-                                if (activeTab?.filePath) {
-                                    const fileName = activeTab.filePath.split('/').pop() || '';
-                                    setBookmarkFilePath(activeTab.filePath);
-                                    setBookmarkFileName(fileName);
-                                    setBookmarkModalOpen(true);
-                                }
-                            }}
-                            onDelete={() => {
-                                if (activeTab?.filePath) {
-                                    handleRequestDeleteConfirm([
-                                        {
-                                            path: activeTab.filePath,
-                                            name: activeTab.filePath.split('/').pop() || '',
-                                            isDirectory: false,
-                                        },
-                                    ]).then((confirmed) => {
-                                        if (confirmed) {
-                                            handleDelete(activeTab.filePath!, false);
-                                            // Close the tab
-                                            closeTab(activeTabId!);
-                                        }
-                                    });
-                                }
-                            }}
-                            onMoveTo={() => {
-                                if (activeTab?.filePath) {
-                                    handleMoveTo(activeTab.filePath);
-                                }
-                            }}
-                            onMakeCopy={() => {
-                                if (activeTab?.filePath) {
-                                    handleCopyFile(activeTab.filePath);
-                                }
-                            }}
-                            onCopyPath={() => {
-                                if (activeTab?.filePath) {
-                                    handleCopyPath(activeTab.filePath);
-                                }
-                            }}
-                            onCopyRelativePath={() => {
-                                if (activeTab?.filePath) {
-                                    handleCopyRelativePath(activeTab.filePath);
-                                }
-                            }}
-                            onShowInExplorer={() => {
-                                if (activeTab?.filePath) {
-                                    handleShowInExplorer(activeTab.filePath);
-                                }
-                            }}
-                        />
-                    </div>
-                )}
-
-                {/* Content Area */}
-                <div className="app-content">
-                    {activeTab && !activeTab.filePath ? (
-                        <EmptyTabView
-                            onNewFile={() => openTab('', { openInNewTab: true })}
-                            onOpenFile={() => handleFileSelect('', true)}
-                        />
-                    ) : isLoadingContent ? (
-                        <div className="app-loading-content">
-                            <div className="loading-spinner" />
-                        </div>
-                    ) : (
-                        <div className={`editor-preview-container mode-${viewMode}`}>
-                            {(viewMode === 'editor' || viewMode === 'side-by-side') && (
-                                <Editor
-                                    key={activeTab?.filePath || 'no-tab'}
-                                    content={editorContent}
-                                    onChange={handleEditorChange}
-                                    filePath={activeTab?.filePath}
-                                    editorRegistry={app.editorRegistry}
-                                    shortcutManager={app.shortcutManager}
-                                    app={app}
-                                    editorConfig={editorConfig}
+                {/* Main Content */}
+                <div className="app-main">
+                    {/* Tab Bar */}
+                    <TabBar
+                        tabs={tabs}
+                        activeTabId={activeTabId}
+                        onTabSelect={setActiveTab}
+                        onTabClose={closeTab}
+                        sidebarCollapsed={sidebarCollapsed}
+                        onToggleSidebar={() => handleSidebarCollapsedChange(!sidebarCollapsed)}
+                        windowControls={
+                            useCustomTitleBar ? (
+                                <WindowControls
+                                    workspaceName={rootPath ? rootPath.split('/').pop() || 'Inkdown' : 'Inkdown'}
                                 />
-                            )}
+                            ) : undefined
+                        }
+                    />
 
-                            {(viewMode === 'preview' || viewMode === 'side-by-side') && (
-                                <Preview
-                                    content={editorContent}
-                                    mode={
-                                        viewMode === 'side-by-side'
-                                            ? 'side-by-side'
-                                            : 'preview-only'
+                    {/* Toolbar replaced by EditorOptionsMenu */}
+                    {activeTab?.filePath && (
+                        <div style={{ position: 'relative' }}>
+                            <EditorOptionsMenu
+                                viewMode={viewMode}
+                                onViewModeChange={handleViewModeChange}
+                                onRename={() => {
+                                    if (activeTab?.filePath) {
+                                        const currentName = activeTab.filePath.split('/').pop() || '';
+
+                                        const modal = new RenameModal(app, currentName, (newName) => {
+                                            handleRename(activeTab.filePath!, newName);
+                                        });
+                                        modal.open();
                                     }
-                                />
-                            )}
+                                }}
+                                onAddBookmark={() => {
+                                    if (activeTab?.filePath) {
+                                        const fileName = activeTab.filePath.split('/').pop() || '';
+                                        setBookmarkFilePath(activeTab.filePath);
+                                        setBookmarkFileName(fileName);
+                                        setBookmarkModalOpen(true);
+                                    }
+                                }}
+                                onDelete={() => {
+                                    if (activeTab?.filePath) {
+                                        handleRequestDeleteConfirm([
+                                            {
+                                                path: activeTab.filePath,
+                                                name: activeTab.filePath.split('/').pop() || '',
+                                                isDirectory: false,
+                                            },
+                                        ]).then((confirmed) => {
+                                            if (confirmed) {
+                                                handleDelete(activeTab.filePath!, false);
+                                                // Close the tab
+                                                closeTab(activeTabId!);
+                                            }
+                                        });
+                                    }
+                                }}
+                                onMoveTo={() => {
+                                    if (activeTab?.filePath) {
+                                        handleMoveTo(activeTab.filePath);
+                                    }
+                                }}
+                                onMakeCopy={() => {
+                                    if (activeTab?.filePath) {
+                                        handleCopyFile(activeTab.filePath);
+                                    }
+                                }}
+                                onCopyPath={() => {
+                                    if (activeTab?.filePath) {
+                                        handleCopyPath(activeTab.filePath);
+                                    }
+                                }}
+                                onCopyRelativePath={() => {
+                                    if (activeTab?.filePath) {
+                                        handleCopyRelativePath(activeTab.filePath);
+                                    }
+                                }}
+                                onShowInExplorer={() => {
+                                    if (activeTab?.filePath) {
+                                        handleShowInExplorer(activeTab.filePath);
+                                    }
+                                }}
+                            />
                         </div>
                     )}
+
+                    {/* Content Area */}
+                    <div className="app-content">
+                        {activeTab && !activeTab.filePath ? (
+                            <EmptyTabView
+                                onNewFile={() => openTab('', { openInNewTab: true })}
+                                onOpenFile={() => handleFileSelect('', true)}
+                            />
+                        ) : isLoadingContent ? (
+                            <div className="app-loading-content">
+                                <div className="loading-spinner" />
+                            </div>
+                        ) : (
+                            <div className={`editor-preview-container mode-${viewMode}`}>
+                                {(viewMode === 'editor' || viewMode === 'side-by-side') && (
+                                    <Editor
+                                        key={activeTab?.filePath || 'no-tab'}
+                                        content={editorContent}
+                                        onChange={handleEditorChange}
+                                        filePath={activeTab?.filePath}
+                                        editorRegistry={app.editorRegistry}
+                                        shortcutManager={app.shortcutManager}
+                                        app={app}
+                                        editorConfig={editorConfig}
+                                    />
+                                )}
+
+                                {(viewMode === 'preview' || viewMode === 'side-by-side') && (
+                                    <Preview
+                                        content={editorContent}
+                                        mode={
+                                            viewMode === 'side-by-side'
+                                                ? 'side-by-side'
+                                                : 'preview-only'
+                                        }
+                                    />
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Status Bar */}
+                    <StatusBar
+                        items={{
+                            left: [],
+                            right: [],
+                        }}
+                    >
+                        <SyncStatus onLinkWorkspace={() => setShowWorkspaceLinkDialog(true)} />
+                    </StatusBar>
                 </div>
 
-                {/* Status Bar */}
-                <StatusBar
-                    items={{
-                        left: [],
-                        right: [],
-                    }}
-                >
-                    <SyncStatus />
-                </StatusBar>
-            </div>
+                {/* Settings Modal */}
+                <SettingsModal
+                    isOpen={settingsOpen}
+                    onClose={() => setSettingsOpen(false)}
+                    onShowLoginScreen={() => setNeedsOnboarding(true)}
+                />
 
-            {/* Settings Modal */}
-            <SettingsModal 
-                isOpen={settingsOpen} 
-                onClose={() => setSettingsOpen(false)}
-                onShowLoginScreen={() => setNeedsOnboarding(true)}
-            />
+                {/* Bookmark Modal */}
+                <BookmarkGroupModal
+                    isOpen={bookmarkModalOpen}
+                    onClose={() => setBookmarkModalOpen(false)}
+                    filePath={bookmarkFilePath}
+                    fileName={bookmarkFileName}
+                />
 
-            {/* Bookmark Modal */}
-            <BookmarkGroupModal
-                isOpen={bookmarkModalOpen}
-                onClose={() => setBookmarkModalOpen(false)}
-                filePath={bookmarkFilePath}
-                fileName={bookmarkFileName}
-            />
+                {/* Workspace Link Dialog */}
+                <WorkspaceLinkDialog
+                    isOpen={showWorkspaceLinkDialog}
+                    onClose={() => setShowWorkspaceLinkDialog(false)}
+                    onLink={handleLinkWorkspace}
+                    onCreateAndLink={handleCreateAndLinkWorkspace}
+                    listWorkspaces={() => app.syncManager.listWorkspaces()}
+                    localPath={rootPath}
+                />
             </div>
         </div>
     );
