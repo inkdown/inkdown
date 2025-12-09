@@ -1,3 +1,4 @@
+import type { App } from '@inkdown/core';
 import { syntaxTree } from '@codemirror/language';
 import { type Range, RangeSetBuilder } from '@codemirror/state';
 import {
@@ -11,12 +12,22 @@ import { createBoldDecorations } from './decorations/bold';
 import { createCalloutDecorations } from './decorations/callout';
 import { createCodeBlockDecorations } from './decorations/codeblock';
 import { createHeadingDecorations } from './decorations/heading';
+import { createHighlightDecorations } from './decorations/highlight';
 import { createImageDecorations } from './decorations/image';
 import { createItalicDecorations } from './decorations/italic';
 import { createLinkDecorations } from './decorations/link';
 import { createListDecorations } from './decorations/list';
 import { createQuoteDecorations } from './decorations/quote';
 import { createStrikethroughDecorations } from './decorations/strikethrough';
+import { createTableDecorations } from './decorations/table';
+import { createTableNavigationKeymap } from './keymaps/table-navigation';
+import './styles/codeblock.css';
+import './styles/list.css';
+import './styles/image.css';
+import './styles/highlight.css';
+import './styles/quote.css';
+import './styles/callout.css';
+import './styles/table.css';
 
 /**
  * Live Preview Extension for CodeMirror
@@ -25,8 +36,12 @@ import { createStrikethroughDecorations } from './decorations/strikethrough';
 
 class LivePreviewView {
     decorations: DecorationSet;
+    filePath?: string;
+    app: App;
 
-    constructor(view: EditorView) {
+    constructor(view: EditorView, app: App, filePath?: string) {
+        this.app = app;
+        this.filePath = filePath;
         this.decorations = this.buildDecorations(view);
     }
 
@@ -61,8 +76,10 @@ class LivePreviewView {
                 allDecorations.push(...createCalloutDecorations(view, lineFrom, lineTo));
                 allDecorations.push(...createBoldDecorations(view, lineFrom, lineTo));
                 allDecorations.push(...createItalicDecorations(view, lineFrom, lineTo));
+                allDecorations.push(...createHighlightDecorations(view, lineFrom, lineTo));
                 allDecorations.push(...createQuoteDecorations(view, lineFrom, lineTo));
-                allDecorations.push(...createImageDecorations(view, lineFrom, lineTo));
+                allDecorations.push(...createTableDecorations(view, lineFrom, lineTo));
+                allDecorations.push(...createImageDecorations(view, lineFrom, lineTo, this.app, this.filePath));
 
                 // Move to next line
                 if (line.to >= to) break;
@@ -72,12 +89,23 @@ class LivePreviewView {
 
         // Sort decorations by position (required by RangeSetBuilder)
         allDecorations.sort((a, b) => {
+            // Primary sort: by from position
             if (a.from !== b.from) return a.from - b.from;
-            // If same position, sort by decoration type (line decorations first)
-            const aIsLine = (a.value.spec as any).class === 'cm-codeblock-line';
-            const bIsLine = (b.value.spec as any).class === 'cm-codeblock-line';
-            if (aIsLine && !bIsLine) return -1;
-            if (!aIsLine && bIsLine) return 1;
+            
+            // Secondary sort: by to position
+            if (a.to !== b.to) return a.to - b.to;
+            
+            // Tertiary sort: line decorations before inline decorations
+            const aIsLine = !!(a.value.spec as any).attributes?.class?.includes('cm-');
+            const bIsLine = !!(b.value.spec as any).attributes?.class?.includes('cm-');
+            
+            // Check if it's a Decoration.line() (has class in spec)
+            const aHasLineClass = (a.value as any).map?.constructor?.name === 'LineDecoration';
+            const bHasLineClass = (b.value as any).map?.constructor?.name === 'LineDecoration';
+            
+            if (aHasLineClass && !bHasLineClass) return -1;
+            if (!aHasLineClass && bHasLineClass) return 1;
+            
             return 0;
         });
 
@@ -124,8 +152,11 @@ class LivePreviewView {
 /**
  * Create the live preview extension
  */
-export function livePreviewExtension() {
-    return ViewPlugin.fromClass(LivePreviewView, {
-        decorations: (v) => v.decorations,
-    });
+export function livePreviewExtension(app: App, filePath?: string) {
+    return [
+        ViewPlugin.define((view) => new LivePreviewView(view, app, filePath), {
+            decorations: (v) => v.decorations,
+        }),
+        createTableNavigationKeymap(),
+    ];
 }

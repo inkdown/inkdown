@@ -1,7 +1,7 @@
 import { history, historyKeymap } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
-import { EditorState } from '@codemirror/state';
+import { EditorState, type Extension } from '@codemirror/state';
 import { drawSelection, EditorView, keymap } from '@codemirror/view';
 import type React from 'react';
 import { useEffect, useRef } from 'react';
@@ -13,6 +13,7 @@ import {
     type EditorConfig,
     getReconfigurationEffects,
 } from './extensions';
+import { createHighlightSyntaxExtension } from './extensions/highlight-syntax';
 import { createCustomizableKeymap, createMarkdownKeymap, createSuggestionKeymap } from './keymaps';
 import { createInkdownTheme } from './theme/codemirror-theme';
 
@@ -34,6 +35,8 @@ export interface EditorProps {
     app: App;
     /** Editor configuration for extensions */
     editorConfig?: EditorConfig;
+    /** Additional CodeMirror extensions (e.g., from plugins) */
+    additionalExtensions?: Extension[];
 }
 
 /**
@@ -61,6 +64,7 @@ export const Editor: React.FC<EditorProps> = ({
     shortcutManager,
     app,
     editorConfig = DEFAULT_EDITOR_CONFIG,
+    additionalExtensions = [],
 }) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
@@ -102,42 +106,48 @@ export const Editor: React.FC<EditorProps> = ({
             viewRef.current = null;
         }
 
+        // Prepare extensions array
+        const baseExtensions = [
+            markdown({ codeLanguages: languages }),
+            createInkdownTheme(), // Theme now uses CSS variables automatically
+            createHighlightSyntaxExtension(), // Highlight ==text== syntax
+            // Line wrapping to prevent horizontal overflow
+            EditorView.lineWrapping,
+            // Draw selection is required for vim visual mode to render correctly
+            drawSelection(),
+            // History for undo/redo (Ctrl+Z, Ctrl+Shift+Z)
+            history(),
+            keymap.of(historyKeymap),
+            // Configurable extensions (auto-pair brackets, tab indentation, etc.)
+            ...createConfigurableExtensions(editorConfig),
+            // Image paste extension (saves pasted images and inserts markdown)
+            createImagePasteExtension(app),
+            // Use customizable keymap if ShortcutManager is provided, otherwise use defaults
+            shortcutManager
+                ? createCustomizableKeymap(shortcutManager)
+                : createMarkdownKeymap(),
+            createSuggestionKeymap(app),
+            // Additional extensions from plugins
+            ...additionalExtensions,
+            EditorView.updateListener.of((update) => {
+                if (update.docChanged && !isExternalUpdate.current) {
+                    onChangeRef.current(update.state.doc.toString());
+                }
+                // Notify app of editor updates (for plugins like EditorSuggest)
+                app.handleEditorUpdate(update);
+            }),
+            // Additional theme customization
+            EditorView.theme({
+                '&': {
+                    height: '100%',
+                },
+            }),
+        ];
+
         // Create editor state with syntax highlighting and keymaps
         const startState = EditorState.create({
             doc: content,
-            extensions: [
-                markdown({ codeLanguages: languages }),
-                createInkdownTheme(), // Theme now uses CSS variables automatically
-                // Line wrapping to prevent horizontal overflow
-                EditorView.lineWrapping,
-                // Draw selection is required for vim visual mode to render correctly
-                drawSelection(),
-                // History for undo/redo (Ctrl+Z, Ctrl+Shift+Z)
-                history(),
-                keymap.of(historyKeymap),
-                // Configurable extensions (auto-pair brackets, tab indentation, etc.)
-                ...createConfigurableExtensions(editorConfig),
-                // Image paste extension (saves pasted images and inserts markdown)
-                createImagePasteExtension(app),
-                // Use customizable keymap if ShortcutManager is provided, otherwise use defaults
-                shortcutManager
-                    ? createCustomizableKeymap(shortcutManager)
-                    : createMarkdownKeymap(),
-                createSuggestionKeymap(app),
-                EditorView.updateListener.of((update) => {
-                    if (update.docChanged && !isExternalUpdate.current) {
-                        onChangeRef.current(update.state.doc.toString());
-                    }
-                    // Notify app of editor updates (for plugins like EditorSuggest)
-                    app.handleEditorUpdate(update);
-                }),
-                // Additional theme customization
-                EditorView.theme({
-                    '&': {
-                        height: '100%',
-                    },
-                }),
-            ],
+            extensions: baseExtensions,
         });
 
         // Create editor view
@@ -158,7 +168,7 @@ export const Editor: React.FC<EditorProps> = ({
             view.destroy();
             viewRef.current = null;
         };
-    }, [editorRegistry, shortcutManager]); // Theme changes handled via CSS variables
+    }, [editorRegistry, shortcutManager, additionalExtensions]); // Theme changes handled via CSS variables
 
     // Update content when it changes externally (e.g., switching tabs)
     useEffect(() => {

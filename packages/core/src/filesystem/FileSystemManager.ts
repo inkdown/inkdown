@@ -50,6 +50,19 @@ export class FileSystemManager {
     }
 
     /**
+     * Read binary file content
+     * Returns Uint8Array for binary files like images
+     */
+    async readFileBinary(path: string): Promise<Uint8Array> {
+        try {
+            return await native.fs.readFileBinary(path);
+        } catch (error) {
+            console.error('Failed to read binary file:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Write file content
      */
     async writeFile(path: string, content: string): Promise<void> {

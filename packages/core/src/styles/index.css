@@ -8,6 +8,9 @@
 /* Base reset and global styles */
 @import './base.css';
 
+/* CodeMirror editor styles */
+@import './editor.css';
+
 /* Icon system styles */
 @import './icons.css';
 

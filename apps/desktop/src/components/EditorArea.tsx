@@ -1,10 +1,12 @@
 import React, { memo, useCallback } from 'react';
 import { Editor } from '@inkdown/core';
-import type { EditorConfig } from '@inkdown/core';
-import { EmptyTabView, Preview } from '@inkdown/ui';
+import type { App, EditorConfig } from '@inkdown/core';
+import { EmptyTabView } from '@inkdown/ui';
+import { Preview } from './Preview';
 import type { ViewMode } from '../hooks/useEditorSettings';
 
 interface EditorAreaProps {
+    app: App;
     activeTab: { id: string; filePath: string; label: string } | null;
     editorContent: string;
     viewMode: ViewMode;
@@ -15,6 +17,7 @@ interface EditorAreaProps {
 }
 
 export const EditorArea = memo<EditorAreaProps>(({
+    app,
     activeTab,
     editorContent,
     viewMode,
@@ -53,7 +56,7 @@ export const EditorArea = memo<EditorAreaProps>(({
     return (
         <div className="editor-area" onKeyDown={handleKeyDown}>
             {viewMode === 'preview' ? (
-                <Preview content={editorContent} />
+                <Preview content={editorContent} mode="preview-only" app={app} currentFilePath={activeTab.filePath} />
             ) : viewMode === 'editor' ? (
                 <Editor
                     key={activeTab.id}
@@ -72,7 +75,7 @@ export const EditorArea = memo<EditorAreaProps>(({
                         />
                     </div>
                     <div className="preview-pane">
-                        <Preview content={editorContent} />
+                        <Preview content={editorContent} mode="side-by-side" app={app} currentFilePath={activeTab.filePath} />
                     </div>
                 </div>
             )}

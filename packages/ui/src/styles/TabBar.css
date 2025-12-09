@@ -27,6 +27,11 @@
     -webkit-app-region: no-drag;
 }
 
+/* When macOS traffic lights are present and sidebar is collapsed, add left margin */
+.tab-bar-toggle.with-traffic-lights {
+    margin-left: 80px;
+}
+
 .tab-bar-toggle:hover {
     background: var(--bg-primary);
     color: var(--text-primary);

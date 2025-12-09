@@ -55,7 +55,6 @@
     overflow-wrap: break-word !important;
     word-wrap: break-word !important;
     white-space: pre-wrap !important;
-    /* ✅ REMOVED: padding: 24px - moved to line padding instead */
     caret-color: var(--editor-cursor) !important;
     color: var(--editor-fg) !important;
 }

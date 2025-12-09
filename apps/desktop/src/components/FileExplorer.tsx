@@ -20,7 +20,6 @@ import {
     FolderOpen,
     FolderPlus,
     Link,
-    PanelLeft,
     Plus,
     Settings,
     Trash2,
@@ -1699,18 +1698,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                         title="Drag to resize, double-click to reset"
                     />
                 </>
-            )}
-
-            {/* Toggle button - only visible when collapsed */}
-            {isCollapsed && (
-                <button
-                    className="file-explorer-toggle collapsed"
-                    onClick={handleToggle}
-                    title="Show sidebar (Ctrl+\\)"
-                    aria-label="Show sidebar"
-                >
-                    <PanelLeft size={16} />
-                </button>
             )}
 
             {/* Bookmark Modal */}

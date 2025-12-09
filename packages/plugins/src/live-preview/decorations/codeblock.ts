@@ -2,10 +2,11 @@ import type { Range } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
 import { Decoration } from '@codemirror/view';
 import { LanguageBadgeWidget } from '../widgets/LanguageBadge';
+import { CopyButtonWidget } from '../widgets/CopyButton';
 
 /**
  * Create decorations for code block markers (```lang ... ```)
- * Hides the backticks and adds language badge when cursor is not inside
+ * Hides the backticks and adds language badge or copy button based on cursor position
  *
  * Note: Background styling is handled by livePreviewExtension
  */
@@ -28,15 +29,47 @@ export function createCodeBlockDecorations(
         const lineNumber = view.state.doc.lineAt(from).number;
         const blockEnd = findCodeBlockEnd(view, lineNumber);
 
-        if (blockEnd && !isSelectionInRange(view, from, blockEnd)) {
-            // Hide opening backticks
-            decorations.push(Decoration.replace({}).range(matchFrom, matchTo));
+        if (blockEnd) {
+            const cursorInBlock = isSelectionInRange(view, from, blockEnd);
+            const blockId = `codeblock-${from}`;
 
-            // Add language badge at the end of the line
-            // The badge will be positioned via CSS
+            if (!cursorInBlock) {
+                // Hide opening backticks when cursor is not in block
+                decorations.push(Decoration.replace({}).range(matchFrom, matchTo));
+            }
+
+            // Extract code content (excluding fence markers)
+            const codeStartLine = view.state.doc.lineAt(from).number + 1;
+            const codeEndLine = view.state.doc.lineAt(blockEnd).number - 1;
+            let codeContent = '';
+
+            for (let lineNum = codeStartLine; lineNum <= codeEndLine; lineNum++) {
+                const line = view.state.doc.line(lineNum);
+                codeContent += line.text + (lineNum < codeEndLine ? '\n' : '');
+            }
+
+            // Add attributes to widgets to track block and cursor state
+            const widgetAttrs = {
+                'data-block-id': blockId,
+                'data-cursor-in-block': cursorInBlock.toString(),
+            };
+
+            // Always add both language badge AND copy button
+            // CSS will handle showing/hiding based on hover and cursor position
+            
+            // Add language badge
             decorations.push(
                 Decoration.widget({
-                    widget: new LanguageBadgeWidget(language),
+                    widget: new LanguageBadgeWidget(language, widgetAttrs),
+                    side: 1,
+                    block: false,
+                }).range(matchTo),
+            );
+            
+            // Add copy button
+            decorations.push(
+                Decoration.widget({
+                    widget: new CopyButtonWidget(codeContent, widgetAttrs),
                     side: 1,
                     block: false,
                 }).range(matchTo),

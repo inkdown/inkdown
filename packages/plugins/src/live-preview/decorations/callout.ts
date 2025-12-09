@@ -3,8 +3,14 @@ import type { EditorView } from '@codemirror/view';
 import { Decoration, WidgetType } from '@codemirror/view';
 
 /**
- * Create decorations for callouts/alerts (> [!INFO] Title)
- * Styles the callout block and hides the markdown syntax
+ * Callout types supported (GitHub-compatible)
+ */
+type CalloutType = 'note' | 'tip' | 'important' | 'warning' | 'caution';
+
+/**
+ * Create decorations for callouts/alerts (> [!TYPE] Title)
+ * Supports GitHub-style callouts with proper multi-line handling
+ * Shows raw syntax when cursor is in the callout block
  */
 export function createCalloutDecorations(
     view: EditorView,
@@ -12,79 +18,132 @@ export function createCalloutDecorations(
     to: number,
 ): Range<Decoration>[] {
     const decorations: Range<Decoration>[] = [];
+    const doc = view.state.doc;
+    const text = doc.sliceString(from, to);
 
-    // We don't check shouldDecorate here because we want callouts to always look like callouts
-    // even when editing (except the header line might reveal syntax)
-
-    const text = view.state.doc.sliceString(from, to);
-
-    // Match callout header: > [!TYPE] Title
-    const calloutHeaderRegex = /^>\s*\[!(\w+)\](.*)$/;
+    // Match callout header: > [!TYPE] optional title
+    const calloutHeaderRegex = /^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(.*)$/i;
     const match = calloutHeaderRegex.exec(text);
 
-    if (match) {
-        const type = match[1].toLowerCase();
-        const title = match[2].trim();
+    if (!match) return decorations;
 
-        // Hide the entire header line and replace with a styled widget
+    const type = match[1].toLowerCase() as CalloutType;
+    const customTitle = match[2].trim();
+    const lineNumber = doc.lineAt(from).number;
+
+    // Find all continuation lines (lines starting with >)
+    const calloutLines: number[] = [lineNumber];
+    let nextLineNum = lineNumber + 1;
+    
+    // Find continuation lines for the entire callout block
+    while (nextLineNum <= doc.lines) {
+        const nextLine = doc.line(nextLineNum);
+        const nextText = doc.sliceString(nextLine.from, nextLine.to);
+        
+        if (!nextText.startsWith('>')) {
+            break;
+        }
+        
+        calloutLines.push(nextLineNum);
+        nextLineNum++;
+    }
+
+    // Check if cursor is anywhere in the callout block
+    let cursorInCallout = false;
+    const selection = view.state.selection.main;
+    
+    for (const lineNum of calloutLines) {
+        const line = doc.line(lineNum);
+        if (selection.from >= line.from && selection.from <= line.to) {
+            cursorInCallout = true;
+            break;
+        }
+    }
+
+    // If cursor is in the callout, don't apply decorations (show raw markdown)
+    if (cursorInCallout) {
+        return decorations;
+    }
+
+    const startLine = doc.line(lineNumber);
+
+    // Only decorate the header line when processing it
+    if (from === startLine.from) {
+        // Hide the header syntax and replace with styled widget
         decorations.push(
             Decoration.replace({
-                widget: new CalloutHeaderWidget(type, title),
-                block: true,
+                widget: new CalloutHeaderWidget(type, customTitle),
             }).range(from, to),
         );
-    } else if (text.startsWith('>')) {
-        // Check if this line is part of a callout block (continuation)
-        // This is a bit complex in line-by-line processing without state
-        // For now, we'll just style it as a quote if it's not a callout header
-        // The Quote decoration handles this, so we don't need to do anything here
-        // UNLESS we want to style callout content differently.
-        // For simplicity, we'll let the quote decoration handle standard > lines
+        
+        // Apply line decoration to mark this as a callout start
+        decorations.push(
+            Decoration.line({
+                class: `cm-callout-line cm-callout-${type}`,
+            }).range(from),
+        );
     }
 
     return decorations;
 }
 
+/**
+ * Widget for rendering the callout header
+ */
 class CalloutHeaderWidget extends WidgetType {
     constructor(
-        private type: string,
-        private title: string,
+        private type: CalloutType,
+        private customTitle: string,
     ) {
         super();
     }
 
     toDOM() {
-        const div = document.createDiv({ cls: `cm-callout cm-callout-${this.type}` });
+        const container = document.createElement('div');
+        container.className = `cm-callout-header cm-callout-header-${this.type}`;
 
-        div.createSpan({
-            cls: 'cm-callout-icon',
-            text: this.getIconForType(this.type),
-        });
+        // Icon
+        const icon = document.createElement('span');
+        icon.className = 'cm-callout-icon';
+        icon.textContent = this.getIcon(this.type);
+        container.appendChild(icon);
 
-        div.createSpan({
-            cls: 'cm-callout-title',
-            text: this.title || this.type.charAt(0).toUpperCase() + this.type.slice(1),
-        });
+        // Title
+        const title = document.createElement('span');
+        title.className = 'cm-callout-title';
+        title.textContent = this.customTitle || this.getDefaultTitle(this.type);
+        container.appendChild(title);
 
-        return div;
+        return container;
     }
 
-    getIconForType(type: string): string {
-        switch (type) {
-            case 'info':
-                return 'ℹ️';
-            case 'warning':
-                return '⚠️';
-            case 'error':
-                return '🚫';
-            case 'success':
-                return '✅';
-            case 'note':
-                return '📝';
-            case 'tip':
-                return '💡';
-            default:
-                return '📌';
-        }
+    private getIcon(type: CalloutType): string {
+        const icons: Record<CalloutType, string> = {
+            note: '📝',
+            tip: '💡',
+            important: '❗',
+            warning: '⚠️',
+            caution: '🚨',
+        };
+        return icons[type];
+    }
+
+    private getDefaultTitle(type: CalloutType): string {
+        const titles: Record<CalloutType, string> = {
+            note: 'Note',
+            tip: 'Tip',
+            important: 'Important',
+            warning: 'Warning',
+            caution: 'Caution',
+        };
+        return titles[type];
+    }
+
+    eq(other: CalloutHeaderWidget): boolean {
+        return this.type === other.type && this.customTitle === other.customTitle;
+    }
+
+    ignoreEvent(): boolean {
+        return false;
     }
 }

@@ -16,7 +16,7 @@ export function createInkdownTheme(): Extension {
             color: 'var(--editor-fg)',
             backgroundColor: 'var(--editor-bg)',
             fontSize: 'var(--font-size-editor, 16px)',
-            fontFamily: 'var(--font-family-editor, "Inter", sans-serif)',
+            fontFamily: 'var(--font-family)',
             lineHeight: 'var(--line-height-editor, 1.6)',
         },
         '.cm-content': {
@@ -123,11 +123,7 @@ export function createInkdownTheme(): Extension {
         // Text formatting
         { tag: t.emphasis, fontStyle: 'italic', color: 'var(--syntax-emphasis)' },
         { tag: t.strong, fontWeight: 'bold', color: 'var(--syntax-strong)' },
-        {
-            tag: t.strikethrough,
-            textDecoration: 'line-through',
-            color: 'var(--syntax-strikethrough)',
-        },
+        { tag: t.strikethrough, textDecoration: 'line-through', color: 'var(--syntax-strikethrough)' },
         { tag: t.link, color: 'var(--syntax-link)', textDecoration: 'underline' },
         { tag: t.url, color: 'var(--syntax-url)' },
 

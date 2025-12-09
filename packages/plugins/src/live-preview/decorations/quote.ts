@@ -5,7 +5,7 @@ import { shouldDecorate } from '../utils/selection';
 
 /**
  * Create decorations for blockquotes (> text)
- * Hides the > marker when cursor is not on the line
+ * Hides the > marker and applies quote styling with left border
  */
 export function createQuoteDecorations(
     view: EditorView,
@@ -27,9 +27,20 @@ export function createQuoteDecorations(
     if (match) {
         const matchFrom = from;
         const matchTo = from + match[0].length;
+        
+        // Count nesting level
+        const nestingLevel = (match[0].match(/>/g) || []).length;
+        const isNested = nestingLevel > 1;
 
         // Hide the quote markers
         decorations.push(Decoration.replace({}).range(matchFrom, matchTo));
+
+        // Apply quote styling to the entire line
+        decorations.push(
+            Decoration.line({
+                class: isNested ? 'cm-quote-line cm-quote-nested' : 'cm-quote-line',
+            }).range(from),
+        );
     }
 
     return decorations;

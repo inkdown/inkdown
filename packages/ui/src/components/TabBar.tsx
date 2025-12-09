@@ -53,6 +53,8 @@ export interface TabBarProps {
     sidebarCollapsed?: boolean;
     onToggleSidebar?: () => void;
     windowControls?: React.ReactNode;
+    /** Whether custom titlebar is enabled (macOS traffic lights) */
+    useCustomTitleBar?: boolean;
 }
 
 /**
@@ -66,12 +68,17 @@ export const TabBar: React.FC<TabBarProps> = ({
     sidebarCollapsed,
     onToggleSidebar,
     windowControls,
+    useCustomTitleBar,
 }) => {
+    // Detect macOS
+    const isMacOS = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
     return (
         <div className="tab-bar" data-tauri-drag-region>
             {onToggleSidebar && (
                 <button
-                    className="tab-bar-toggle"
+                    className={`tab-bar-toggle ${
+                        isMacOS && useCustomTitleBar && sidebarCollapsed ? 'with-traffic-lights' : ''
+                    }`}
                     onClick={onToggleSidebar}
                     title={sidebarCollapsed ? 'Show sidebar (Ctrl+\\)' : 'Hide sidebar (Ctrl+\\)'}
                 >

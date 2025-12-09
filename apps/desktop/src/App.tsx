@@ -1,11 +1,12 @@
 import type React from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import './components/EditorModes.css';
 import type { FileNode, RecentWorkspace, SyncConfig } from '@inkdown/core';
 import { OnboardingScreen, WorkspaceHistory } from '@inkdown/core';
-import { EmptyTabView, Preview, StatusBar, TabBar, WorkspaceSelector, WorkspaceLinkDialog } from '@inkdown/ui';
+import { EmptyTabView, StatusBar, TabBar, WorkspaceSelector, WorkspaceLinkDialog } from '@inkdown/ui';
+import { Preview } from './components/Preview';
 import { invoke } from '@tauri-apps/api/core';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { ask, open as openDialog } from '@tauri-apps/plugin-dialog';
@@ -26,6 +27,7 @@ import { RenameModal } from './components/RenameModal';
 import { SyncStatus } from './components/SyncStatus';
 import { WindowControls } from './components/WindowControls';
 import { BookmarkGroupModal } from './components/BookmarkGroupModal';
+import { livePreviewExtension } from '@inkdown/plugins';
 
 const DEFAULT_SIDEBAR_WIDTH = 250;
 
@@ -105,6 +107,18 @@ const AppContent: React.FC = () => {
 
     // Get active tab
     const activeTab = getActiveTab();
+
+    // Prepare editor extensions based on enabled plugins
+    const editorExtensions = useMemo(() => {
+        const extensions = [];
+        
+        // Add live preview extension if plugin is enabled
+        if (app.pluginManager.isPluginEnabled('live-preview')) {
+            extensions.push(livePreviewExtension(app, activeTab?.filePath));
+        }
+        
+        return extensions;
+    }, [app, activeTab?.filePath]);
 
     // Use EditorStateManager via hook for content management
     const {
@@ -872,6 +886,7 @@ const AppContent: React.FC = () => {
                         onTabClose={closeTab}
                         sidebarCollapsed={sidebarCollapsed}
                         onToggleSidebar={() => handleSidebarCollapsedChange(!sidebarCollapsed)}
+                        useCustomTitleBar={useCustomTitleBar}
                         windowControls={
                             useCustomTitleBar ? (
                                 <WindowControls
@@ -973,12 +988,15 @@ const AppContent: React.FC = () => {
                                         shortcutManager={app.shortcutManager}
                                         app={app}
                                         editorConfig={editorConfig}
+                                        additionalExtensions={editorExtensions}
                                     />
                                 )}
 
                                 {(viewMode === 'preview' || viewMode === 'side-by-side') && (
                                     <Preview
                                         content={editorContent}
+                                        app={app}
+                                        currentFilePath={activeTab?.filePath}
                                         mode={
                                             viewMode === 'side-by-side'
                                                 ? 'side-by-side'

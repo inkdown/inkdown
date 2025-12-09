@@ -47,3 +47,4 @@ export { TauriPlatform } from './TauriPlatform';
 export { TauriExport } from './TauriExport';
 export { TauriFont } from './TauriFont';
 export { TauriMenu } from './TauriMenu';
+export { TauriAsset } from './TauriAsset';

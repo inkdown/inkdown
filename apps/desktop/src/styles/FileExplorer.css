@@ -41,6 +41,8 @@
     position: relative !important;
     z-index: 100 !important;
     padding: 0 !important;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 /* When macOS traffic lights are present, add top padding for traffic lights row */
@@ -136,6 +138,7 @@
     overflow-x: hidden;
     overflow-y: auto;
     padding: 8px 0;
+    user-select: none;
 }
 
 .file-node {
@@ -152,6 +155,10 @@
     margin: 2px 8px;
     outline: none;
     cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .file-node-item:hover {
@@ -203,6 +210,7 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
+    pointer-events: none;
 }
 
 .file-node-name {
@@ -214,6 +222,9 @@
     flex: 1;
     cursor: default;
     user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
     pointer-events: none;
 }
 
@@ -375,42 +386,13 @@
     background: var(--color-primary);
 }
 
-/* Toggle button - only shown when sidebar is collapsed */
-.file-explorer-toggle {
-    position: absolute;
-    top: 16px;
-    left: 8px;
-    width: 32px;
-    height: 32px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    color: var(--text-secondary);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
-    z-index: 100;
-}
-
-.file-explorer-toggle:hover {
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    border-color: var(--color-primary);
-}
-
-.file-explorer-toggle:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--color-primary-alpha, rgba(124, 58, 237, 0.3));
-}
-
 .file-node-name-container {
     display: flex;
     align-items: center;
     gap: 6px;
     flex: 1;
     overflow: hidden;
+    pointer-events: none;
 }
 
 .file-node-badge {
@@ -446,13 +428,6 @@
 }
 
 /* Smooth icon rotation for folder expand/collapse */
-.file-node-icon {
-    font-size: 14px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-}
-
 .file-node-item.directory .file-node-icon svg {
     transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }

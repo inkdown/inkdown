@@ -116,6 +116,46 @@
    --cm-code-marker: #6e7781;
    --cm-emphasis-marker: #6e7781;
    --cm-strong-marker: #6e7781;
+   --cm-highlight-marker: #6e7781;
+   --cm-strikethrough-marker: #6e7781;
+   
+   /* Highlight Background */
+   --text-highlight-bg: rgba(255, 220, 0, 0.35);
+   --text-highlight-bg-active: rgba(255, 220, 0, 0.45);
+   
+   /* Callout/Alert Colors */
+   --callout-note-bg: rgba(9, 105, 218, 0.1);
+   --callout-note-border: #0969da;
+   --callout-note-title: #0969da;
+   --callout-note-icon: #0969da;
+   
+   --callout-tip-bg: rgba(26, 127, 55, 0.1);
+   --callout-tip-border: #1a7f37;
+   --callout-tip-title: #1a7f37;
+   --callout-tip-icon: #1a7f37;
+   
+   --callout-important-bg: rgba(130, 80, 223, 0.1);
+   --callout-important-border: #8250df;
+   --callout-important-title: #8250df;
+   --callout-important-icon: #8250df;
+   
+   --callout-warning-bg: rgba(154, 103, 0, 0.1);
+   --callout-warning-border: #9a6700;
+   --callout-warning-title: #9a6700;
+   --callout-warning-icon: #9a6700;
+   
+   --callout-caution-bg: rgba(207, 34, 46, 0.1);
+   --callout-caution-border: #cf222e;
+   --callout-caution-title: #cf222e;
+   --callout-caution-icon: #cf222e;
+   
+   /* Table Colors */
+   --table-bg: var(--bg-primary);
+   --table-header-bg: rgba(110, 119, 129, 0.1);
+   --table-header-text: var(--text-primary);
+   --table-cell-text: var(--text-primary);
+   --table-border: rgba(110, 119, 129, 0.3);
+   --table-row-hover: rgba(110, 119, 129, 0.05);
 
    /* ==========================================
        Code Inline & Quote Styling

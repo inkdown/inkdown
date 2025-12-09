@@ -1,22 +1,28 @@
+import type { App } from '@inkdown/core';
 import type React from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import { remarkCallout, remarkHighlight } from '@inkdown/plugins';
 import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/github-dark.css';
 import './Preview.css';
+import { MarkdownImage } from './MarkdownImage';
 
 export interface PreviewProps {
     content: string;
     mode: 'side-by-side' | 'preview-only';
+    app: App;
+    currentFilePath?: string;
 }
 
 /**
  * Preview Component - Renders markdown content with syntax highlighting and math
  */
-export const Preview: React.FC<PreviewProps> = ({ content, mode }) => {
+export const Preview: React.FC<PreviewProps> = ({ content, mode, app, currentFilePath }) => {
     const components: Components = {
         // Custom renderers for better styling
         h1: ({ ...props }) => <h1 className="preview-h1" {...props} />,
@@ -46,15 +52,25 @@ export const Preview: React.FC<PreviewProps> = ({ content, mode }) => {
         blockquote: ({ ...props }) => <blockquote className="preview-quote" {...props} />,
         a: ({ ...props }) => <a className="preview-link" {...props} />,
         table: ({ ...props }) => <table className="preview-table" {...props} />,
-        img: ({ ...props }) => <img className="preview-image" {...props} />,
+        img: ({ src, alt, title, ...props }) => (
+            <MarkdownImage
+                src={src}
+                alt={alt}
+                title={title}
+                app={app}
+                currentFilePath={currentFilePath}
+                className="preview-image"
+                {...props}
+            />
+        ),
     };
 
     return (
         <div className={`preview-container preview-${mode}`}>
             <div className="preview-content">
                 <ReactMarkdown
-                    remarkPlugins={[remarkGfm, remarkMath]}
-                    rehypePlugins={[rehypeKatex, rehypeHighlight]}
+                    remarkPlugins={[remarkGfm, remarkMath, remarkCallout, remarkHighlight]}
+                    rehypePlugins={[rehypeRaw, rehypeKatex, rehypeHighlight]}
                     components={components}
                 >
                     {content}

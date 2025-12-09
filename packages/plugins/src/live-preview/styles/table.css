@@ -1,0 +1,72 @@
+/**
+ * Table styling for Live Preview
+ */
+
+.cm-table-widget {
+    margin: 16px 0;
+    overflow-x: auto;
+    border-radius: var(--radius-md, 6px);
+}
+
+.cm-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--table-border, var(--border-color));
+    border-radius: var(--radius-md, 6px);
+    overflow: hidden;
+    background-color: var(--table-bg, var(--bg-primary));
+}
+
+.cm-table thead {
+    background-color: var(--table-header-bg, var(--bg-secondary));
+}
+
+.cm-table th {
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--table-header-text, var(--text-primary));
+    border-bottom: 2px solid var(--table-border, var(--border-color));
+    border-right: 1px solid var(--table-border, var(--border-color));
+}
+
+.cm-table th:last-child {
+    border-right: none;
+}
+
+.cm-table td {
+    padding: 8px 12px;
+    color: var(--table-cell-text, var(--text-primary));
+    border-bottom: 1px solid var(--table-border, var(--border-color));
+    border-right: 1px solid var(--table-border, var(--border-color));
+}
+
+.cm-table td:last-child {
+    border-right: none;
+}
+
+.cm-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.cm-table tbody tr:hover {
+    background-color: var(--table-row-hover, var(--bg-hover));
+}
+
+/* Smooth transitions */
+.cm-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .cm-table-widget {
+        margin: 12px 0;
+    }
+    
+    .cm-table th,
+    .cm-table td {
+        padding: 6px 8px;
+        font-size: 0.9em;
+    }
+}

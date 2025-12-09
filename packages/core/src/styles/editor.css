@@ -1,0 +1,20 @@
+/**
+ * CodeMirror Editor Specific Styles
+ * Additional styling for markdown elements in the editor
+ */
+
+/* Strikethrough marker styling */
+.cm-strikethrough {
+    text-decoration: line-through;
+    color: var(--syntax-strikethrough);
+}
+
+/* Style for == markers in raw markdown when not in Live Preview */
+.cm-content:not(.cm-livePreview) {
+    /* This selector targets the raw editor content */
+}
+
+/* Add visual hint for == syntax in raw editor */
+.cm-line:has-text("==") {
+    /* Browsers that support :has-text would show hints */
+}

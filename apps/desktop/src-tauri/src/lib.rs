@@ -435,6 +435,27 @@ fn read_file(path: String) -> Result<String, String> {
         .map_err(|e| format!("Failed to read file: {}", e))
 }
 
+/// Read binary file content (returns base64 encoded)
+#[tauri::command]
+fn read_file_binary(path: String) -> Result<String, String> {
+    use base64::{Engine as _, engine::general_purpose};
+    
+    let file_path = PathBuf::from(&path);
+    
+    if !file_path.exists() {
+        return Err(format!("File does not exist: {}", path));
+    }
+    
+    if !file_path.is_file() {
+        return Err(format!("Path is not a file: {}", path));
+    }
+    
+    let bytes = fs::read(&file_path)
+        .map_err(|e| format!("Failed to read file: {}", e))?;
+    
+    Ok(general_purpose::STANDARD.encode(&bytes))
+}
+
 /// Write file content
 #[tauri::command]
 fn write_file(path: String, content: String) -> Result<(), String> {
@@ -930,6 +951,7 @@ pub fn run() {
             // File system operations
             read_directory,
             read_file,
+            read_file_binary,
             write_file,
             write_file_binary,
             create_file,

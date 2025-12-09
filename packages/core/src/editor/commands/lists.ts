@@ -87,9 +87,96 @@ export function toggleNumberedList(view: EditorView): boolean {
 
 /**
  * Toggle task list on selected lines
+ * - If line already has a task list: toggle its checkbox state ([ ] <-> [x])
+ * - If line doesn't have a task list: add one and position cursor after [ ]
  */
 export function toggleTaskList(view: EditorView): boolean {
-    return toggleListType(view, 'task');
+    const { from, to } = view.state.selection.main;
+    const startLine = view.state.doc.lineAt(from);
+    const endLine = view.state.doc.lineAt(to);
+
+    // Special case: single line with task list already - toggle checkbox
+    if (startLine.number === endLine.number) {
+        const lineText = startLine.text;
+        const taskMatch = lineText.match(/^(\s*[-*+]\s\[)([x\s])(\]\s)/i);
+        
+        if (taskMatch) {
+            const checkPos = startLine.from + taskMatch[1].length;
+            const isChecked = taskMatch[2].toLowerCase() === 'x';
+
+            view.dispatch({
+                changes: {
+                    from: checkPos,
+                    to: checkPos + 1,
+                    insert: isChecked ? ' ' : 'x',
+                },
+            });
+
+            view.focus();
+            return true;
+        }
+    }
+
+    // Otherwise, use the standard toggle logic with improved cursor positioning
+    const changes: { from: number; to: number; insert: string }[] = [];
+    let newCursorPos: number | null = null;
+
+    for (let lineNum = startLine.number; lineNum <= endLine.number; lineNum++) {
+        const line = view.state.doc.line(lineNum);
+        const lineText = line.text;
+        const listInfo = getListInfo(lineText);
+
+        // Determine the prefix based on list type
+        const indent = listInfo.indent || getLeadingWhitespace(lineText);
+        const prefix = indent + '- [ ] ';
+
+        if (listInfo.type === 'task') {
+            // Same type - remove the list marker
+            changes.push({
+                from: line.from,
+                to: line.from + listInfo.fullMatch.length,
+                insert: listInfo.indent, // Keep the indentation
+            });
+        } else if (listInfo.type !== null) {
+            // Different list type - replace the marker
+            changes.push({
+                from: line.from,
+                to: line.from + listInfo.fullMatch.length,
+                insert: prefix,
+            });
+            // Set cursor position after [ ] for first line
+            if (newCursorPos === null) {
+                newCursorPos = line.from + prefix.length;
+            }
+        } else {
+            // No list marker - add one
+            const leadingSpace = getLeadingWhitespace(lineText);
+            const insertPos = line.from + leadingSpace.length;
+            changes.push({
+                from: insertPos,
+                to: insertPos,
+                insert: prefix.trimStart(),
+            });
+            // Set cursor position after [ ] for first line
+            if (newCursorPos === null) {
+                newCursorPos = insertPos + prefix.trimStart().length;
+            }
+        }
+    }
+
+    if (changes.length > 0) {
+        const transaction: any = { changes };
+        
+        // Position cursor after [ ] if we added a new task list
+        if (newCursorPos !== null) {
+            transaction.selection = { anchor: newCursorPos };
+        }
+        
+        view.dispatch(transaction);
+    }
+
+    view.focus();
+    return true;
 }
 
 /**

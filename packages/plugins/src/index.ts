@@ -6,6 +6,8 @@
 
 export { LivePreviewPlugin, livePreviewExtension, livePreviewManifest } from './live-preview';
 export { default as QuickFinderPlugin, quickFinderManifest } from './quick-finder';
+export { remarkCallout } from './remark-callout';
+export { remarkHighlight } from './remark-highlight';
 export {
     SlashCommandsPlugin,
     SlashCommandsSettingTab,

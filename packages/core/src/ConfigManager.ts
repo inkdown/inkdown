@@ -163,7 +163,7 @@ export class ConfigManager {
     private getDefaultConfig<T>(configName: string): T {
         const defaults: Record<string, any> = {
             app: {
-                version: '1.0.0',
+                version: '0.1.0',
                 tabs: [],
                 workspace: '', // User's selected workspace path
                 theme: 'default-dark',
