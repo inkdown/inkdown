@@ -91,21 +91,21 @@ class LivePreviewView {
         allDecorations.sort((a, b) => {
             // Primary sort: by from position
             if (a.from !== b.from) return a.from - b.from;
-            
+
             // Secondary sort: by to position
             if (a.to !== b.to) return a.to - b.to;
-            
+
             // Tertiary sort: line decorations before inline decorations
             const aIsLine = !!(a.value.spec as any).attributes?.class?.includes('cm-');
             const bIsLine = !!(b.value.spec as any).attributes?.class?.includes('cm-');
-            
+
             // Check if it's a Decoration.line() (has class in spec)
             const aHasLineClass = (a.value as any).map?.constructor?.name === 'LineDecoration';
             const bHasLineClass = (b.value as any).map?.constructor?.name === 'LineDecoration';
-            
+
             if (aHasLineClass && !bHasLineClass) return -1;
             if (!aHasLineClass && bHasLineClass) return 1;
-            
+
             return 0;
         });
 
@@ -134,7 +134,7 @@ class LivePreviewView {
                     const to = node.to;
 
                     // Apply line decoration to each line in the code block
-                    for (let pos = from; pos <= to; ) {
+                    for (let pos = from; pos <= to;) {
                         const line = view.state.doc.lineAt(pos);
                         decorations.push(codeBlockLineDeco.range(line.from));
 
