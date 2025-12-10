@@ -1,10 +1,10 @@
 # Community Plugins
 
-Inkdown supports community plugins that extend the application's functionality. This guide covers how to create, install, and manage community plugins.
+Inkdown supports community plugins that extend the application's functionality. This guide covers how to create, install, and publish community plugins.
 
 ## Overview
 
-Community plugins are JavaScript bundles that use the Inkdown Plugin API. They are loaded from the user's configuration directory and have access to the same capabilities as built-in plugins.
+Community plugins are JavaScript bundles that use the Inkdown Plugin API. They are loaded dynamically from the user's configuration directory and have access to the same capabilities as built-in plugins.
 
 ### Directory Structure
 
@@ -19,7 +19,28 @@ Community plugins are JavaScript bundles that use the Inkdown Plugin API. They a
 
 ## Creating a Community Plugin
 
-### 1. Project Setup
+### Using the Inkdown CLI (Recommended)
+
+The fastest way to create a new plugin is using the Inkdown CLI:
+
+```bash
+# Install the CLI
+go install github.com/inkdown/inkdown-cli@latest
+
+# Create a new plugin
+inkdown-cli plugin create my-plugin
+cd my-plugin
+
+# Install dependencies
+npm install
+
+# Start development
+npm run dev
+```
+
+### Manual Setup
+
+#### 1. Project Setup
 
 Create a new directory for your plugin and initialize it:
 
@@ -27,19 +48,19 @@ Create a new directory for your plugin and initialize it:
 mkdir my-inkdown-plugin
 cd my-inkdown-plugin
 npm init -y
-npm install --save-dev typescript esbuild @inkdown/core
+npm install --save-dev typescript esbuild
 ```
 
-### 2. Configure TypeScript
+#### 2. Configure TypeScript
 
 Create a `tsconfig.json`:
 
 ```json
 {
   "compilerOptions": {
-    "target": "ES2018",
+    "target": "ES2020",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "declaration": true,
     "strict": true,
     "esModuleInterop": true,
@@ -50,7 +71,7 @@ Create a `tsconfig.json`:
 }
 ```
 
-### 3. Create the Manifest
+#### 3. Create the Manifest
 
 Create a `manifest.json` in your project root:
 
@@ -67,7 +88,7 @@ Create a `manifest.json` in your project root:
 }
 ```
 
-### 4. Write Your Plugin
+#### 4. Write Your Plugin
 
 Create `src/main.ts`:
 
@@ -76,27 +97,29 @@ import { Plugin, Notice, PluginSettingTab, Setting } from '@inkdown/core';
 
 interface MyPluginSettings {
   greeting: string;
+  enabled: boolean;
 }
 
 const DEFAULT_SETTINGS: MyPluginSettings = {
-  greeting: 'Hello, World!'
+  greeting: 'Hello, World!',
+  enabled: true
 };
 
 export default class MyPlugin extends Plugin {
-  settings: MyPluginSettings;
+  settings: MyPluginSettings = DEFAULT_SETTINGS;
 
   async onload() {
     console.log('Loading My Plugin');
     
     // Load settings
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    await this.loadSettings();
 
     // Add a command
     this.addCommand({
       id: 'show-greeting',
       name: 'Show Greeting',
       callback: () => {
-        new Notice(this.settings.greeting);
+        this.showNotice(this.settings.greeting);
       }
     });
 
@@ -112,6 +135,10 @@ export default class MyPlugin extends Plugin {
     console.log('Unloading My Plugin');
   }
 
+  async loadSettings() {
+    this.settings = { ...DEFAULT_SETTINGS, ...await this.loadData() };
+  }
+
   async saveSettings() {
     await this.saveData(this.settings);
   }
@@ -120,7 +147,7 @@ export default class MyPlugin extends Plugin {
 class MyPluginSettingTab extends PluginSettingTab {
   plugin: MyPlugin;
 
-  constructor(app: App, plugin: MyPlugin) {
+  constructor(app: any, plugin: MyPlugin) {
     super(app, plugin);
     this.plugin = plugin;
   }
@@ -139,11 +166,21 @@ class MyPluginSettingTab extends PluginSettingTab {
           this.plugin.settings.greeting = value;
           await this.plugin.saveSettings();
         }));
+        
+    new Setting(containerEl)
+      .setName('Enable Feature')
+      .setDesc('Toggle this feature on or off')
+      .addToggle(toggle => toggle
+        .setValue(this.plugin.settings.enabled)
+        .onChange(async (value) => {
+          this.plugin.settings.enabled = value;
+          await this.plugin.saveSettings();
+        }));
   }
 }
 ```
 
-### 5. Configure esbuild
+#### 5. Configure esbuild
 
 Create `esbuild.config.mjs`:
 
@@ -222,45 +259,69 @@ import {
   
   // Views
   ItemView,
+  
+  // Editor
+  EditorAdapter,
+  
+  // Utilities
+  setIcon,
 } from '@inkdown/core';
 ```
 
-### Plugin Lifecycle
+### Plugin Methods
 
 | Method | Description |
 |--------|-------------|
 | `onload()` | Called when the plugin is enabled. Initialize your plugin here. |
-| `onunload()` | Called when the plugin is disabled. Clean up resources here. |
-
-### Common Methods
-
-| Method | Description |
-|--------|-------------|
-| `addCommand(command)` | Register a command |
-| `addSettingTab(tab)` | Add a settings tab |
-| `addStatusBarItem()` | Add a status bar item |
-| `addRibbonIcon(icon, title, callback)` | Add a sidebar icon |
+| `onunload()` | Called when the plugin is disabled. Cleanup is automatic. |
+| `loadData<T>()` | Load plugin settings from persistent storage |
+| `saveData(data)` | Save plugin settings to persistent storage |
+| `addCommand(command)` | Register a command for Command Palette and shortcuts |
+| `addSettingTab(tab)` | Add a settings tab to the Settings modal |
+| `addStatusBarItem()` | Add an item to the status bar |
+| `addRibbonIcon(icon, title, callback)` | Add an icon to the sidebar ribbon |
+| `addStyle(css)` | Inject CSS (auto-removed on unload) |
 | `registerEditorSuggest(suggest)` | Register an autocomplete provider |
-| `registerMarkdownCodeBlockProcessor(lang, processor)` | Process code blocks |
+| `registerMarkdownCodeBlockProcessor(lang, fn)` | Process custom code blocks |
+| `registerMarkdownPostProcessor(fn)` | Post-process rendered markdown |
 | `registerEditorExtension(extension)` | Add CodeMirror extension |
-| `loadData()` | Load plugin settings |
-| `saveData(data)` | Save plugin settings |
+| `registerEvent(unsubscribe)` | Track event for auto-cleanup |
+| `registerDomEvent(el, type, callback)` | DOM event with auto-cleanup |
+| `registerInterval(id)` | Track interval for auto-cleanup |
 | `showNotice(message, duration?)` | Show a toast notification |
+
+### Command Interface
+
+```typescript
+interface Command {
+  id: string;           // Unique identifier
+  name: string;         // Display name
+  callback: () => void; // Function to execute
+  hotkey?: string[];    // e.g., ['Mod', 'Shift', 'p']
+  icon?: string;        // Icon name
+}
+```
 
 ## Installing Community Plugins
 
 ### Manual Installation
 
 1. Download the plugin files (`main.js`, `manifest.json`, and optionally `styles.css`)
-2. Create a folder in your plugins directory with the plugin ID
+2. Create a folder in your plugins directory with the plugin ID:
+   - macOS: `~/Library/Application Support/com.furqas.inkdown/plugins/plugin-id/`
+   - Windows: `%APPDATA%\com.furqas.inkdown\plugins\plugin-id\`
+   - Linux: `~/.config/com.furqas.inkdown/plugins/plugin-id/`
 3. Copy the files into the folder
-4. Restart Inkdown or reload plugins
+4. Restart Inkdown or go to Settings → Plugins and enable the plugin
 
 ### Via Community Plugin Browser
 
-*(Coming soon)*
+The Community Plugin Browser allows you to browse, install, and update plugins directly from within Inkdown:
 
-The Community Plugin Browser will allow you to browse, install, and update plugins directly from within Inkdown.
+1. Open Settings (Cmd/Ctrl + ,)
+2. Go to "Community Plugins"
+3. Click "Browse" to see available plugins
+4. Click "Install" on any plugin you want
 
 ## Security Considerations
 
@@ -268,22 +329,34 @@ Community plugins run in the same context as the application and have access to:
 - The file system (through the Workspace API)
 - Network requests (through standard browser APIs)
 - The DOM (for UI modifications)
+- Plugin settings storage
 
-**Only install plugins from trusted sources.**
+**⚠️ Only install plugins from trusted sources.**
 
 ## Publishing Your Plugin
 
 To publish your plugin to the Inkdown community:
 
-1. Host your plugin on GitHub
-2. Create a release with `main.js`, `manifest.json`, and `styles.css` (if applicable)
-3. Submit a PR to the [community-plugins repository](https://github.com/inkdown-app/community-plugins)
+1. **Host on GitHub**: Create a public repository for your plugin
+2. **Create a Release**: Tag a release with the following files:
+   - `main.js` (bundled plugin)
+   - `manifest.json` (plugin metadata)
+   - `styles.css` (optional, for custom styles)
+3. **Submit to Registry**: Submit a PR to the [community-plugins repository](https://github.com/inkdown-app/community-plugins)
 
 ### Release Checklist
 
-- [ ] `manifest.json` has correct `id`, `name`, `version`
-- [ ] `main.js` is bundled and working
-- [ ] `README.md` describes your plugin
-- [ ] `LICENSE` file included
+- [ ] `manifest.json` has correct `id`, `name`, `version`, `minAppVersion`
+- [ ] `main.js` is bundled with esbuild and working
+- [ ] `README.md` describes your plugin with screenshots
+- [ ] `LICENSE` file included (MIT recommended)
 - [ ] No hardcoded paths or user-specific data
 - [ ] Error handling for edge cases
+- [ ] Tested enable/disable lifecycle
+- [ ] Uses CSS variables for theming compatibility
+
+## Related Documentation
+
+- [Plugin System](./system.md)
+- [UI Components](./ui-components.md)
+- [Built-in Plugins](../built-in-plugins.md)

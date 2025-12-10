@@ -1,13 +1,13 @@
 # Theme System
 
-Inkdown features a comprehensive theme system that supports both built-in and custom themes. This document describes the architecture and implementation of the theming system.
+Inkdown features a comprehensive theme system that supports both built-in and custom/community themes. This document describes the architecture and implementation details.
 
 ## Overview
 
 The theme system consists of three main components:
 
-1. **ThemeManager**: Manages theme loading, switching, and CSS injection
-2. **CommunityThemeManager**: Handles browsing, installing, and managing community themes
+1. **ThemeManager**: Manages theme loading, switching, and CSS injection for built-in and custom themes
+2. **CommunityThemeManager**: Handles browsing, installing, and managing community themes from GitHub
 3. **ConfigManager**: Persists theme preferences and installed theme metadata
 
 ```mermaid
@@ -20,8 +20,8 @@ graph TD
 
     subgraph "Storage"
         CSS[CSS Variables]
-        Config[App Config]
-        ThemeDir[Themes Directory]
+        Config[app.json]
+        ThemeDir[themes/ directory]
     end
 
     TM --> CSS
@@ -37,26 +37,48 @@ The `ThemeManager` class (`packages/core/src/ThemeManager.ts`) is responsible fo
 
 - Registering built-in themes (default-dark, default-light)
 - Loading custom themes from the themes directory
-- Applying themes by injecting CSS into the document
+- Applying themes by setting CSS classes or injecting custom CSS
 - Managing color scheme (dark/light) switching
-- Persisting theme preferences
+- Persisting theme preferences to configuration
 
-### Theme Loading Flow
-
-1. **Initialization**: `ThemeManager.init()` is called during app startup
-2. **Register Built-in**: Built-in themes are registered in memory
-3. **Load Custom**: Custom themes are loaded by reading `manifest.json` files from the themes directory
-4. **Apply Theme**: The saved theme preference is loaded and applied
-
-### Applying Themes
-
-**Built-in Themes**: Use CSS classes (`.theme-dark`, `.theme-light`) already loaded in the app's CSS bundle.
-
-**Custom Themes**: CSS is fetched from the theme directory and injected into a `<style>` element in the document head.
+### Initialization Flow
 
 ```typescript
-// ThemeManager applies custom theme CSS
+async init(): Promise<void> {
+    // 1. Register built-in themes
+    this.registerBuiltInThemes();
+    
+    // 2. Load custom themes from disk
+    await this.loadCustomThemes();
+    
+    // 3. Load saved preference from config
+    const config = await this.app.configManager.loadConfig('app');
+    this.colorScheme = config?.colorScheme || 'dark';
+    this.currentTheme = config?.theme || 'default-dark';
+    
+    // 4. Apply the theme
+    this.applyColorScheme(this.colorScheme);
+}
+```
+
+### Theme Application
+
+**Built-in Themes**: Use CSS classes (`.theme-dark`, `.theme-light`) already loaded in the app's CSS bundle:
+
+```typescript
+// Simply swap the class on documentElement
+document.documentElement.className = 'theme-dark';
+```
+
+**Custom Themes**: CSS is fetched from the theme directory and injected into a `<style>` element:
+
+```typescript
 private applyCustomThemeCSS(cssContent: string): void {
+    // Remove any existing custom theme
+    const existing = document.getElementById('inkdown-custom-theme');
+    if (existing) existing.remove();
+    
+    // Inject new theme CSS
     const styleElement = document.createElement('style');
     styleElement.id = 'inkdown-custom-theme';
     styleElement.textContent = cssContent;
@@ -66,33 +88,40 @@ private applyCustomThemeCSS(cssContent: string): void {
 
 ### Color Scheme Switching
 
-When switching between dark/light modes:
-
-1. For built-in themes: Simply swap the CSS class on `documentElement`
-2. For custom themes with both modes: Load the appropriate CSS file (`dark.css` or `light.css`)
-
 ```typescript
-await themeManager.setColorScheme('dark');  // Switches to dark mode
-await themeManager.setColorScheme('light'); // Switches to light mode
+// Switch to dark mode
+await themeManager.setColorScheme('dark');
+
+// Switch to light mode
+await themeManager.setColorScheme('light');
+
+// Get current scheme
+const scheme = themeManager.getColorScheme(); // 'dark' | 'light'
 ```
+
+When switching between modes:
+1. For built-in themes: Swap the CSS class on `documentElement`
+2. For custom themes with both modes: Load the appropriate CSS file (`dark.css` or `light.css`)
 
 ## CommunityThemeManager
 
-The `CommunityThemeManager` class (`packages/core/src/CommunityThemeManager.ts`) handles community themes:
+The `CommunityThemeManager` class (`packages/core/src/CommunityThemeManager.ts`) handles community themes from GitHub:
 
 ### Features
 
-- **Browse Themes**: Fetches theme listings from the community repository
-- **Caching**: Caches theme data in memory with a 1-hour TTL
-- **Install/Uninstall**: Downloads and saves theme files to the local config directory
-- **Version Tracking**: Tracks installed versions for update detection
+| Feature | Description |
+|---------|-------------|
+| Browse Themes | Fetches theme listings from the community registry |
+| Caching | In-memory cache with 1-hour TTL |
+| Install/Uninstall | Downloads and saves theme files locally |
+| Version Tracking | Tracks installed versions for update detection |
 
 ### Theme Installation Flow
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant UI as ThemesSettings
+    participant UI as Settings UI
     participant CTM as CommunityThemeManager
     participant GitHub
     participant FS as File System
@@ -102,9 +131,9 @@ sequenceDiagram
     UI->>CTM: installTheme(theme)
     CTM->>GitHub: Fetch manifest.json
     CTM->>GitHub: Fetch dark.css
-    CTM->>GitHub: Fetch light.css
+    CTM->>GitHub: Fetch light.css (if available)
     CTM->>GitHub: Fetch README.md
-    CTM->>FS: Save files to themes/
+    CTM->>FS: Save files to themes/theme-id/
     CTM->>TM: reloadCustomThemes()
     TM-->>UI: Theme available
 ```
@@ -113,9 +142,9 @@ sequenceDiagram
 
 ```typescript
 interface CommunityThemeCache {
-    lastFetched: number;           // Timestamp for TTL check
-    listings: CommunityThemeListing[];  // Basic theme info
-    themes: Record<string, CommunityTheme>;  // Full theme details
+    lastFetched: number;                      // Timestamp for TTL check
+    listings: CommunityThemeListing[];        // Basic theme info from registry
+    themes: Record<string, CommunityTheme>;   // Full theme details (on-demand)
 }
 ```
 
@@ -130,39 +159,37 @@ Custom themes are stored in the app's config directory:
 ```
 ~/Library/Application Support/com.furqas.inkdown/themes/
 └── theme-name/
-    ├── manifest.json    # Theme metadata
-    ├── dark.css         # Dark mode styles
+    ├── manifest.json    # Theme metadata (required)
+    ├── dark.css         # Dark mode styles (required if modes includes 'dark')
     ├── light.css        # Light mode styles (optional)
     └── README.md        # Theme documentation (optional)
 ```
 
 ### manifest.json
 
-The manifest file contains theme metadata:
-
 ```json
 {
-  "name": "Theme Name",
+  "name": "My Theme",
   "author": "Author Name",
   "version": "1.0.0",
-  "description": "A description of the theme",
-  "homepage": "https://github.com/author/theme",
+  "description": "A beautiful custom theme",
+  "homepage": "https://github.com/author/my-theme",
   "modes": ["dark", "light"]
 }
 ```
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `name` | Yes | Display name of the theme |
+| `name` | Yes | Display name shown in theme browser |
 | `author` | Yes | Theme author's name |
 | `version` | Yes | Semantic version (e.g., "1.0.0") |
-| `description` | No | Brief description |
+| `description` | No | Brief description of the theme |
 | `homepage` | No | URL to theme repository or website |
-| `modes` | Yes | Array of supported modes: `["dark"]`, `["light"]`, or `["dark", "light"]` |
+| `modes` | Yes | Supported modes: `["dark"]`, `["light"]`, or `["dark", "light"]` |
 
 ### CSS Files
 
-Theme CSS files must use the `.theme-dark` or `.theme-light` class selector and define CSS variables:
+Theme CSS must use the appropriate class selector and define CSS variables:
 
 ```css
 /* dark.css */
@@ -170,7 +197,7 @@ Theme CSS files must use the `.theme-dark` or `.theme-light` class selector and 
     /* Background Colors */
     --bg-primary: #1d2021;
     --bg-secondary: #282828;
-    --bg-sidebar: #282828;
+    --bg-sidebar: #1f2335;
     --bg-tertiary: #32302f;
 
     /* Text Colors */
@@ -178,7 +205,14 @@ Theme CSS files must use the `.theme-dark` or `.theme-light` class selector and 
     --text-secondary: #d5c4a1;
     --text-muted: #928374;
 
-    /* ... more variables */
+    /* Accent Colors */
+    --color-primary: #fe8019;
+    --color-primary-hover: #fabd2f;
+    --color-success: #b8bb26;
+    --color-warning: #fabd2f;
+    --color-danger: #fb4934;
+    
+    /* ... all other variables ... */
 }
 ```
 
@@ -201,38 +235,41 @@ interface ThemeConfig {
 }
 ```
 
-### CommunityTheme
-
-Full community theme data:
+### ColorScheme
 
 ```typescript
-interface CommunityTheme {
-    listing: CommunityThemeListing;  // From themes.json index
-    manifest: CommunityThemeManifest; // From manifest.json
-    readme: string;                   // README.md content
-    screenshotUrl: string;            // Resolved screenshot URL
-    installed: boolean;
-    installedVersion?: string;
+type ColorScheme = 'dark' | 'light';
+```
+
+### CommunityThemeListing
+
+From the community registry index:
+
+```typescript
+interface CommunityThemeListing {
+    id: string;           // Unique identifier
+    name: string;         // Display name
+    author: string;       // Author name
+    repo: string;         // GitHub repo (e.g., "author/repo")
+    branch?: string;      // Branch name (default: "main")
+    modes: ColorScheme[]; // Supported modes
 }
 ```
 
-## Rust Backend Commands
+## Tauri Commands
 
 The theme system uses Tauri commands for file operations:
 
 | Command | Description |
 |---------|-------------|
-| `list_custom_themes` | Lists all theme directories |
+| `list_custom_themes` | Lists all theme directories in themes/ |
 | `read_theme_manifest` | Reads a theme's manifest.json |
-| `read_theme_css` | Reads a theme's CSS file (dark.css/light.css) |
-| `install_community_theme_file` | Saves a file to the themes directory |
+| `read_theme_css` | Reads a theme's CSS file |
+| `install_community_theme_file` | Saves a file to themes/theme-id/ |
 | `uninstall_community_theme` | Removes a theme directory |
 
-## Creating a Custom Theme
+## Related Documentation
 
-1. Create a new directory in the themes folder
-2. Create `manifest.json` with required metadata
-3. Create `dark.css` and/or `light.css` with CSS variables
-4. Optionally add a `README.md`
-
-See the [CSS Architecture](../styling/css-architecture.md) document for the full list of CSS variables.
+- [Creating Themes](../styling/creating-themes.md)
+- [CSS Architecture](../styling/css-architecture.md)
+- [Configuration System](./config-system.md)

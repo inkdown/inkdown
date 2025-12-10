@@ -1,34 +1,34 @@
 # CSS Architecture
 
-Inkdown's CSS architecture is designed for modularity, reusability (desktop & mobile), and theme support.
+Inkdown's CSS architecture is designed for modularity, cross-platform compatibility (desktop & future mobile), and comprehensive theme support using CSS custom properties (variables).
 
 ## Structure
 
-Styles are centralized in `@inkdown/core` to be shared across platforms.
+Styles are centralized in `@inkdown/core` to be shared across all platforms:
 
 ```
 packages/core/src/styles/
 ├── index.css                    # Entry point (imports everything)
 ├── variables.css                # Global CSS variables (Theming API)
-├── base.css                     # Reset & base styles
+├── base.css                     # Reset & base element styles
 ├── themes/                      # Default themes
 │   ├── default-dark.css
 │   └── default-light.css
 ├── icons.css                    # Icon system
-├── plugin-api.css               # UI components (Modals, Settings)
-└── popover-suggest.css          # Suggestion popovers
+├── plugin-api.css               # Plugin UI components (Modals, Settings)
+└── popover-suggest.css          # Suggestion popovers & autocomplete
 ```
 
-## Platform Specifics
+## Platform-Specific Styles
 
-Platform-specific apps (like Desktop) only define layout-specific styles.
+Platform-specific apps define only layout-specific styles:
 
 ```
 apps/desktop/src/styles/
-└── app.css                      # Desktop layout (grid, flex structure)
-
-apps/desktop/src/components/
-└── EditorModes.css              # Editor/Preview layout modes
+├── app.css                      # Desktop layout (grid, sidebar, main)
+├── FileExplorer.css             # File explorer sidebar
+└── components/
+    └── EditorModes.css          # Editor/Preview layout modes
 ```
 
 ## Theme Application
@@ -43,31 +43,43 @@ Themes are applied via CSS class selectors on the `documentElement`:
 <html class="theme-light">
 ```
 
-Custom themes inject their CSS into a `<style id="inkdown-custom-theme">` element.
+The `ThemeManager` handles switching between modes and injecting custom theme CSS.
+
+### Custom Themes
+
+Custom themes inject their CSS into a `<style id="inkdown-custom-theme">` element:
+
+```typescript
+// ThemeManager injects custom theme CSS
+const styleEl = document.createElement('style');
+styleEl.id = 'inkdown-custom-theme';
+styleEl.textContent = cssContent;
+document.head.appendChild(styleEl);
+```
 
 ## CSS Variables Reference
 
 ### Background Colors
 
-| Variable | Description | Example (Dark) |
-|----------|-------------|----------------|
+| Variable | Description | Dark Default |
+|----------|-------------|--------------|
 | `--bg-primary` | Main background | `#1e1e1e` |
 | `--bg-secondary` | Secondary panels | `#262626` |
 | `--bg-sidebar` | Sidebar background | `#1a1a1a` |
-| `--bg-tertiary` | Tertiary elements | `#2a2a2a` |
+| `--bg-tertiary` | Tertiary/hover elements | `#2a2a2a` |
 
 ### Text Colors
 
-| Variable | Description | Example (Dark) |
-|----------|-------------|----------------|
+| Variable | Description | Dark Default |
+|----------|-------------|--------------|
 | `--text-primary` | Main text color | `#dcdcdc` |
 | `--text-secondary` | Secondary text | `#8c8c8c` |
 | `--text-muted` | Muted/disabled text | `#686868` |
 
 ### UI Colors
 
-| Variable | Description | Example (Dark) |
-|----------|-------------|----------------|
+| Variable | Description | Dark Default |
+|----------|-------------|--------------|
 | `--color-primary` | Accent/primary color | `#6c99bb` |
 | `--color-primary-hover` | Primary hover state | `#7daccc` |
 | `--color-primary-alpha` | Primary with transparency | `rgba(108, 153, 187, 0.15)` |
@@ -97,7 +109,7 @@ Custom themes inject their CSS into a `<style id="inkdown-custom-theme">` elemen
 | `--heading-h1` through `--heading-h6` | Heading colors |
 | `--heading-h1-size` through `--heading-h6-size` | Heading sizes |
 
-### Syntax Highlighting
+### Syntax Highlighting (Markdown)
 
 | Variable | Description |
 |----------|-------------|
@@ -111,7 +123,7 @@ Custom themes inject their CSS into a `<style id="inkdown-custom-theme">` elemen
 | `--syntax-list` | List markers |
 | `--syntax-separator` | Horizontal rules |
 
-### Code Block Colors
+### Code Block Syntax
 
 | Variable | Description |
 |----------|-------------|
@@ -129,26 +141,26 @@ Custom themes inject their CSS into a `<style id="inkdown-custom-theme">` elemen
 | `--code-meta` | Meta/annotations |
 | `--code-punctuation` | Punctuation |
 
-### CodeMirror Specific
+### CodeMirror Editor
 
 | Variable | Description |
 |----------|-------------|
-| `--cm-comment` | CM comment color |
-| `--cm-keyword` | CM keyword color |
-| `--cm-string` | CM string color |
-| `--cm-number` | CM number color |
-| `--cm-operator` | CM operator color |
-| `--cm-punctuation` | CM punctuation |
-| `--cm-function` | CM function names |
-| `--cm-property` | CM property names |
-| `--cm-variable` | CM variables |
-| `--cm-type` | CM type names |
-| `--cm-tag` | CM HTML/XML tags |
-| `--cm-attribute` | CM attributes |
-| `--cm-heading-marker` | Markdown heading markers |
+| `--cm-comment` | Comment color |
+| `--cm-keyword` | Keyword color |
+| `--cm-string` | String color |
+| `--cm-number` | Number color |
+| `--cm-operator` | Operator color |
+| `--cm-punctuation` | Punctuation |
+| `--cm-function` | Function names |
+| `--cm-property` | Property names |
+| `--cm-variable` | Variables |
+| `--cm-type` | Type names |
+| `--cm-tag` | HTML/XML tags |
+| `--cm-attribute` | Attributes |
+| `--cm-heading-marker` | Markdown heading `#` markers |
 | `--cm-list-marker` | List markers |
-| `--cm-quote-marker` | Quote markers |
-| `--cm-link-bracket` | Link brackets |
+| `--cm-quote-marker` | Quote `>` markers |
+| `--cm-link-bracket` | Link brackets `[]()` |
 | `--cm-link-text` | Link text |
 | `--cm-link` | Link color |
 | `--cm-link-hover` | Link hover color |
@@ -169,7 +181,7 @@ Custom themes inject their CSS into a `<style id="inkdown-custom-theme">` elemen
 | `--tab-bg-active` | Active tab background |
 | `--tab-border-active` | Active tab border |
 
-### Sizing & Spacing
+### Sizing & Typography
 
 | Variable | Description |
 |----------|-------------|
@@ -182,59 +194,62 @@ Custom themes inject their CSS into a `<style id="inkdown-custom-theme">` elemen
 | `--scrollbar-width` | Scrollbar width |
 | `--scrollbar-border-radius` | Scrollbar radius |
 | `--font-family-mono` | Monospace font stack |
+| `--radius-sm` | Small border radius (2px) |
+| `--radius-md` | Medium border radius (4px) |
+| `--radius-lg` | Large border radius (8px) |
 
-## Creating Custom Themes
+## Best Practices
 
-Custom themes should be placed in the themes directory:
+### 1. Always Use Variables
 
-```
-~/Library/Application Support/com.furqas.inkdown/themes/
-└── my-theme/
-    ├── manifest.json
-    ├── dark.css
-    ├── light.css
-    └── README.md
-```
-
-### Theme CSS Structure
+Never hardcode colors or dimensions:
 
 ```css
-/**
- * My Theme for Inkdown
- */
+/* ❌ Bad */
+.my-element {
+    background: #1e1e1e;
+    color: #ffffff;
+}
 
-.theme-dark {
-    /* Background Colors */
-    --bg-primary: #1d2021;
-    --bg-secondary: #282828;
-    --bg-sidebar: #282828;
-    --bg-tertiary: #32302f;
-
-    /* Text Colors */
-    --text-primary: #ebdbb2;
-    --text-secondary: #d5c4a1;
-    --text-muted: #928374;
-
-    /* Border & UI */
-    --border-color: #665c54;
-    --color-primary: #fe8019;
-    --color-primary-hover: #fabd2f;
-    --color-primary-alpha: rgba(254, 128, 25, 0.15);
-    --color-success: #b8bb26;
-    --color-warning: #fabd2f;
-    --color-danger: #fb4934;
-
-    /* ... all other variables ... */
+/* ✅ Good */
+.my-element {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
 }
 ```
 
-See [Theme System](../architecture/theme-system.md) for complete theme documentation.
+### 2. Provide Fallbacks for Critical Values
 
-## Guidelines
+```css
+.my-element {
+    color: var(--color-primary, #007bff);
+}
+```
 
-1. **Use Variables**: Never hardcode colors or dimensions. Use `var(--variable-name)`.
-2. **Mobile First**: Core styles should be responsive or platform-agnostic.
-3. **Component Scoping**: Component-specific styles should be co-located with the component or in a dedicated file in core if shared.
-4. **Theme Compatibility**: Always test styles against both Dark and Light themes.
-5. **Fallbacks**: Provide fallback values for critical variables: `var(--color-primary, #007bff)`
+### 3. Test Both Themes
+
+Always verify your styles work in both dark and light modes.
+
+### 4. Use Semantic Variable Names
+
+Choose variables that describe the purpose, not the value:
+- Use `--bg-secondary` not `--dark-gray`
+- Use `--color-danger` not `--red`
+
+### 5. Component-Scoped Styles
+
+Keep component-specific styles co-located or in dedicated files:
+
+```css
+/* In your plugin's addStyle() */
+.my-plugin-container { ... }
+.my-plugin-title { ... }
+.my-plugin-button { ... }
+```
+
+## Related Documentation
+
+- [Creating Themes](./creating-themes.md)
+- [Theme System](../architecture/theme-system.md)
+- [UI Components](../plugins/ui-components.md)
 

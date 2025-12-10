@@ -1,95 +1,297 @@
 # Plugin System
 
-Inkdown features a powerful plugin system that allows developers to extend the application's functionality. The system is designed to be modular and safe, plugin architecture.
+Inkdown features a powerful plugin system that allows developers to extend the application's functionality. The system is designed to be modular, type-safe, and compatible with the Obsidian plugin API patterns.
 
 ## Plugin Structure
 
-A plugin is a class that extends the base `Plugin` class from `@inkdown/core`.
+A plugin is a class that extends the base `Plugin` class from `@inkdown/core`. Each plugin requires a manifest file and implements the `onload()` and `onunload()` lifecycle methods.
+
+### Basic Plugin
 
 ```typescript
 import { Plugin } from '@inkdown/core';
 
 export default class MyPlugin extends Plugin {
     async onload() {
-        // Called when the plugin is loaded
         console.log('MyPlugin loaded');
         
         // Register commands, settings, views, etc.
+        this.addCommand({
+            id: 'my-command',
+            name: 'My Command',
+            callback: () => console.log('Command executed')
+        });
     }
 
     async onunload() {
-        // Called when the plugin is disabled
         console.log('MyPlugin unloaded');
+        // Resources are automatically cleaned up
     }
 }
 ```
 
-## Capabilities
+### Plugin Manifest
 
-Plugins can interact with the application in various ways:
+Each plugin requires a `manifest.json`:
+
+```json
+{
+    "id": "my-plugin",
+    "name": "My Plugin",
+    "version": "1.0.0",
+    "minAppVersion": "0.1.0",
+    "description": "A sample plugin for Inkdown",
+    "author": "Your Name",
+    "authorUrl": "https://github.com/yourusername"
+}
+```
+
+## Plugin Capabilities
 
 ### 1. Commands
-Register commands that can be triggered via the Command Palette or keyboard shortcuts.
+
+Register commands accessible via the Command Palette or keyboard shortcuts:
 
 ```typescript
 this.addCommand({
-    id: 'my-command',
-    name: 'Execute My Command',
+    id: 'show-greeting',
+    name: 'Show Greeting',
+    hotkey: ['Mod', 'Shift', 'g'],  // Cmd/Ctrl + Shift + G
     callback: () => {
-        console.log('Command executed');
+        this.showNotice('Hello from plugin!');
     }
 });
 ```
 
 ### 2. Settings
-Add a settings tab to the application's settings modal.
+
+Add a settings tab to the Settings modal:
 
 ```typescript
-this.addSettingTab(new MyPluginSettingTab(this.app, this));
+import { PluginSettingTab, Setting } from '@inkdown/core';
+
+class MySettingTab extends PluginSettingTab {
+    plugin: MyPlugin;
+    
+    constructor(app: App, plugin: MyPlugin) {
+        super(app, plugin);
+        this.plugin = plugin;
+    }
+    
+    display(): void {
+        const { containerEl } = this;
+        containerEl.empty();
+        
+        new Setting(containerEl)
+            .setName('Enable Feature')
+            .setDesc('Toggle this feature on or off')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.enabled)
+                .onChange(async (value) => {
+                    this.plugin.settings.enabled = value;
+                    await this.plugin.saveSettings();
+                }));
+    }
+}
+
+// In onload()
+this.addSettingTab(new MySettingTab(this.app, this));
 ```
 
 ### 3. Editor Interaction
-Interact with the active editor to read or modify content.
+
+Interact with the active editor using `EditorAdapter`:
 
 ```typescript
-const editor = this.app.workspace.activeEditor;
-if (editor) {
-    editor.replaceSelection('Hello from plugin!');
+import { EditorAdapter } from '@inkdown/core';
+
+// Get active editor
+const activeEditor = this.app.editorRegistry.getActive();
+if (activeEditor) {
+    const editor = new EditorAdapter(activeEditor);
+    
+    // Get content
+    const content = editor.getValue();
+    
+    // Replace selection
+    editor.replaceSelection('Inserted text');
+    
+    // Get cursor position
+    const cursor = editor.getCursor();
 }
 ```
 
-### 4. File System
-Perform file operations using the Workspace API.
+### 4. Status Bar
+
+Add items to the status bar:
 
 ```typescript
-// Create a new file
-await this.app.workspace.create('notes/new-note.md', '# New Note');
+const statusBarItem = this.addStatusBarItem();
+statusBarItem.setText('Word count: 0');
 
-// Read a file
-const file = this.app.workspace.getActiveFile();
-if (file) {
-    const content = await this.app.workspace.read(file);
-}
+// Update later
+statusBarItem.setText('Word count: 150');
 ```
 
-### 5. UI Components
-Register new views or add items to the status bar.
+### 5. Editor Suggestions (Autocomplete)
+
+Register custom autocomplete providers:
 
 ```typescript
-// Add status bar item
-const item = this.addStatusBarItem();
-item.setText('My Status');
+import { EditorSuggest } from '@inkdown/core';
+
+class MySuggest extends EditorSuggest<MyItem> {
+    onTrigger(cursor, editor, file) {
+        // Return trigger info or null
+    }
+    
+    getSuggestions(context) {
+        // Return array of suggestions
+    }
+    
+    renderSuggestion(item, el) {
+        // Render suggestion item
+    }
+    
+    selectSuggestion(item, evt) {
+        // Handle selection
+    }
+}
+
+// In onload()
+this.registerEditorSuggest(new MySuggest(this.app));
+```
+
+### 6. Markdown Processing
+
+Register custom code block processors:
+
+```typescript
+this.registerMarkdownCodeBlockProcessor('mermaid', (source, el, ctx) => {
+    // Render mermaid diagram
+    el.innerHTML = renderMermaid(source);
+});
+```
+
+Register post-processors for rendered markdown:
+
+```typescript
+this.registerMarkdownPostProcessor((el, ctx) => {
+    // Process all links
+    el.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', handleClick);
+    });
+});
+```
+
+### 7. Custom Styles
+
+Inject CSS that's automatically removed on unload:
+
+```typescript
+this.addStyle(`
+    .my-custom-class {
+        color: var(--text-accent);
+        background: var(--bg-secondary);
+    }
+`);
+```
+
+### 8. CodeMirror Extensions
+
+Register CodeMirror extensions for custom editor behavior:
+
+```typescript
+import { keymap } from '@codemirror/view';
+
+this.registerEditorExtension(
+    keymap.of([{
+        key: 'Ctrl-k',
+        run: () => {
+            console.log('Custom shortcut');
+            return true;
+        }
+    }])
+);
+```
+
+### 9. Notices (Toast Notifications)
+
+Show temporary notifications:
+
+```typescript
+// Simple notice (auto-hides after 5 seconds)
+this.showNotice('File saved!');
+
+// Custom duration
+this.showNotice('Processing...', 3000);
+
+// Persistent notice with manual control
+const notice = this.showNotice('Uploading...', 0);
+// Later...
+notice.hide();
+```
+
+### 10. Data Persistence
+
+Load and save plugin data:
+
+```typescript
+interface MySettings {
+    option1: string;
+    enabled: boolean;
+}
+
+const DEFAULT_SETTINGS: MySettings = {
+    option1: 'default',
+    enabled: true
+};
+
+// In onload()
+async loadSettings() {
+    this.settings = { ...DEFAULT_SETTINGS, ...await this.loadData() };
+}
+
+async saveSettings() {
+    await this.saveData(this.settings);
+}
 ```
 
 ## Plugin Lifecycle
 
-1.  **Load**: The `App` loads all plugins found in the plugins directory (or built-in registry).
-2.  **Initialize**: The plugin class is instantiated.
-3.  **onload**: The `onload` method is called. This is where most initialization logic should go.
-4.  **Usage**: The plugin is active and responds to events/commands.
-5.  **onunload**: When the plugin is disabled or the app closes, `onunload` is called to clean up resources (event listeners, UI elements).
+```mermaid
+stateDiagram-v2
+    [*] --> Registered: Plugin registered
+    Registered --> Loading: Enable plugin
+    Loading --> Active: onload() called
+    Active --> Unloading: Disable plugin
+    Unloading --> Registered: onunload() + cleanup
+    Active --> Active: Normal operation
+```
 
-## Built-in vs. Community Plugins
+1. **Registered**: Plugin manifest is loaded, plugin is available but not active
+2. **Loading**: Plugin class is instantiated
+3. **Active**: `onload()` is called, plugin is fully functional
+4. **Unloading**: `onunload()` is called, then automatic cleanup of:
+   - Commands
+   - Settings tabs
+   - Status bar items
+   - Event listeners
+   - Editor suggests
+   - Injected styles
+   - Markdown processors
 
-*   **Built-in Plugins**: Core features like File Explorer, Search, and Slash Commands are implemented as plugins. They are bundled with the application.
-*   **Community Plugins**: (Future) Third-party plugins that can be installed by users.
+## Built-in vs Community Plugins
+
+| Type | Location | Default State | Management |
+|------|----------|---------------|------------|
+| **Built-in** | `packages/plugins/` | Enabled by default | `PluginManager` |
+| **Community** | `~/Library/.../plugins/` | Disabled by default | `CommunityPluginManager` |
+
+Built-in plugins are bundled with the app and provide core functionality. Community plugins are installed from GitHub and loaded dynamically.
+
+## Related Documentation
+
+- [Community Plugins](./community-plugins.md)
+- [UI Components](./ui-components.md)
+- [Built-in Plugins](../built-in-plugins.md)

@@ -8,7 +8,23 @@ This guide walks you through creating a custom theme for Inkdown.
 - Basic knowledge of CSS
 - A text editor
 
-## Step 1: Create the Theme Directory
+## Quick Start with CLI
+
+The fastest way to create a theme is using the Inkdown CLI:
+
+```bash
+# Install the CLI
+go install github.com/inkdown/inkdown-cli@latest
+
+# Create a new theme
+inkdown-cli theme create my-theme
+
+# Follow the prompts to customize your theme
+```
+
+## Manual Setup
+
+### Step 1: Create the Theme Directory
 
 Create a new folder in the themes directory:
 
@@ -298,10 +314,25 @@ Check these themes for inspiration:
 
 To share your theme with the community:
 
-1. Create a GitHub repository for your theme
-2. Include all required files (manifest.json, CSS files, README.md)
-3. Add a screenshot
-4. Submit a PR to the [inkdown-community](https://github.com/inkdown/inkdown-community) repository
+1. **Create a GitHub Repository**: Host your theme files
+2. **Include Required Files**:
+   - `manifest.json` (metadata)
+   - `dark.css` and/or `light.css` (theme styles)
+   - `README.md` (documentation with screenshots)
+   - `screenshot.png` (preview image)
+3. **Submit to Registry**: Create a PR to add your theme to [inkdown-community](https://github.com/inkdown/inkdown-community)
+
+### Repository Structure
+
+```
+my-theme/
+├── manifest.json
+├── dark.css
+├── light.css
+├── README.md
+├── screenshot.png
+└── LICENSE
+```
 
 ## Troubleshooting
 
@@ -320,3 +351,9 @@ To share your theme with the community:
 ### Partial styling
 
 - Some variables might be missing - check the [CSS Architecture](./css-architecture.md) for the full list
+- Use browser DevTools to inspect which variables are being used
+
+## Related Documentation
+
+- [CSS Architecture](./css-architecture.md) - Full CSS variables reference
+- [Theme System](../architecture/theme-system.md) - How themes work internally
