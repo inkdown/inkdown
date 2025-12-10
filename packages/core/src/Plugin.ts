@@ -189,7 +189,7 @@ export abstract class Plugin extends Component {
      */
     registerCommand(command: Command): void {
         this.commands.set(command.id, command);
-        this.app.shortcutManager.registerCommand(command, 'plugin', this.manifest.id);
+        this.app.commandManager.registerCommand(command, 'plugin', this.manifest.id);
     }
 
     /**
@@ -530,7 +530,7 @@ export abstract class Plugin extends Component {
     async _cleanup(): Promise<void> {
         // Unregister commands
         for (const command of this.commands.values()) {
-            this.app.shortcutManager.unregisterCommand(command.id);
+            this.app.commandManager.unregisterCommand(command.id);
         }
         this.commands.clear();
 

@@ -8,7 +8,8 @@
 
 import type { Extension } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
-import type { ShortcutManager } from '@inkdown/core';
+import type { CommandManager } from '../../managers/CommandManager';
+import type { IKeybindingManager } from '../../types/shortcuts';
 import {
     insertCodeBlock,
     insertHeader1,
@@ -202,14 +203,14 @@ export function createMarkdownKeymap(): Extension {
  * Create a markdown keymap that respects user customizations
  * Reads current shortcuts from ShortcutManager
  */
-export function createCustomizableKeymap(shortcutManager: ShortcutManager): Extension {
+export function createCustomizableKeymap(keybindingManager: IKeybindingManager): Extension {
     const bindings = EDITOR_COMMANDS.map((cmd) => {
         // Get user-customized keys or fall back to defaults
-        const shortcut = shortcutManager.getShortcut(cmd.id);
-        const keys = shortcut?.keys || cmd.defaultKeys;
+        const keys = keybindingManager.getKeysForCommand(cmd.id);
+        const effectiveKeys = (keys && keys.length > 0) ? keys : cmd.defaultKeys;
 
         return {
-            key: keysToCodeMirrorKey(keys),
+            key: keysToCodeMirrorKey(effectiveKeys),
             run: cmd.run,
             preventDefault: true,
         };
@@ -294,9 +295,9 @@ export function createSuggestionKeymap(app: any): Extension {
  * Register all editor commands with the ShortcutManager
  * This makes them appear in the shortcuts settings UI
  */
-export function registerEditorCommands(shortcutManager: ShortcutManager): void {
+export function registerEditorCommands(commandManager: CommandManager): void {
     for (const cmd of EDITOR_COMMANDS) {
-        shortcutManager.registerCommand(
+        commandManager.registerCommand(
             {
                 id: cmd.id,
                 name: cmd.name,

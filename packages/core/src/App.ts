@@ -14,12 +14,13 @@ import { FilesConfigManager } from './managers/FilesConfigManager';
 import { FontManager } from './managers/FontManager';
 import { MetadataCache } from './managers/MetadataCache';
 import { SyncManager } from './managers/SyncManager';
-import { WindowConfigManager } from './managers/WindowConfigManager';
+
 import { Workspace } from './managers/Workspace';
 import { WorkspaceUI } from './managers/WorkspaceUI';
 import { MarkdownProcessorRegistry } from './markdown/MarkdownProcessor';
 import { PluginManager } from './PluginManager';
-import { ShortcutManager } from './ShortcutManager';
+import { CommandManager } from './managers/CommandManager';
+import type { IKeybindingManager } from './types/shortcuts';
 import { TabManager } from './TabManager';
 import { ThemeManager } from './ThemeManager';
 import { loggers } from './utils/logger';
@@ -37,14 +38,15 @@ export class App {
     communityThemeManager: CommunityThemeManager;
     communityPluginManager: CommunityPluginManager;
     configManager: ConfigManager;
-    shortcutManager: ShortcutManager;
+    commandManager: CommandManager;
+    keybindingManager?: IKeybindingManager;
     tabManager: TabManager;
     fileSystemManager: FileSystemManager;
     workspace: Workspace;
     workspaceUI: WorkspaceUI;
     fileManager: FileManager;
     filesConfigManager: FilesConfigManager;
-    windowConfigManager: WindowConfigManager;
+
     bookmarkManager: BookmarkManager;
     metadataCache: MetadataCache;
     markdownProcessor: MarkdownProcessorRegistry;
@@ -67,7 +69,7 @@ export class App {
         this.workspaceUI = new WorkspaceUI(this);
         this.fileManager = new FileManager(this);
         this.filesConfigManager = new FilesConfigManager(this);
-        this.windowConfigManager = new WindowConfigManager(this);
+
         this.bookmarkManager = new BookmarkManager(this);
         this.metadataCache = new MetadataCache(this);
         this.markdownProcessor = new MarkdownProcessorRegistry();
@@ -79,7 +81,7 @@ export class App {
         this.themeManager = new ThemeManager(this);
         this.communityThemeManager = new CommunityThemeManager(this);
         this.communityPluginManager = new CommunityPluginManager(this);
-        this.shortcutManager = new ShortcutManager(this);
+        this.commandManager = new CommandManager(this);
         this.dialog = new DialogManager();
         this.tabManager = new TabManager(this);
 
@@ -148,9 +150,9 @@ export class App {
             await this.tabManager.init();
             this.logger.debug('TabManager initialized');
 
-            // 9. Initialize shortcut manager
-            await this.shortcutManager.init();
-            this.logger.debug('ShortcutManager initialized');
+            // 9. Initialize command manager
+            this.commandManager.registerCoreCommands();
+            this.logger.debug('CommandManager initialized');
 
             this.initialized = true;
             this.logger.info('Inkdown initialized successfully');

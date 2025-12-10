@@ -5,7 +5,8 @@ import { EditorState, type Extension } from '@codemirror/state';
 import { drawSelection, EditorView, keymap } from '@codemirror/view';
 import type React from 'react';
 import { useEffect, useRef } from 'react';
-import type { App, EditorRegistry, ShortcutManager } from '../index';
+import type { App, EditorRegistry } from '../index';
+import type { IKeybindingManager } from '../types/shortcuts';
 import {
     createConfigurableExtensions,
     createImagePasteExtension,
@@ -29,8 +30,8 @@ export interface EditorProps {
     filePath?: string;
     /** Editor registry for managing multiple editor instances */
     editorRegistry: EditorRegistry;
-    /** Optional ShortcutManager for customizable keybindings */
-    shortcutManager?: ShortcutManager;
+    /** Optional KeybindingManager for customizable keybindings */
+    keybindingManager?: IKeybindingManager;
     /** App instance for checking plugin states */
     app: App;
     /** Editor configuration for extensions */
@@ -61,7 +62,7 @@ export const Editor: React.FC<EditorProps> = ({
     onChange,
     filePath,
     editorRegistry,
-    shortcutManager,
+    keybindingManager,
     app,
     editorConfig = DEFAULT_EDITOR_CONFIG,
     additionalExtensions = [],
@@ -122,8 +123,8 @@ export const Editor: React.FC<EditorProps> = ({
             ...createConfigurableExtensions(editorConfig),
             // Image paste extension (saves pasted images and inserts markdown)
             createImagePasteExtension(app),
-            // Use customizable keymap if ShortcutManager is provided, otherwise use defaults
-            shortcutManager ? createCustomizableKeymap(shortcutManager) : createMarkdownKeymap(),
+            // Use customizable keymap if KeybindingManager is provided, otherwise use defaults
+            keybindingManager ? createCustomizableKeymap(keybindingManager) : createMarkdownKeymap(),
             createSuggestionKeymap(app),
             // Additional extensions from plugins
             ...additionalExtensions,
@@ -166,7 +167,7 @@ export const Editor: React.FC<EditorProps> = ({
             view.destroy();
             viewRef.current = null;
         };
-    }, [editorRegistry, shortcutManager, additionalExtensions, app, content, editorConfig]); // Theme changes handled via CSS variables
+    }, [editorRegistry, keybindingManager, additionalExtensions, app, content, editorConfig]); // Theme changes handled via CSS variables
 
     // Update content when it changes externally (e.g., switching tabs)
     useEffect(() => {

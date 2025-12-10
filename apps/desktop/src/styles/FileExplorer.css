@@ -9,7 +9,8 @@
     transition:
         width 0.2s ease,
         min-width 0.2s ease;
-    overflow: visible;
+    overflow: hidden;
+    flex-shrink: 0;
 }
 
 .file-explorer-sidebar.collapsed {
@@ -27,22 +28,23 @@
     height: 100%;
     background: var(--bg-sidebar);
     flex: 1;
-    overflow: visible;
+    overflow: hidden;
 }
 
 /* ============================================
    File Explorer Header - Redesigned
    ============================================ */
 .file-explorer .file-explorer-header {
-    display: flex !important;
-    flex-direction: column !important;
-    border-bottom: 1px solid var(--border-color) !important;
-    overflow: visible !important;
-    position: relative !important;
-    z-index: 100 !important;
-    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid var(--border-color);
+    overflow: visible;
+    position: relative;
+    z-index: 10;
+    padding: 0;
     user-select: none;
     -webkit-user-select: none;
+    flex-shrink: 0;
 }
 
 /* When macOS traffic lights are present, add top padding for traffic lights row */
@@ -373,7 +375,7 @@
     position: absolute;
     top: 0;
     right: 0;
-    width: 4px;
+    width: 5px;
     height: 100%;
     cursor: col-resize;
     background: transparent;

@@ -98,12 +98,7 @@ export type {
 } from './managers/MetadataCache';
 export { MetadataCache } from './managers/MetadataCache';
 export { SyncManager } from './managers/SyncManager';
-export type { WindowConfig, WindowState } from './managers/WindowConfigManager';
-export {
-    DEFAULT_WINDOW_CONFIG,
-    DEFAULT_WINDOW_STATE,
-    WindowConfigManager,
-} from './managers/WindowConfigManager';
+
 export type { TAbstractFile, TFile, TFolder } from './managers/Workspace';
 export { Workspace } from './managers/Workspace';
 export { WorkspaceHistory } from './managers/WorkspaceHistory';
@@ -124,7 +119,7 @@ export type {
     PluginInfo,
 } from './PluginManager';
 export { PluginManager } from './PluginManager';
-export { ShortcutManager } from './ShortcutManager';
+
 // Sync
 export { AuthService } from './sync/AuthService';
 export { DeviceManager } from './sync/DeviceManager';
@@ -183,7 +178,9 @@ export type {
     ModifierKey,
     ShortcutConfig,
     ShortcutsConfig,
+    IKeybindingManager,
 } from './types/shortcuts';
+export { CommandManager } from './managers/CommandManager';
 export type {
     Tab,
     TabContent,

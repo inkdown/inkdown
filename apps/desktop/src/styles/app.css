@@ -8,8 +8,10 @@
 /* Container for file explorer and main content */
 .app-workspace {
     display: flex;
+    flex-direction: row;
     flex: 1;
     overflow: hidden;
+    min-width: 0;
 }
 
 .app-layout.with-custom-titlebar > :not(.custom-titlebar) {
@@ -67,6 +69,7 @@
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-width: 0;
     overflow: hidden;
 }
 

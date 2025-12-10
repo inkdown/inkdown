@@ -2,6 +2,7 @@ import { RotateCcw } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useApp } from '../contexts/AppContext';
+import { KeybindingManager } from '../managers/KeybindingManager';
 import './ShortcutsSettings.css';
 
 interface ShortcutItem {
@@ -19,6 +20,7 @@ interface ShortcutItem {
  */
 export const ShortcutsSettings: React.FC = () => {
     const app = useApp();
+    const keybindingManager = app.keybindingManager as KeybindingManager;
     const [shortcuts, setShortcuts] = useState<ShortcutItem[]>([]);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [recordedKeys, setRecordedKeys] = useState<string[]>([]);
@@ -27,9 +29,10 @@ export const ShortcutsSettings: React.FC = () => {
 
     // Function to load shortcuts
     const loadShortcuts = useCallback(() => {
-        const allShortcuts = app.shortcutManager.getAllShortcuts();
+        if (!keybindingManager) return;
+        const allShortcuts = keybindingManager.getAllShortcuts();
         setShortcuts(allShortcuts as ShortcutItem[]);
-    }, [app.shortcutManager]);
+    }, [keybindingManager]);
 
     // Load shortcuts on mount
     useEffect(() => {
@@ -79,7 +82,7 @@ export const ShortcutsSettings: React.FC = () => {
             keys.push(key);
 
             // Check for conflicts
-            const conflictId = app.shortcutManager.checkConflict(keys, editingId);
+            const conflictId = keybindingManager.checkConflict(keys, editingId);
             if (conflictId) {
                 setConflict(conflictId);
             } else {
@@ -98,7 +101,7 @@ export const ShortcutsSettings: React.FC = () => {
 
                 if (hasModifier && hasKey) {
                     try {
-                        await app.shortcutManager.updateShortcut(editingId!, recordedKeys);
+                        await keybindingManager.updateShortcut(editingId!, recordedKeys);
                         loadShortcuts();
                         setEditingId(null);
                         setRecordedKeys([]);
@@ -116,7 +119,7 @@ export const ShortcutsSettings: React.FC = () => {
             window.removeEventListener('keydown', handleKeyDown, true);
             window.removeEventListener('keyup', handleKeyUp, true);
         };
-    }, [editingId, recordedKeys, conflict, app.shortcutManager, loadShortcuts]);
+    }, [editingId, recordedKeys, conflict, keybindingManager, loadShortcuts]);
 
     // Cancel editing on Escape
     useEffect(() => {
@@ -167,7 +170,7 @@ export const ShortcutsSettings: React.FC = () => {
 
     const resetShortcut = async (id: string) => {
         try {
-            await app.shortcutManager.resetShortcut(id);
+            await keybindingManager.resetShortcut(id);
             loadShortcuts();
         } catch (error: any) {
             console.error('Failed to reset shortcut:', error);
@@ -175,7 +178,7 @@ export const ShortcutsSettings: React.FC = () => {
     };
 
     const isCustomized = (id: string): boolean => {
-        return app.shortcutManager.isCustomized(id);
+        return keybindingManager.isCustomized(id);
     };
 
     const categoryNames: Record<string, string> = {

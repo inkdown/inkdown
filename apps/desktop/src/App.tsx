@@ -25,6 +25,7 @@ import { useFontSettings } from './hooks/useFontSettings';
 import { useTabManager } from './hooks/useTabManager';
 import { useWindowState } from './hooks/useWindowState';
 import './styles/FileExplorer.css';
+import './styles/app.css';
 import type { EditorConfig } from '@inkdown/core';
 import { DEFAULT_EDITOR_CONFIG, Editor, registerEditorCommands } from '@inkdown/core';
 import { livePreviewExtension } from '@inkdown/plugins';
@@ -243,10 +244,14 @@ const AppContent: React.FC = () => {
         [app],
     );
 
-    // Register editor commands with ShortcutManager for settings UI
+    // Register editor commands with CommandManager for settings UI
     useEffect(() => {
-        registerEditorCommands(app.shortcutManager);
-    }, [app.shortcutManager]);
+        // We'll update registerEditorCommands signature to accept CommandManager later
+        // or ensure it works via app reference if it takes App?
+        // Actually registerEditorCommands imported from core.
+        // It likely takes ShortcutManager type.
+        registerEditorCommands(app.commandManager);
+    }, [app.commandManager]);
 
     // Sync active file to core
     useEffect(() => {
@@ -281,7 +286,7 @@ const AppContent: React.FC = () => {
     // Register desktop-specific commands only
     useEffect(() => {
         // Register app:open-settings command
-        app.shortcutManager.registerCommand(
+        app.commandManager.registerCommand(
             {
                 id: 'app:open-settings',
                 name: 'Open Settings',
@@ -294,7 +299,7 @@ const AppContent: React.FC = () => {
         );
 
         // Register app:toggle-view-mode command
-        app.shortcutManager.registerCommand(
+        app.commandManager.registerCommand(
             {
                 id: 'app:toggle-view-mode',
                 name: 'Toggle View Mode',
@@ -319,7 +324,7 @@ const AppContent: React.FC = () => {
         );
 
         // Register app:toggle-sidebar command
-        app.shortcutManager.registerCommand(
+        app.commandManager.registerCommand(
             {
                 id: 'app:toggle-sidebar',
                 name: 'Toggle Sidebar',
@@ -341,7 +346,7 @@ const AppContent: React.FC = () => {
         );
 
         // Register app:open-workspace command
-        app.shortcutManager.registerCommand(
+        app.commandManager.registerCommand(
             {
                 id: 'app:open-workspace',
                 name: 'Open Workspace',
@@ -382,9 +387,9 @@ const AppContent: React.FC = () => {
         );
 
         return () => {
-            app.shortcutManager.unregisterCommand('app:open-settings');
-            app.shortcutManager.unregisterCommand('app:toggle-sidebar');
-            app.shortcutManager.unregisterCommand('app:open-workspace');
+            app.commandManager.unregisterCommand('app:open-settings');
+            app.commandManager.unregisterCommand('app:toggle-sidebar');
+            app.commandManager.unregisterCommand('app:open-workspace');
         };
     }, [app]);
 
@@ -1013,7 +1018,7 @@ const AppContent: React.FC = () => {
                                         onChange={handleEditorChange}
                                         filePath={activeTab?.filePath}
                                         editorRegistry={app.editorRegistry}
-                                        shortcutManager={app.shortcutManager}
+                                        keybindingManager={app.keybindingManager}
                                         app={app}
                                         editorConfig={editorConfig}
                                         additionalExtensions={editorExtensions}

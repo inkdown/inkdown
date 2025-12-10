@@ -6,7 +6,7 @@
  * Requires app restart to apply decoration changes.
  */
 
-import type { App } from '../App';
+import type { App } from '@inkdown/core';
 
 /**
  * Window size and position state
@@ -61,7 +61,7 @@ export class WindowConfigManager {
     private config: WindowConfig = DEFAULT_WINDOW_CONFIG;
     private configLoaded = false;
 
-    constructor(private app: App) {}
+    constructor(private app: App) { }
 
     /**
      * Load configuration from window.json

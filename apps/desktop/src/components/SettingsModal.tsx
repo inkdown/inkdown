@@ -1,4 +1,5 @@
-import type { FileNode, App as InkdownApp, PluginSettingTab, WindowConfig } from '@inkdown/core';
+import type { FileNode, App as InkdownApp, PluginSettingTab } from '@inkdown/core';
+import type { WindowConfig } from '../managers/WindowConfigManager';
 import {
     Button,
     Select,

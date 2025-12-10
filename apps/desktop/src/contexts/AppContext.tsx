@@ -4,12 +4,14 @@ import {
     type EditorStateManager,
     type FileSystemManager,
     App as InkdownApp,
+    type CommandManager,
     type PluginManager,
-    type ShortcutManager,
     type TabManager,
     type ThemeManager,
 } from '@inkdown/core';
 import { getBuiltInPlugins } from '@inkdown/plugins';
+import { KeybindingManager } from '../managers/KeybindingManager';
+import { WindowConfigManager } from '../managers/WindowConfigManager';
 import type React from 'react';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
@@ -18,7 +20,8 @@ interface AppContextValue {
     pluginManager: PluginManager;
     configManager: ConfigManager;
     themeManager: ThemeManager;
-    shortcutManager: ShortcutManager;
+    commandManager: CommandManager;
+    keybindingManager?: KeybindingManager;
     tabManager: TabManager;
     editorStateManager: EditorStateManager;
     editorRegistry: EditorRegistry;
@@ -42,12 +45,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const app = appRef.current;
 
+    // Initialize Desktop-specific managers
+    // Initialize Desktop-specific managers
+    if (!app.windowConfigManager) {
+        // @ts-ignore - Assigned via module augmentation
+        app.windowConfigManager = new WindowConfigManager(app);
+    }
+    if (!app.keybindingManager) {
+        // @ts-ignore - Assigned via module augmentation
+        app.keybindingManager = new KeybindingManager(app);
+    }
+
     // Initialize app
     useEffect(() => {
         const initializeApp = async () => {
             try {
-                // Initialize the app (this calls init on all managers including ShortcutManager)
+                // Initialize the app (this calls init on all managers including CommandManager)
                 await app.init();
+
+                // Initialize Desktop-specific managers that depend on app being initialized
+                if (app.keybindingManager) {
+                    await (app.keybindingManager as KeybindingManager).init();
+                }
 
                 setIsInitialized(true);
             } catch (error: any) {
@@ -60,6 +79,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Cleanup on unmount
         return () => {
             app.cleanup();
+            (app.keybindingManager as KeybindingManager)?.cleanup();
         };
     }, [app]);
 
@@ -77,7 +97,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         pluginManager: app.pluginManager,
         configManager: app.configManager,
         themeManager: app.themeManager,
-        shortcutManager: app.shortcutManager,
+        commandManager: app.commandManager,
+        keybindingManager: app.keybindingManager as KeybindingManager,
         tabManager: app.tabManager,
         editorStateManager: app.editorStateManager,
         editorRegistry: app.editorRegistry,
@@ -133,14 +154,25 @@ export function useThemeManager(): ThemeManager {
 }
 
 /**
- * Hook to access the ShortcutManager.
+ * Hook to access the CommandManager.
  */
-export function useShortcutManager(): ShortcutManager {
+export function useCommandManager(): CommandManager {
     const context = useContext(AppContext);
     if (!context) {
-        throw new Error('useShortcutManager must be used within an AppProvider');
+        throw new Error('useCommandManager must be used within an AppProvider');
     }
-    return context.shortcutManager;
+    return context.commandManager;
+}
+
+/**
+ * Hook to access the KeybindingManager.
+ */
+export function useKeybindingManager(): KeybindingManager | undefined {
+    const context = useContext(AppContext);
+    if (!context) {
+        throw new Error('useKeybindingManager must be used within an AppProvider');
+    }
+    return context.keybindingManager;
 }
 
 /**

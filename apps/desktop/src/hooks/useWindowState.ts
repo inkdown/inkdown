@@ -7,7 +7,8 @@
  * return physical pixels. On HiDPI displays (like Retina), logical != physical.
  */
 
-import type { App, WindowState } from '@inkdown/core';
+import type { App } from '@inkdown/core';
+import type { WindowState } from '../managers/WindowConfigManager';
 import { PhysicalPosition, PhysicalSize } from '@tauri-apps/api/dpi';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useEffect, useRef } from 'react';

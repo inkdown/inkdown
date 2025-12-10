@@ -1155,9 +1155,9 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                             node.isDirectory
                                 ? (e) => handleDragOver(e, node.path)
                                 : (e) => {
-                                      e.preventDefault();
-                                      e.dataTransfer.dropEffect = 'none';
-                                  }
+                                    e.preventDefault();
+                                    e.dataTransfer.dropEffect = 'none';
+                                }
                         }
                         onDragLeave={node.isDirectory ? handleDragLeave : undefined}
                         onDrop={node.isDirectory ? (e) => handleDrop(e, node.path) : undefined}
@@ -1358,8 +1358,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                     <WorkspaceSwitcher
                                         currentWorkspace={rootPath}
                                         recentWorkspaces={recentWorkspaces}
-                                        onSelect={onWorkspaceSwitch || (() => {})}
-                                        onBrowse={onBrowseWorkspace || (() => {})}
+                                        onSelect={onWorkspaceSwitch || (() => { })}
+                                        onBrowse={onBrowseWorkspace || (() => { })}
                                     />
                                 </div>
                                 <div className="file-explorer-header-actions">
@@ -1580,8 +1580,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                             contextMenu.isRoot
                                                 ? rootPath
                                                 : contextMenu.isDirectory
-                                                  ? contextMenu.path!
-                                                  : undefined,
+                                                    ? contextMenu.path!
+                                                    : undefined,
                                         )
                                     }
                                 >
@@ -1596,8 +1596,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                             contextMenu.isRoot
                                                 ? rootPath
                                                 : contextMenu.isDirectory
-                                                  ? contextMenu.path!
-                                                  : undefined,
+                                                    ? contextMenu.path!
+                                                    : undefined,
                                         )
                                     }
                                 >
@@ -1674,7 +1674,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                             <Trash2 size={14} />
                                             Delete
                                             {selectionCount > 1 &&
-                                            selectedPaths.has(contextMenu.path!)
+                                                selectedPaths.has(contextMenu.path!)
                                                 ? ` (${selectionCount})`
                                                 : ''}
                                         </button>
