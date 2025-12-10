@@ -3,16 +3,16 @@ import { Events } from '../Events';
 /**
  * Token lifecycle events
  */
-export type TokenEvent = 
-    | 'token-saved'      // New access token saved
-    | 'token-refreshed'  // Token was refreshed
-    | 'token-expired'    // Token has expired
-    | 'token-cleared'    // Tokens were cleared (logout)
-    | 'auth-required';   // Authentication is required
+export type TokenEvent =
+    | 'token-saved' // New access token saved
+    | 'token-refreshed' // Token was refreshed
+    | 'token-expired' // Token has expired
+    | 'token-cleared' // Tokens were cleared (logout)
+    | 'auth-required'; // Authentication is required
 
 /**
  * TokenManager - Manages JWT tokens with event-driven lifecycle
- * 
+ *
  * Features:
  * - Proactive expiration checks with configurable buffer
  * - Event emission for token lifecycle changes
@@ -22,7 +22,7 @@ export class TokenManager extends Events {
     private readonly ACCESS_TOKEN_KEY = 'inkdown-access-token';
     private readonly REFRESH_TOKEN_KEY = 'inkdown-refresh-token';
     private readonly USER_EMAIL_KEY = 'inkdown-user-email';
-    
+
     // Default buffer for proactive refresh (1 minute before expiry)
     private readonly DEFAULT_EXPIRY_BUFFER_MS = 60 * 1000;
 
@@ -36,7 +36,7 @@ export class TokenManager extends Events {
         }
         const isRefresh = this.hasToken();
         localStorage.setItem(this.ACCESS_TOKEN_KEY, token);
-        
+
         if (isRefresh) {
             this.trigger('token-refreshed', { token });
         } else {
@@ -154,7 +154,7 @@ export class TokenManager extends Events {
     isExpiringSoon(bufferMs: number = this.DEFAULT_EXPIRY_BUFFER_MS): boolean {
         const expiration = this.getExpiration();
         if (!expiration) return true;
-        
+
         // Token is "expiring soon" if current time + buffer >= expiration
         return Date.now() + bufferMs >= expiration;
     }
@@ -189,4 +189,3 @@ export class TokenManager extends Events {
         }
     }
 }
-

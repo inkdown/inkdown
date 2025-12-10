@@ -1,12 +1,12 @@
 // Note: App type kept for constructor compatibility but not stored
 import { Events } from '../Events';
-import { TokenManager } from './TokenManager';
-import { AuthService } from './AuthService';
 import { loggers } from '../utils/logger';
+import type { AuthService } from './AuthService';
+import type { TokenManager } from './TokenManager';
 
 /**
  * TokenRefreshService - Manages automatic token refresh with proactive checking
- * 
+ *
  * Features:
  * - Proactive token refresh before expiry
  * - Automatic retry on 401 errors
@@ -54,13 +54,17 @@ export class TokenRefreshService extends Events {
 
         // Proactively refresh if token is expiring soon (within 1 minute)
         if (this.tokenManager.isExpiringSoon()) {
-            this.logger.debug('[TokenRefreshService] Token expiring soon, refreshing proactively...');
+            this.logger.debug(
+                '[TokenRefreshService] Token expiring soon, refreshing proactively...',
+            );
             try {
                 await this.refreshToken();
-            } catch (error) {
+            } catch (_error) {
                 // If proactive refresh fails, still return current token
                 // The request might succeed if token isn't actually expired yet
-                this.logger.warn('[TokenRefreshService] Proactive refresh failed, using existing token');
+                this.logger.warn(
+                    '[TokenRefreshService] Proactive refresh failed, using existing token',
+                );
             }
         }
 
@@ -79,7 +83,9 @@ export class TokenRefreshService extends Events {
     async refreshToken(): Promise<void> {
         // If already refreshing, wait for that operation to complete
         if (this.isRefreshing && this.refreshPromise) {
-            this.logger.debug('[TokenRefreshService] Token refresh already in progress, waiting...');
+            this.logger.debug(
+                '[TokenRefreshService] Token refresh already in progress, waiting...',
+            );
             await this.refreshPromise;
             return;
         }
@@ -119,7 +125,10 @@ export class TokenRefreshService extends Events {
             this.logger.info('[TokenRefreshService] Token refreshed successfully');
             this.trigger('token-refreshed');
         } catch (error: any) {
-            this.logger.error('[TokenRefreshService] Token refresh failed:', error?.message || error);
+            this.logger.error(
+                '[TokenRefreshService] Token refresh failed:',
+                (error as any)?.message || error,
+            );
             this.handleAuthFailure();
             throw new Error('Token refresh failed - please login again');
         }
@@ -144,7 +153,7 @@ export class TokenRefreshService extends Events {
 
     /**
      * Wrapper for authenticated requests with automatic retry on 401
-     * 
+     *
      * @param fn Function that takes a token and returns a promise
      * @returns The result of the function
      */
@@ -158,12 +167,14 @@ export class TokenRefreshService extends Events {
             const isUnauthorized = this.isUnauthorizedError(error);
 
             if (isUnauthorized) {
-                this.logger.debug('[TokenRefreshService] Received 401, attempting token refresh...');
+                this.logger.debug(
+                    '[TokenRefreshService] Received 401, attempting token refresh...',
+                );
 
                 // Force refresh the token
                 try {
                     await this.refreshToken();
-                } catch (refreshError) {
+                } catch (_refreshError) {
                     // Refresh failed - don't retry, throw original error
                     throw error;
                 }
@@ -187,8 +198,8 @@ export class TokenRefreshService extends Events {
         // Check various common ways this might be represented
         if (error.status === 401 || error.statusCode === 401) return true;
 
-        if (error.message) {
-            const msg = error.message.toLowerCase();
+        if ((error as any).message) {
+            const msg = (error as any).message.toLowerCase();
             return (
                 msg.includes('401') ||
                 msg.includes('unauthorized') ||
@@ -214,4 +225,3 @@ export class TokenRefreshService extends Events {
         return this.tokenManager.hasToken();
     }
 }
-

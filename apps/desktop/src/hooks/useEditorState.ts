@@ -58,7 +58,7 @@ export function useEditorState(filePath: string | undefined): UseEditorStateRetu
                         setIsDirty(false);
                     }
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load content:', error);
                 if (currentFileRef.current === filePath) {
                     setContent('');
@@ -94,7 +94,7 @@ export function useEditorState(filePath: string | undefined): UseEditorStateRetu
         try {
             await app.editorStateManager.saveFile(filePath);
             setIsDirty(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save file:', error);
             throw error;
         }

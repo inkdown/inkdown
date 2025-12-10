@@ -24,7 +24,8 @@ export function createHighlightDecorations(
     const highlightRegex = /(==)(.+?)\1/g;
     let match;
 
-    while ((match = highlightRegex.exec(text)) !== null) {
+    match = highlightRegex.exec(text);
+    while (match !== null) {
         const matchFrom = from + match.index;
         const matchTo = matchFrom + match[0].length;
         const markerLen = match[1].length; // 2 for ==
@@ -41,6 +42,7 @@ export function createHighlightDecorations(
                 class: 'cm-highlight',
             }).range(matchFrom + markerLen, matchTo - markerLen),
         );
+        match = highlightRegex.exec(text);
     }
 
     return decorations;

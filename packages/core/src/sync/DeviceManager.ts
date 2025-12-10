@@ -1,9 +1,4 @@
-import type {
-    Device,
-    DeviceResponse,
-    DevicesListResponse,
-    RegisterDeviceData,
-} from './types';
+import type { Device, DeviceResponse, DevicesListResponse, RegisterDeviceData } from './types';
 
 /**
  * DeviceManager - Manages device registration and tracking
@@ -13,7 +8,7 @@ export class DeviceManager {
     private readonly DEVICE_ID_KEY = 'inkdown-device-id';
     private baseURL: string;
 
-    constructor(baseURL: string = 'http://localhost:8080/api/v1') {
+    constructor(baseURL = 'http://localhost:8080/api/v1') {
         this.baseURL = baseURL;
         this.loadDeviceId();
     }
@@ -119,8 +114,10 @@ export class DeviceManager {
         });
 
         if (!response.ok) {
-            const error = await response.json().catch(() => ({ message: 'Device registration failed' }));
-            throw new Error(error.message || 'Device registration failed');
+            const error = await response
+                .json()
+                .catch(() => ({ message: 'Device registration failed' }));
+            throw new Error((error as any).message || 'Device registration failed');
         }
 
         const result: DeviceResponse = await response.json();

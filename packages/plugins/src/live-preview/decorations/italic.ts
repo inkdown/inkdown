@@ -26,7 +26,8 @@ export function createItalicDecorations(
     const italicRegex = /(?<!\*)(\*|_)(?!\1)(.+?)\1(?!\1)/g;
     let match;
 
-    while ((match = italicRegex.exec(text)) !== null) {
+    match = italicRegex.exec(text);
+    while (match !== null) {
         const matchFrom = from + match.index;
         const matchTo = matchFrom + match[0].length;
 
@@ -43,6 +44,7 @@ export function createItalicDecorations(
                 attributes: { style: 'font-style: italic;' },
             }).range(matchFrom + 1, matchTo - 1),
         );
+        match = italicRegex.exec(text);
     }
 
     return decorations;

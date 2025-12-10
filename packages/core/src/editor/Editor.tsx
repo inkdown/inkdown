@@ -123,9 +123,7 @@ export const Editor: React.FC<EditorProps> = ({
             // Image paste extension (saves pasted images and inserts markdown)
             createImagePasteExtension(app),
             // Use customizable keymap if ShortcutManager is provided, otherwise use defaults
-            shortcutManager
-                ? createCustomizableKeymap(shortcutManager)
-                : createMarkdownKeymap(),
+            shortcutManager ? createCustomizableKeymap(shortcutManager) : createMarkdownKeymap(),
             createSuggestionKeymap(app),
             // Additional extensions from plugins
             ...additionalExtensions,
@@ -168,7 +166,7 @@ export const Editor: React.FC<EditorProps> = ({
             view.destroy();
             viewRef.current = null;
         };
-    }, [editorRegistry, shortcutManager, additionalExtensions]); // Theme changes handled via CSS variables
+    }, [editorRegistry, shortcutManager, additionalExtensions, app, content, editorConfig]); // Theme changes handled via CSS variables
 
     // Update content when it changes externally (e.g., switching tabs)
     useEffect(() => {

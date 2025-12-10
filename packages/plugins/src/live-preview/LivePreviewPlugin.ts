@@ -1,4 +1,3 @@
-import type { App, PluginManifest } from '@inkdown/core';
 import { Plugin } from '@inkdown/core';
 
 /**
@@ -21,10 +20,6 @@ import { Plugin } from '@inkdown/core';
  * The editor checks if this plugin is enabled before applying the extension.
  */
 export default class LivePreviewPlugin extends Plugin {
-    constructor(app: App, manifest: PluginManifest) {
-        super(app, manifest);
-    }
-
     async onload(): Promise<void> {
         console.log('LivePreviewPlugin loaded');
         this.showNotice('Live Preview plugin loaded!', 1000);

@@ -1,19 +1,19 @@
 import { Events } from '../Events';
 import type { SyncEngine } from './SyncEngine';
-import type { SyncLogger, SyncConflict as LoggerConflict } from './SyncLogger';
+import type { SyncConflict as LoggerConflict, SyncLogger } from './SyncLogger';
 
 /**
  * Sync status states
  */
 export type SyncStatus =
-    | 'idle'        // No sync activity
-    | 'checking'    // Checking for changes
-    | 'syncing'     // Active sync in progress
-    | 'uploading'   // Uploading local changes
+    | 'idle' // No sync activity
+    | 'checking' // Checking for changes
+    | 'syncing' // Active sync in progress
+    | 'uploading' // Uploading local changes
     | 'downloading' // Downloading remote changes
-    | 'offline'     // No network connection
-    | 'error'       // Sync error
-    | 'conflict';   // Has unresolved conflicts
+    | 'offline' // No network connection
+    | 'error' // Sync error
+    | 'conflict'; // Has unresolved conflicts
 
 /**
  * Sync progress information
@@ -31,7 +31,7 @@ export interface SyncProgress {
  */
 export interface SyncConflict extends LoggerConflict {
     // Additional UI fields
-    localPreview?: string;  // First 200 chars of local content
+    localPreview?: string; // First 200 chars of local content
     serverPreview?: string; // First 200 chars of server content
 }
 
@@ -50,10 +50,10 @@ export interface SyncState {
 
 /**
  * SyncOrchestrator - Centralized sync state and operations management
- * 
+ *
  * Provides a clean, event-driven API for sync operations.
  * Delegates actual sync work to SyncEngine but manages state.
- * 
+ *
  * Events:
  * - 'state-change': SyncState changed
  * - 'sync-start': Sync starting
@@ -128,7 +128,7 @@ export class SyncOrchestrator extends Events {
         } catch (error: any) {
             this.updateState({
                 status: 'error',
-                error: error?.message || 'Sync failed',
+                error: (error as any)?.message || 'Sync failed',
             });
             this.trigger('sync-error', error);
             throw error;
@@ -161,7 +161,7 @@ export class SyncOrchestrator extends Events {
                 lastSync: new Date(),
             });
         } catch (error: any) {
-            this.updateState({ status: 'error', error: error?.message });
+            this.updateState({ status: 'error', error: (error as any)?.message });
             throw error;
         }
     }
@@ -176,7 +176,7 @@ export class SyncOrchestrator extends Events {
             throw new Error('SyncOrchestrator not initialized');
         }
 
-        const conflict = this.state.conflicts.find(c => c.id === conflictId);
+        const conflict = this.state.conflicts.find((c) => c.id === conflictId);
         if (!conflict) {
             throw new Error(`Conflict not found: ${conflictId}`);
         }
@@ -192,7 +192,7 @@ export class SyncOrchestrator extends Events {
             this.syncLogger.resolveConflict(conflictId, resolution);
 
             // Update state
-            const updatedConflicts = this.state.conflicts.filter(c => c.id !== conflictId);
+            const updatedConflicts = this.state.conflicts.filter((c) => c.id !== conflictId);
             this.updateState({
                 conflicts: updatedConflicts,
                 status: updatedConflicts.length > 0 ? 'conflict' : 'idle',
@@ -210,7 +210,7 @@ export class SyncOrchestrator extends Events {
         for (const conflict of [...this.state.conflicts]) {
             try {
                 await this.resolveConflict(conflict.id, resolution);
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`Failed to resolve conflict ${conflict.id}:`, error);
                 // Continue with other conflicts
             }
@@ -283,7 +283,7 @@ export class SyncOrchestrator extends Events {
         this.syncEngine.on('sync-error', (error: Error) => {
             this.updateState({
                 status: 'error',
-                error: error.message,
+                error: (error as any).message,
                 progress: undefined,
             });
         });
@@ -309,7 +309,7 @@ export class SyncOrchestrator extends Events {
         if (!this.syncLogger) return;
 
         const loggerConflicts = this.syncLogger.getConflicts();
-        const conflicts: SyncConflict[] = loggerConflicts.map(c => this.mapConflict(c));
+        const conflicts: SyncConflict[] = loggerConflicts.map((c) => this.mapConflict(c));
 
         this.updateState({
             conflicts,

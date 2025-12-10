@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
 import type { App, EditorConfig } from '@inkdown/core';
 import { DEFAULT_EDITOR_CONFIG } from '@inkdown/core';
+import { useCallback, useEffect, useState } from 'react';
 
 export type ViewMode = 'editor' | 'preview' | 'side-by-side';
 
@@ -21,7 +21,7 @@ export const useEditorSettings = (app: App) => {
                 if (config) {
                     setEditorConfig(config);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load editor config:', error);
             }
         };
@@ -31,9 +31,15 @@ export const useEditorSettings = (app: App) => {
         const handleConfigChange = (e: CustomEvent<EditorConfig>) => {
             setEditorConfig(e.detail);
         };
-        window.addEventListener('inkdown:editor-config-changed', handleConfigChange as EventListener);
+        window.addEventListener(
+            'inkdown:editor-config-changed',
+            handleConfigChange as EventListener,
+        );
         return () => {
-            window.removeEventListener('inkdown:editor-config-changed', handleConfigChange as EventListener);
+            window.removeEventListener(
+                'inkdown:editor-config-changed',
+                handleConfigChange as EventListener,
+            );
         };
     }, [app]);
 
@@ -45,7 +51,7 @@ export const useEditorSettings = (app: App) => {
                 if (config?.viewMode) {
                     setViewMode(config.viewMode as ViewMode);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load view mode:', error);
             }
         };
@@ -59,11 +65,11 @@ export const useEditorSettings = (app: App) => {
                 const config = await app.configManager.loadConfig<AppConfig>('app');
                 config.viewMode = mode;
                 await app.configManager.saveConfig('app', config);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to save view mode:', error);
             }
         },
-        [app]
+        [app],
     );
 
     return {

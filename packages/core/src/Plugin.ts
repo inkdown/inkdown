@@ -132,7 +132,7 @@ export abstract class Plugin extends Component {
     async loadData<T = any>(): Promise<T | undefined> {
         try {
             return (await this.app.pluginManager.getPluginSettings(this.manifest.id)) as T;
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Failed to load data for plugin ${this.manifest.id}:`, error);
             return undefined;
         }
@@ -154,7 +154,7 @@ export abstract class Plugin extends Component {
     async saveData(data: any): Promise<void> {
         try {
             await this.app.pluginManager.savePluginSettings(this.manifest.id, data);
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Failed to save data for plugin ${this.manifest.id}:`, error);
             throw error;
         }
@@ -485,7 +485,7 @@ export abstract class Plugin extends Component {
 
                     // Extensions will be applied when editor is re-created or via compartments
                     // This is a placeholder for the actual implementation
-                } catch (error) {
+                } catch (error: any) {
                     console.error('[Plugin] Failed to register editor extension:', error);
                 }
             }
@@ -541,7 +541,7 @@ export abstract class Plugin extends Component {
         for (const tab of this.settingTabs) {
             try {
                 tab.hide();
-            } catch (e) {
+            } catch (_e) {
                 // Ignore errors during cleanup
             }
         }
@@ -560,14 +560,16 @@ export abstract class Plugin extends Component {
         this.statusBarItems = [];
 
         // Remove all style elements
-        this.styleElements.forEach((el) => el.remove());
+        this.styleElements.forEach((el) => {
+            el.remove();
+        });
         this.styleElements = [];
 
         // Unregister events
         for (const unregister of this.eventRefs) {
             try {
                 unregister();
-            } catch (e) {
+            } catch (_e) {
                 // Ignore errors during cleanup
             }
         }
@@ -580,7 +582,7 @@ export abstract class Plugin extends Component {
                 if (suggest && typeof suggest.destroy === 'function') {
                     suggest.destroy();
                 }
-            } catch (e) {
+            } catch (_e) {
                 // Ignore errors during cleanup
             }
         }

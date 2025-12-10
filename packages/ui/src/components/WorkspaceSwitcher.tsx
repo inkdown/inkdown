@@ -1,8 +1,8 @@
+import type { RecentWorkspace } from '@inkdown/core';
 import { Check, ChevronDown, FolderOpen } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { RecentWorkspace } from '@inkdown/core';
 import './WorkspaceSwitcher.css';
 
 export interface WorkspaceSwitcherProps {
@@ -97,14 +97,13 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
                 <>
                     {recentWorkspaces.map((workspace) => (
                         <button
+                            type="button"
                             key={workspace.path}
                             className={`workspace-switcher-item ${workspace.path === currentWorkspace ? 'active' : ''}`}
                             onClick={() => handleSelect(workspace.path)}
                             title={workspace.path}
                         >
-                            <span className="workspace-switcher-item-name">
-                                {workspace.name}
-                            </span>
+                            <span className="workspace-switcher-item-name">{workspace.name}</span>
                             {workspace.path === currentWorkspace && (
                                 <Check size={14} className="workspace-switcher-check" />
                             )}
@@ -114,7 +113,7 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
                 </>
             ) : null}
 
-            <button className="workspace-switcher-item" onClick={handleBrowse}>
+            <button type="button" className="workspace-switcher-item" onClick={handleBrowse}>
                 <FolderOpen size={14} />
                 <span>Switch workspace...</span>
             </button>
@@ -124,6 +123,7 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
     return (
         <div className="workspace-switcher">
             <button
+                type="button"
                 ref={buttonRef}
                 className="workspace-switcher-button"
                 onClick={() => setIsOpen(!isOpen)}

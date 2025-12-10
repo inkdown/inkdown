@@ -104,6 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Toggle button - always visible */}
             <button
+                type="button"
                 className={`sidebar-toggle ${isCollapsed ? 'collapsed' : ''}`}
                 onClick={handleToggle}
                 title={isCollapsed ? 'Show sidebar (Ctrl+\\)' : 'Hide sidebar (Ctrl+\\)'}

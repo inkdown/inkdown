@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import type { App, SyncConfig } from '@inkdown/core';
+import { useEffect, useState } from 'react';
 
 export const useOnboarding = (app: App, loading: boolean) => {
     const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -11,7 +11,7 @@ export const useOnboarding = (app: App, loading: boolean) => {
             try {
                 const syncConfig = await app.configManager.loadConfig<SyncConfig>('sync');
                 setNeedsOnboarding(!syncConfig?.onboardingCompleted);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to check onboarding:', error);
             }
         };
@@ -30,7 +30,7 @@ export const useWindowConfig = (app: App) => {
             try {
                 const config = await app.windowConfigManager.loadConfig();
                 setUseCustomTitleBar(config.customTitleBar);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load window config:', error);
             }
         };

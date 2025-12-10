@@ -62,7 +62,7 @@ export function insertCodeBlock(view: EditorView): boolean {
     const { from, to } = view.state.selection.main;
     const selectedText = view.state.sliceDoc(from, to);
 
-    const codeBlock = '```\n' + selectedText + (selectedText ? '\n' : '') + '```';
+    const codeBlock = `\`\`\`\n${selectedText}${selectedText ? '\n' : ''}\`\`\``;
 
     // Position cursor after the opening ``` to type language
     const cursorPos = from + 3;
@@ -109,7 +109,7 @@ export function insertTable(view: EditorView): boolean {
 `;
 
     // Insert at end of current line
-    const insert = line.text.length > 0 ? '\n' + table : table.trimStart();
+    const insert = line.text.length > 0 ? `\n${table}` : table.trimStart();
 
     view.dispatch({
         changes: { from: line.to, insert },
@@ -133,10 +133,10 @@ export function insertImage(view: EditorView): boolean {
     let cursorPos: number;
 
     if (isUrl) {
-        image = '![alt text](' + selectedText + ')';
+        image = `![alt text](${selectedText})`;
         cursorPos = from + 2; // Position at 'alt text'
     } else if (selectedText) {
-        image = '![' + selectedText + '](url)';
+        image = `![${selectedText}](url)`;
         cursorPos = from + selectedText.length + 4; // Position at 'url'
     } else {
         image = '![alt text](url)';

@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { App } from '@inkdown/core';
-import type { RecentWorkspace } from '@inkdown/core';
+import type { App, RecentWorkspace } from '@inkdown/core';
+import { useCallback, useEffect, useState } from 'react';
 
 interface AppConfig {
     workspace?: string;
@@ -52,7 +51,7 @@ export const useWorkspace = (app: App) => {
                         await app.configManager.saveConfig('app', config);
                     }
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load workspace:', error);
             } finally {
                 setLoading(false);
@@ -81,7 +80,7 @@ export const useWorkspace = (app: App) => {
             recent.unshift({
                 path,
                 name: path.split('/').pop() || path,
-                lastAccessed: now,
+                lastOpened: now,
             });
 
             // Keep only last 10
@@ -91,7 +90,7 @@ export const useWorkspace = (app: App) => {
             await app.configManager.saveConfig('app', config);
             setRecentWorkspaces(recent);
         },
-        [app]
+        [app],
     );
 
     return {

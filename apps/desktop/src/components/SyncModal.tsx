@@ -1,22 +1,23 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useApp } from '../contexts/AppContext';
+import type { SyncConflict, SyncLogEntry, SyncLogLevel } from '@inkdown/core';
+import { getSyncLogger } from '@inkdown/core';
 import {
-    X,
-    RefreshCw,
     AlertTriangle,
     Check,
     ChevronDown,
     ChevronRight,
-    Trash2,
-    Copy,
-    GitMerge,
-    FileText,
     Cloud,
-    HardDrive
+    Copy,
+    FileText,
+    GitMerge,
+    HardDrive,
+    RefreshCw,
+    Trash2,
+    X,
 } from 'lucide-react';
-import type { SyncLogEntry, SyncConflict, SyncLogLevel } from '@inkdown/core';
-import { getSyncLogger } from '@inkdown/core';
-import { SyncProgress, SyncProgressOperation } from './SyncProgress';
+import type React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useApp } from '../contexts/AppContext';
+import { SyncProgress, type SyncProgressOperation } from './SyncProgress';
 import './SyncModal.css';
 
 interface SyncModalProps {
@@ -57,18 +58,18 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
             setLogs(syncLogger.getLogs(logLevel));
             setConflicts(syncLogger.getConflicts());
         }
-    }, [isOpen, logLevel]);
+    }, [isOpen, logLevel, syncLogger.getConflicts, syncLogger.getLogs]);
 
     // Subscribe to log events
     useEffect(() => {
         if (!isOpen) return;
 
         const handleLog = (entry: SyncLogEntry) => {
-            setLogs(prev => [...prev.slice(-499), entry]);
+            setLogs((prev) => [...prev.slice(-499), entry]);
         };
 
         const handleConflictAdded = (conflict: SyncConflict) => {
-            setConflicts(prev => [...prev, conflict]);
+            setConflicts((prev) => [...prev, conflict]);
             // Auto-switch to conflicts tab when new conflict arrives
             setActiveTab('conflicts');
         };
@@ -89,16 +90,18 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
         ];
 
         return () => {
-            refs.forEach(ref => ref.unload());
+            refs.forEach((ref) => {
+                ref.unload();
+            });
         };
-    }, [isOpen]);
+    }, [isOpen, syncLogger.getConflicts, syncLogger.on]);
 
     // Auto-scroll logs
     useEffect(() => {
         if (autoScroll && logsEndRef.current) {
             logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [logs, autoScroll]);
+    }, [autoScroll]);
 
     // Handle sync now
     const handleSyncNow = useCallback(async () => {
@@ -111,7 +114,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
             setTimeout(() => {
                 setProgress({ operation: 'idle', current: 0, total: 0 });
             }, 2000);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Sync failed:', error);
             setProgress({ operation: 'idle', current: 0, total: 0 });
         } finally {
@@ -120,9 +123,16 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
     }, [app.syncManager]);
 
     // Handle conflict resolution
-    const handleResolveConflict = async (conflict: SyncConflict, resolution: 'local' | 'server') => {
+    const handleResolveConflict = async (
+        conflict: SyncConflict,
+        resolution: 'local' | 'server',
+    ) => {
         try {
-            syncLogger.info(`Resolving conflict for ${conflict.path}...`, `Using ${resolution} version`, 'Conflict');
+            syncLogger.info(
+                `Resolving conflict for ${conflict.path}...`,
+                `Using ${resolution} version`,
+                'Conflict',
+            );
 
             const syncEngine = app.syncManager.syncEngine;
             if (!syncEngine) {
@@ -154,26 +164,30 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
     // Copy logs to clipboard
     const handleCopyLogs = () => {
         const logText = logs
-            .map(log => `[${log.timestamp.toISOString()}] [${log.level.toUpperCase()}] ${log.module ? `[${log.module}] ` : ''}${log.message}${log.details ? ` - ${log.details}` : ''}`)
+            .map(
+                (log) =>
+                    `[${log.timestamp.toISOString()}] [${log.level.toUpperCase()}] ${log.module ? `[${log.module}] ` : ''}${log.message}${log.details ? ` - ${log.details}` : ''}`,
+            )
             .join('\n');
         navigator.clipboard.writeText(logText);
     };
 
     if (!isOpen) return null;
 
-    const filteredLogs = logs.filter(log => {
+    const filteredLogs = logs.filter((log) => {
         const levels: SyncLogLevel[] = ['debug', 'info', 'warn', 'error'];
         return levels.indexOf(log.level) >= levels.indexOf(logLevel);
     });
 
     return (
         <div className="sync-modal-overlay" onClick={onClose}>
-            <div className="sync-modal" onClick={e => e.stopPropagation()}>
+            <div className="sync-modal" onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
                 <div className="sync-modal-header">
                     <h2>Sync Status</h2>
                     <div className="sync-modal-actions">
                         <button
+                            type="button"
                             className="sync-btn primary"
                             onClick={handleSyncNow}
                             disabled={isSyncing}
@@ -181,7 +195,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                             <RefreshCw size={14} className={isSyncing ? 'spin' : ''} />
                             {isSyncing ? 'Syncing...' : 'Sync Now'}
                         </button>
-                        <button className="sync-btn icon" onClick={onClose}>
+                        <button type="button" className="sync-btn icon" onClick={onClose}>
                             <X size={18} />
                         </button>
                     </div>
@@ -203,6 +217,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                 {/* Tabs */}
                 <div className="sync-modal-tabs">
                     <button
+                        type="button"
                         className={`sync-tab ${activeTab === 'logs' ? 'active' : ''}`}
                         onClick={() => setActiveTab('logs')}
                     >
@@ -211,6 +226,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                         <span className="tab-count">{filteredLogs.length}</span>
                     </button>
                     <button
+                        type="button"
                         className={`sync-tab ${activeTab === 'conflicts' ? 'active' : ''}`}
                         onClick={() => setActiveTab('conflicts')}
                     >
@@ -277,7 +293,7 @@ const LogsView: React.FC<LogsViewProps> = ({
             <div className="logs-toolbar">
                 <select
                     value={logLevel}
-                    onChange={e => setLogLevel(e.target.value as SyncLogLevel)}
+                    onChange={(e) => setLogLevel(e.target.value as SyncLogLevel)}
                     className="log-level-select"
                 >
                     <option value="debug">Debug</option>
@@ -289,15 +305,20 @@ const LogsView: React.FC<LogsViewProps> = ({
                     <input
                         type="checkbox"
                         checked={autoScroll}
-                        onChange={e => setAutoScroll(e.target.checked)}
+                        onChange={(e) => setAutoScroll(e.target.checked)}
                     />
                     Auto-scroll
                 </label>
                 <div className="toolbar-spacer" />
-                <button className="sync-btn small" onClick={onCopy} title="Copy logs">
+                <button type="button" className="sync-btn small" onClick={onCopy} title="Copy logs">
                     <Copy size={12} />
                 </button>
-                <button className="sync-btn small" onClick={onClear} title="Clear logs">
+                <button
+                    type="button"
+                    className="sync-btn small"
+                    onClick={onClear}
+                    title="Clear logs"
+                >
                     <Trash2 size={12} />
                 </button>
             </div>
@@ -307,9 +328,7 @@ const LogsView: React.FC<LogsViewProps> = ({
                 {logs.length === 0 ? (
                     <div className="logs-empty">No logs yet. Sync activity will appear here.</div>
                 ) : (
-                    logs.map(log => (
-                        <LogEntry key={log.id} log={log} />
-                    ))
+                    logs.map((log) => <LogEntry key={log.id} log={log} />)
                 )}
                 <div ref={logsEndRef} />
             </div>
@@ -323,27 +342,20 @@ const LogEntry: React.FC<{ log: SyncLogEntry }> = ({ log }) => {
 
     return (
         <div className={`log-entry ${log.level}`}>
-            <span className="log-time">
-                {log.timestamp.toLocaleTimeString()}
-            </span>
-            <span className={`log-level-badge ${log.level}`}>
-                {log.level.toUpperCase()}
-            </span>
-            {log.module && (
-                <span className="log-module">[{log.module}]</span>
-            )}
+            <span className="log-time">{log.timestamp.toLocaleTimeString()}</span>
+            <span className={`log-level-badge ${log.level}`}>{log.level.toUpperCase()}</span>
+            {log.module && <span className="log-module">[{log.module}]</span>}
             <span className="log-message">{log.message}</span>
             {log.details && (
                 <>
                     <button
+                        type="button"
                         className="log-expand"
                         onClick={() => setExpanded(!expanded)}
                     >
                         {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                     </button>
-                    {expanded && (
-                        <div className="log-details">{log.details}</div>
-                    )}
+                    {expanded && <div className="log-details">{log.details}</div>}
                 </>
             )}
         </div>
@@ -388,9 +400,11 @@ const ConflictsView: React.FC<ConflictsViewProps> = ({
         <div className="conflicts-list">
             <div className="conflicts-header">
                 <AlertTriangle size={16} className="warning-icon" />
-                <span>{conflicts.length} conflict{conflicts.length > 1 ? 's' : ''} need your attention</span>
+                <span>
+                    {conflicts.length} conflict{conflicts.length > 1 ? 's' : ''} need your attention
+                </span>
             </div>
-            {conflicts.map(conflict => (
+            {conflicts.map((conflict) => (
                 <div
                     key={conflict.id}
                     className="conflict-item"
@@ -419,17 +433,13 @@ interface ConflictResolverProps {
     onResolve: (conflict: SyncConflict, resolution: 'local' | 'server') => void;
 }
 
-const ConflictResolver: React.FC<ConflictResolverProps> = ({
-    conflict,
-    onBack,
-    onResolve,
-}) => {
+const ConflictResolver: React.FC<ConflictResolverProps> = ({ conflict, onBack, onResolve }) => {
     const [selectedSide, setSelectedSide] = useState<'local' | 'server' | null>(null);
 
     return (
         <div className="conflict-resolver">
             {/* Back button */}
-            <button className="back-btn" onClick={onBack}>
+            <button type="button" className="back-btn" onClick={onBack}>
                 ← Back to conflicts
             </button>
 
@@ -474,13 +484,11 @@ const ConflictResolver: React.FC<ConflictResolverProps> = ({
 
             {/* Resolution actions */}
             <div className="conflict-actions">
-                <button
-                    className="sync-btn"
-                    onClick={onBack}
-                >
+                <button type="button" className="sync-btn" onClick={onBack}>
                     Cancel
                 </button>
                 <button
+                    type="button"
                     className={`sync-btn ${selectedSide === 'local' ? 'primary' : ''}`}
                     onClick={() => onResolve(conflict, 'local')}
                     disabled={selectedSide !== 'local'}
@@ -489,6 +497,7 @@ const ConflictResolver: React.FC<ConflictResolverProps> = ({
                     Keep Local
                 </button>
                 <button
+                    type="button"
                     className={`sync-btn ${selectedSide === 'server' ? 'primary' : ''}`}
                     onClick={() => onResolve(conflict, 'server')}
                     disabled={selectedSide !== 'server'}

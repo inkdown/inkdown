@@ -20,7 +20,9 @@
     justify-content: center;
     cursor: default;
     padding: 0;
-    transition: filter 0.15s ease, transform 0.1s ease;
+    transition:
+        filter 0.15s ease,
+        transform 0.1s ease;
     /* Ensure clicks work properly */
     pointer-events: auto;
     /* Remove any default button styles */

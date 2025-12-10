@@ -1,6 +1,6 @@
 /**
  * FilesConfigManager - Manages file location settings
- * 
+ *
  * Handles configuration for where new notes and attachments are created.
  * Uses files.json config with localStorage cache for performance.
  */
@@ -54,7 +54,7 @@ export class FilesConfigManager {
                 this.config = { ...DEFAULT_FILES_CONFIG, ...config };
             }
             this.configLoaded = true;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to load files config:', error);
         }
 
@@ -86,7 +86,7 @@ export class FilesConfigManager {
      */
     async getNewNotePath(filename: string): Promise<string> {
         await this.loadConfig();
-        
+
         const workspacePath = this.app.fileSystemManager.getWorkspacePath();
         if (!workspacePath) {
             throw new Error('No workspace opened');
@@ -98,12 +98,12 @@ export class FilesConfigManager {
         if (this.config.newNotesLocation === 'folder' && this.config.newNotesFolder) {
             const folderPath = this.app.fileSystemManager.joinPath(
                 workspacePath,
-                this.config.newNotesFolder
+                this.config.newNotesFolder,
             );
-            
+
             // Ensure folder exists
             await this.ensureDirectoryExists(folderPath);
-            
+
             return this.app.fileSystemManager.joinPath(folderPath, noteFilename);
         }
 
@@ -118,7 +118,7 @@ export class FilesConfigManager {
      */
     async getNewAttachmentPath(filename: string): Promise<string> {
         await this.loadConfig();
-        
+
         const workspacePath = this.app.fileSystemManager.getWorkspacePath();
         if (!workspacePath) {
             throw new Error('No workspace opened');
@@ -127,12 +127,12 @@ export class FilesConfigManager {
         if (this.config.newAttachmentsLocation === 'folder' && this.config.newAttachmentsFolder) {
             const folderPath = this.app.fileSystemManager.joinPath(
                 workspacePath,
-                this.config.newAttachmentsFolder
+                this.config.newAttachmentsFolder,
             );
-            
+
             // Ensure folder exists
             await this.ensureDirectoryExists(folderPath);
-            
+
             return this.app.fileSystemManager.joinPath(folderPath, filename);
         }
 
@@ -174,7 +174,7 @@ export class FilesConfigManager {
         if (this.config.newNotesLocation === 'folder' && this.config.newNotesFolder) {
             targetDir = this.app.fileSystemManager.joinPath(
                 workspacePath,
-                this.config.newNotesFolder
+                this.config.newNotesFolder,
             );
             await this.ensureDirectoryExists(targetDir);
         }
@@ -185,9 +185,11 @@ export class FilesConfigManager {
         let counter = 1;
 
         // Check for existing files and find unique name
-        while (await this.app.fileSystemManager.exists(
-            this.app.fileSystemManager.joinPath(targetDir, filename)
-        )) {
+        while (
+            await this.app.fileSystemManager.exists(
+                this.app.fileSystemManager.joinPath(targetDir, filename),
+            )
+        ) {
             filename = `${baseName} ${counter}.md`;
             counter++;
         }
@@ -209,7 +211,7 @@ export class FilesConfigManager {
             if (!exists) {
                 await this.app.fileSystemManager.createDirectory(path);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.warn('Failed to ensure directory exists:', error);
         }
     }

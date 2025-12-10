@@ -1,4 +1,5 @@
 import type { App } from '@inkdown/core';
+import { remarkCallout, remarkHighlight } from '@inkdown/plugins';
 import type React from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
@@ -6,7 +7,6 @@ import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import { remarkCallout, remarkHighlight } from '@inkdown/plugins';
 import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/github-dark.css';
 import './Preview.css';

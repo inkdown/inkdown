@@ -35,10 +35,6 @@ export class SyncLogger extends Events {
     private maxLogs = 500;
     private idCounter = 0;
 
-    constructor() {
-        super();
-    }
-
     /**
      * Add a log entry
      */
@@ -88,7 +84,7 @@ export class SyncLogger extends Events {
         const levels: SyncLogLevel[] = ['debug', 'info', 'warn', 'error'];
         const minIndex = levels.indexOf(minLevel);
 
-        return this.logs.filter(log => levels.indexOf(log.level) >= minIndex);
+        return this.logs.filter((log) => levels.indexOf(log.level) >= minIndex);
     }
 
     /**
@@ -112,7 +108,12 @@ export class SyncLogger extends Events {
 
         this.conflicts.set(fullConflict.id, fullConflict);
         this.trigger('conflict-added', fullConflict);
-        this.log('warn', `Conflict detected: ${conflict.path}`, `Local v${conflict.localVersion} vs Server v${conflict.serverVersion}`, 'Conflict');
+        this.log(
+            'warn',
+            `Conflict detected: ${conflict.path}`,
+            `Local v${conflict.localVersion} vs Server v${conflict.serverVersion}`,
+            'Conflict',
+        );
 
         return fullConflict;
     }
@@ -125,7 +126,12 @@ export class SyncLogger extends Events {
         if (conflict) {
             conflict.resolved = true;
             this.trigger('conflict-resolved', { conflict, resolution });
-            this.log('info', `Conflict resolved: ${conflict.path}`, `Resolution: ${resolution}`, 'Conflict');
+            this.log(
+                'info',
+                `Conflict resolved: ${conflict.path}`,
+                `Resolution: ${resolution}`,
+                'Conflict',
+            );
         }
     }
 
@@ -133,7 +139,7 @@ export class SyncLogger extends Events {
      * Get all unresolved conflicts
      */
     getConflicts(): SyncConflict[] {
-        return Array.from(this.conflicts.values()).filter(c => !c.resolved);
+        return Array.from(this.conflicts.values()).filter((c) => !c.resolved);
     }
 
     /**

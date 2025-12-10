@@ -48,19 +48,19 @@
 }
 
 /* Nested list support - add more indentation */
-.cm-line[data-indent="1"] {
+.cm-line[data-indent='1'] {
     padding-left: 2em;
 }
 
-.cm-line[data-indent="2"] {
+.cm-line[data-indent='2'] {
     padding-left: 4em;
 }
 
-.cm-line[data-indent="3"] {
+.cm-line[data-indent='3'] {
     padding-left: 6em;
 }
 
-.cm-line[data-indent="4"] {
+.cm-line[data-indent='4'] {
     padding-left: 8em;
 }
 

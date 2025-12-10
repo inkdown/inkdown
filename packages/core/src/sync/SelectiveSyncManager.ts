@@ -1,5 +1,5 @@
-import type { App } from '../App';
 import { minimatch } from 'minimatch';
+import type { App } from '../App';
 
 export interface SyncIgnoreConfig {
     ignorePatterns: string[];
@@ -9,11 +9,7 @@ export interface SyncIgnoreConfig {
 export class SelectiveSyncManager {
     private app: App;
     private config: SyncIgnoreConfig = {
-        ignorePatterns: [
-            '*.tmp',
-            '.trash/**',
-            'node_modules/**',
-        ],
+        ignorePatterns: ['*.tmp', '.trash/**', 'node_modules/**'],
         ignoredPaths: {},
     };
 
@@ -70,7 +66,7 @@ export class SelectiveSyncManager {
     }
 
     async removeIgnorePattern(pattern: string): Promise<void> {
-        this.config.ignorePatterns = this.config.ignorePatterns.filter(p => p !== pattern);
+        this.config.ignorePatterns = this.config.ignorePatterns.filter((p) => p !== pattern);
         await this.saveConfig();
     }
 
@@ -87,7 +83,7 @@ export class SelectiveSyncManager {
     }
 
     private async saveConfig(): Promise<void> {
-        const existingConfig = await this.app.configManager.loadConfig<any>('sync') || {};
+        const existingConfig = (await this.app.configManager.loadConfig<any>('sync')) || {};
         await this.app.configManager.saveConfig('sync', {
             ...existingConfig,
             ignorePatterns: this.config.ignorePatterns,

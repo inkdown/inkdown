@@ -1,5 +1,5 @@
-import { native } from './native';
 import type { App } from './App';
+import { native } from './native';
 import type {
     CommunityTheme,
     CommunityThemeCache,
@@ -28,7 +28,7 @@ const CACHE_TTL = 60 * 60 * 1000;
 
 /**
  * CommunityThemeManager - Manages community theme browsing, installation, and removal
- * 
+ *
  * This manager handles:
  * - Fetching the community themes index from GitHub
  * - Fetching individual theme manifests and READMEs
@@ -62,15 +62,14 @@ export class CommunityThemeManager {
      */
     private async loadInstalledThemes(): Promise<void> {
         try {
-            const config = await this.app.configManager.loadConfig<InstalledThemesConfig>(
-                'installed-themes'
-            );
+            const config =
+                await this.app.configManager.loadConfig<InstalledThemesConfig>('installed-themes');
             if (config?.themes) {
                 for (const theme of config.themes) {
                     this.installedThemes.set(theme.id, theme);
                 }
             }
-        } catch (error) {
+        } catch (_error) {
             this.logger.debug('No installed themes config found, starting fresh');
         }
     }
@@ -122,7 +121,7 @@ export class CommunityThemeManager {
 
             this.logger.info(`Fetched ${listings.length} community themes`);
             return listings;
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Failed to fetch community themes index', error);
             // Return cached data if available
             return this.cache?.listings ?? [];
@@ -196,7 +195,7 @@ export class CommunityThemeManager {
             }
 
             return theme;
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to fetch theme details for ${themeId}`, error);
             return null;
         } finally {
@@ -289,7 +288,7 @@ export class CommunityThemeManager {
             await this.app.themeManager.reloadCustomThemes();
 
             this.logger.info(`Theme ${themeId} installed successfully`);
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to install theme ${themeId}`, error);
             throw error;
         }
@@ -323,7 +322,7 @@ export class CommunityThemeManager {
             await this.app.themeManager.reloadCustomThemes();
 
             this.logger.info(`Theme ${themeId} uninstalled successfully`);
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to uninstall theme ${themeId}`, error);
             throw error;
         }

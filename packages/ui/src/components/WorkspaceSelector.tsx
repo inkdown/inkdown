@@ -45,6 +45,7 @@ export const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
                 </p>
 
                 <button
+                    type="button"
                     className="workspace-selector-button"
                     onClick={handleOpenFolder}
                     disabled={isOpening}
@@ -59,7 +60,7 @@ export const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
                         <ul>
                             {recentWorkspaces.map((path) => (
                                 <li key={path}>
-                                    <button onClick={() => onWorkspaceSelected(path)}>
+                                    <button type="button" onClick={() => onWorkspaceSelected(path)}>
                                         <Folder size={16} />
                                         <span>{path.split('/').pop()}</span>
                                     </button>

@@ -18,11 +18,11 @@ import {
     insertHeader5,
     insertHeader6,
     insertHorizontalRule,
+    insertImage,
     insertTable,
     toggleBlockquote,
 } from '../commands/blocks';
 import {
-    insertImage,
     insertLink,
     toggleBold,
     toggleHighlight,

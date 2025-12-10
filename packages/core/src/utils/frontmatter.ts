@@ -37,7 +37,7 @@ export function parseFrontMatter(content: string): {
             frontmatter[key] = true;
         } else if (unquoted === 'false') {
             frontmatter[key] = false;
-        } else if (!isNaN(Number(unquoted)) && unquoted !== '') {
+        } else if (!Number.isNaN(Number(unquoted)) && unquoted !== '') {
             frontmatter[key] = Number(unquoted);
         } else {
             frontmatter[key] = unquoted;

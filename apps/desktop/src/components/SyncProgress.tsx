@@ -1,5 +1,5 @@
-import React from 'react';
-import { Cloud, Download, Upload, Check, Loader } from 'lucide-react';
+import { Check, Cloud, Download, Loader, Upload } from 'lucide-react';
+import type React from 'react';
 import './SyncProgress.css';
 
 export type SyncProgressOperation = 'download' | 'upload' | 'check' | 'idle' | 'complete';
@@ -40,7 +40,6 @@ export const SyncProgress: React.FC<SyncProgressProps> = ({
                 return 'Checking for changes';
             case 'complete':
                 return 'Sync complete';
-            case 'idle':
             default:
                 return 'Ready';
         }
@@ -56,7 +55,6 @@ export const SyncProgress: React.FC<SyncProgressProps> = ({
                 return <Loader size={14} className="progress-icon spin" />;
             case 'complete':
                 return <Check size={14} className="progress-icon complete" />;
-            case 'idle':
             default:
                 return <Cloud size={14} className="progress-icon idle" />;
         }
@@ -76,18 +74,11 @@ export const SyncProgress: React.FC<SyncProgressProps> = ({
 
             {isActive && total > 0 && (
                 <div className="sync-progress-bar-container">
-                    <div
-                        className="sync-progress-bar"
-                        style={{ width: `${progressPercent}%` }}
-                    />
+                    <div className="sync-progress-bar" style={{ width: `${progressPercent}%` }} />
                 </div>
             )}
 
-            {currentFile && isActive && (
-                <div className="sync-progress-file">
-                    {currentFile}
-                </div>
-            )}
+            {currentFile && isActive && <div className="sync-progress-file">{currentFile}</div>}
         </div>
     );
 };

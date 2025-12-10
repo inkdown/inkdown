@@ -1,36 +1,36 @@
-import { useCallback } from 'react';
 import type { App } from '@inkdown/core';
 import { invoke } from '@tauri-apps/api/core';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { ask, open as openDialog } from '@tauri-apps/plugin-dialog';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
+import { useCallback } from 'react';
 import type { SelectedItem } from '../components/FileExplorer';
 
 export const useFileOperations = (
     app: App,
     rootPath: string,
-    _onFileSelect?: (filePath: string, openInNewTab?: boolean) => Promise<void>
+    _onFileSelect?: (filePath: string, openInNewTab?: boolean) => Promise<void>,
 ) => {
     const handleCreateFile = useCallback(
         async (parentPath: string) => {
             try {
                 await app.fileSystemManager.createFile(parentPath);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to create file:', error);
             }
         },
-        [app]
+        [app],
     );
 
     const handleCreateDirectory = useCallback(
         async (parentPath: string) => {
             try {
                 await app.fileSystemManager.createDirectory(parentPath);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to create directory:', error);
             }
         },
-        [app]
+        [app],
     );
 
     const handleRename = useCallback(
@@ -45,11 +45,11 @@ export const useFileOperations = (
                 const newPath = `${parentDir}/${newName}`;
 
                 await app.fileManager.renameFile(file, newPath);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to rename:', error);
             }
         },
-        [app]
+        [app],
     );
 
     const handleDelete = useCallback(
@@ -60,11 +60,11 @@ export const useFileOperations = (
                     throw new Error(`File not found in workspace cache: ${path}`);
                 }
                 await app.fileManager.trashFile(file);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to delete:', error);
             }
         },
-        [app]
+        [app],
     );
 
     const handleDeleteMultiple = useCallback(
@@ -79,22 +79,22 @@ export const useFileOperations = (
                         await app.fileSystemManager.delete(path);
                     }
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to delete multiple items:', error);
             }
         },
-        [app]
+        [app],
     );
 
     const handleMove = useCallback(
         async (source: string, destination: string) => {
             try {
                 await app.fileSystemManager.move(source, destination);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to move:', error);
             }
         },
-        [app]
+        [app],
     );
 
     const handleMoveMultiple = useCallback(
@@ -103,11 +103,11 @@ export const useFileOperations = (
                 for (const source of sources) {
                     await app.fileSystemManager.move(source, destination);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to move multiple items:', error);
             }
         },
-        [app]
+        [app],
     );
 
     const handleRequestDeleteConfirm = useCallback(
@@ -132,27 +132,24 @@ export const useFileOperations = (
 
             return confirmed;
         },
-        []
+        [],
     );
 
-    const handleCopyFile = useCallback(
-        async (sourcePath: string) => {
-            try {
-                // Get the parent directory of the source file
-                const parentDir = sourcePath.substring(0, sourcePath.lastIndexOf('/'));
-                // The backend copy_file command will automatically handle naming with " (copy)" suffix
-                await invoke('copy_file', { source: sourcePath, destination: parentDir });
-            } catch (error) {
-                console.error('Failed to copy file:', error);
-            }
-        },
-        []
-    );
+    const handleCopyFile = useCallback(async (sourcePath: string) => {
+        try {
+            // Get the parent directory of the source file
+            const parentDir = sourcePath.substring(0, sourcePath.lastIndexOf('/'));
+            // The backend copy_file command will automatically handle naming with " (copy)" suffix
+            await invoke('copy_file', { source: sourcePath, destination: parentDir });
+        } catch (error: any) {
+            console.error('Failed to copy file:', error);
+        }
+    }, []);
 
     const handleCopyPath = useCallback(async (path: string) => {
         try {
             await writeText(path);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to copy path:', error);
         }
     }, []);
@@ -160,19 +157,19 @@ export const useFileOperations = (
     const handleCopyRelativePath = useCallback(
         async (path: string) => {
             try {
-                const relativePath = path.replace(rootPath + '/', '');
+                const relativePath = path.replace(`${rootPath}/`, '');
                 await writeText(relativePath);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to copy relative path:', error);
             }
         },
-        [rootPath]
+        [rootPath],
     );
 
     const handleShowInExplorer = useCallback(async (path: string) => {
         try {
             await revealItemInDir(path);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to show in explorer:', error);
         }
     }, []);
@@ -185,18 +182,18 @@ export const useFileOperations = (
                     return;
                 }
 
-                const relativePath = path.replace(rootPath + '/', '');
+                const relativePath = path.replace(`${rootPath}/`, '');
 
                 if (ignored) {
                     await app.syncManager.selectiveSync.addIgnorePath(relativePath);
                 } else {
                     await app.syncManager.selectiveSync.removeIgnorePath(relativePath);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to toggle sync ignore:', error);
             }
         },
-        [app, rootPath]
+        [app, rootPath],
     );
 
     const handleOpenDialog = useCallback(async (): Promise<string | null> => {
@@ -212,7 +209,7 @@ export const useFileOperations = (
             }
 
             return null;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to open dialog:', error);
             return null;
         }

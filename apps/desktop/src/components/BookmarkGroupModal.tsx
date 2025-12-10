@@ -60,12 +60,12 @@ export const BookmarkGroupModal: React.FC<BookmarkGroupModalProps> = ({
 
         const allGroups = app.bookmarkManager.getGroupNames();
         const filtered = allGroups.filter((name) =>
-            name.toLowerCase().includes(inputValue.toLowerCase())
+            name.toLowerCase().includes(inputValue.toLowerCase()),
         );
 
         // Check if exact match exists
         const exactMatch = allGroups.find(
-            (name) => name.toLowerCase() === inputValue.toLowerCase()
+            (name) => name.toLowerCase() === inputValue.toLowerCase(),
         );
 
         setSuggestions(filtered);
@@ -76,7 +76,7 @@ export const BookmarkGroupModal: React.FC<BookmarkGroupModalProps> = ({
 
     const handleAddBookmark = useCallback(async () => {
         const groupName = inputValue.trim();
-        
+
         if (!groupName) {
             setError('Please enter a group name');
             return;
@@ -86,7 +86,7 @@ export const BookmarkGroupModal: React.FC<BookmarkGroupModalProps> = ({
             // Find existing group or create new one
             const existingGroups = app.bookmarkManager.getGroups();
             let group = existingGroups.find(
-                (g) => g.name.toLowerCase() === groupName.toLowerCase()
+                (g) => g.name.toLowerCase() === groupName.toLowerCase(),
             );
 
             if (!group) {
@@ -98,7 +98,7 @@ export const BookmarkGroupModal: React.FC<BookmarkGroupModalProps> = ({
             await app.bookmarkManager.addBookmark(
                 group.id,
                 filePath,
-                fileName.endsWith('.md') ? fileName.slice(0, -3) : fileName
+                fileName.endsWith('.md') ? fileName.slice(0, -3) : fileName,
             );
 
             onClose();
@@ -129,15 +129,13 @@ export const BookmarkGroupModal: React.FC<BookmarkGroupModalProps> = ({
 
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                setSelectedIndex((prev) =>
-                    prev < suggestions.length - 1 ? prev + 1 : prev
-                );
+                setSelectedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : prev));
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
             }
         },
-        [selectedIndex, suggestions, showSuggestions, onClose, handleAddBookmark]
+        [selectedIndex, suggestions, showSuggestions, onClose, handleAddBookmark],
     );
 
     const handleSuggestionClick = useCallback((suggestion: string) => {
@@ -159,6 +157,7 @@ export const BookmarkGroupModal: React.FC<BookmarkGroupModalProps> = ({
                 <div className="bookmark-modal-header">
                     <h3>Add to Bookmarks</h3>
                     <button
+                        type="button"
                         className="bookmark-modal-close"
                         onClick={onClose}
                         aria-label="Close"
@@ -214,10 +213,15 @@ export const BookmarkGroupModal: React.FC<BookmarkGroupModalProps> = ({
                 </div>
 
                 <div className="bookmark-modal-footer">
-                    <button className="bookmark-modal-button secondary" onClick={onClose}>
+                    <button
+                        type="button"
+                        className="bookmark-modal-button secondary"
+                        onClick={onClose}
+                    >
                         Cancel
                     </button>
                     <button
+                        type="button"
                         className="bookmark-modal-button primary"
                         onClick={handleAddBookmark}
                     >

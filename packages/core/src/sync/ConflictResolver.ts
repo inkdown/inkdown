@@ -1,7 +1,7 @@
 import DiffMatchPatch from 'diff-match-patch';
 import type { App } from '../App';
-import type { NoteResponse } from './types';
 import { loggers } from '../utils/logger';
+import type { NoteResponse } from './types';
 
 export class ConflictResolver {
     private app: App;
@@ -17,7 +17,7 @@ export class ConflictResolver {
         path: string,
         localContent: string,
         remoteContent: string,
-        remoteNote: NoteResponse
+        remoteNote: NoteResponse,
     ): Promise<string> {
         this.logger.info(`Resolving conflict for: ${path}`);
 
@@ -40,7 +40,7 @@ export class ConflictResolver {
 
     private attemptAutoMerge(
         localContent: string,
-        remoteContent: string
+        remoteContent: string,
     ): { success: boolean; content: string } {
         try {
             // Calculate patches from remote to local
@@ -50,13 +50,13 @@ export class ConflictResolver {
             const [merged, results] = this.dmp.patch_apply(patches, remoteContent);
 
             // Check if all patches applied successfully
-            const allSuccess = results.every(r => r === true);
+            const allSuccess = results.every((r) => r === true);
 
             return {
                 success: allSuccess,
                 content: merged,
             };
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Auto-merge error:', error);
             return {
                 success: false,
@@ -69,7 +69,7 @@ export class ConflictResolver {
         path: string,
         localContent: string,
         remoteContent: string,
-        remoteNote: NoteResponse
+        remoteNote: NoteResponse,
     ): Promise<string> {
         // Get local file modification time
         const localModifiedTime = await this.getLocalModifiedTime(path);
@@ -79,11 +79,10 @@ export class ConflictResolver {
             this.logger.info('Keeping local version (newer)');
             this.notifyUser(path, 'kept_local');
             return localContent;
-        } else {
-            this.logger.info('Using remote version (newer)');
-            this.notifyUser(path, 'used_remote');
-            return remoteContent;
         }
+        this.logger.info('Using remote version (newer)');
+        this.notifyUser(path, 'used_remote');
+        return remoteContent;
     }
 
     private async getLocalModifiedTime(path: string): Promise<Date> {
@@ -91,7 +90,7 @@ export class ConflictResolver {
             const file = this.app.workspace.getAbstractFileByPath(path) as any;
             if (!file) return new Date(0);
             return new Date(file.stat.mtime);
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Failed to get file stats:', error);
             return new Date(0); // Return epoch if failed
         }

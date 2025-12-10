@@ -1,6 +1,6 @@
-import type React from 'react';
 import type { App } from '@inkdown/core';
 import { ExternalLink as ExternalLinkIcon } from 'lucide-react';
+import type React from 'react';
 import '../styles/Link.css';
 
 export interface LinkProps {

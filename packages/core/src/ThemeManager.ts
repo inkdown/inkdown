@@ -1,5 +1,5 @@
-import { native } from './native';
 import type { App } from './App';
+import { native } from './native';
 import type { ColorScheme, ThemeConfig } from './types/theme';
 
 /**
@@ -88,7 +88,7 @@ export class ThemeManager {
                         builtIn: false,
                     };
                     this.availableThemes.set(themeName, themeConfig);
-                } catch (error) {
+                } catch (error: any) {
                     console.error(`Failed to load theme ${themeName}:`, error);
                 }
             }
@@ -138,18 +138,18 @@ export class ThemeManager {
             // For custom themes, load and inject the CSS
             // Determine which CSS file to load based on available modes and current scheme
             const modes = theme.modes || ['dark'];
-            const cssFile = modes.includes(this.colorScheme) 
-                ? `${this.colorScheme}.css` 
+            const cssFile = modes.includes(this.colorScheme)
+                ? `${this.colorScheme}.css`
                 : `${modes[0]}.css`;
-            
+
             try {
                 const cssContent = await native.fs.readThemeCss(themeId, cssFile);
                 this.applyCustomThemeCSS(cssContent);
-                
+
                 // Apply the correct color scheme class for the theme
                 const scheme = cssFile.includes('light') ? 'light' : 'dark';
                 this.applyColorScheme(scheme);
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`Failed to load custom theme ${themeId}:`, error);
                 return;
             }
@@ -207,10 +207,10 @@ export class ThemeManager {
      */
     async setColorScheme(scheme: ColorScheme): Promise<void> {
         console.log('[ThemeManager] setColorScheme START - scheme:', scheme);
-        
+
         const currentThemeConfig = this.availableThemes.get(this.currentTheme);
         const modes = currentThemeConfig?.modes || ['dark'];
-        
+
         // If current theme is custom and supports the new scheme, reload its CSS
         if (currentThemeConfig && !currentThemeConfig.builtIn && modes.includes(scheme)) {
             const cssFile = `${scheme}.css`;
@@ -218,7 +218,7 @@ export class ThemeManager {
                 const cssContent = await native.fs.readThemeCss(this.currentTheme, cssFile);
                 this.applyCustomThemeCSS(cssContent);
                 this.applyColorScheme(scheme);
-                
+
                 // Save to config
                 const config = await this.app.configManager.loadConfig<any>('app');
                 if (config) {
@@ -226,12 +226,12 @@ export class ThemeManager {
                     await this.app.configManager.saveConfig('app', config);
                 }
                 return;
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`Failed to load ${scheme} variant for ${this.currentTheme}:`, error);
                 // Fall through to default theme
             }
         }
-        
+
         // Apply the color scheme class
         this.applyColorScheme(scheme);
 

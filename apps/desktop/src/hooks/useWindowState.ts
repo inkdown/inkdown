@@ -1,16 +1,16 @@
 /**
  * useWindowState - Hook for managing window size and state persistence
- * 
+ *
  * Saves and restores window dimensions, position, and maximized/fullscreen state.
- * 
+ *
  * Note: We use Physical coordinates for consistency, as innerSize() and outerPosition()
  * return physical pixels. On HiDPI displays (like Retina), logical != physical.
  */
 
-import { useEffect, useRef } from 'react';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { PhysicalSize, PhysicalPosition } from '@tauri-apps/api/dpi';
 import type { App, WindowState } from '@inkdown/core';
+import { PhysicalPosition, PhysicalSize } from '@tauri-apps/api/dpi';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { useEffect, useRef } from 'react';
 
 // Debounce time for saving window state (ms)
 const SAVE_DEBOUNCE_MS = 500;
@@ -55,13 +55,18 @@ export function useWindowState(app: App) {
                 }
 
                 // Center window if no position was saved
-                if (state.x === undefined && state.y === undefined && !state.isMaximized && !state.isFullscreen) {
+                if (
+                    state.x === undefined &&
+                    state.y === undefined &&
+                    !state.isMaximized &&
+                    !state.isFullscreen
+                ) {
                     await window.center();
                     console.log('[WindowState] Centered window');
                 }
 
                 isRestoringRef.current = false;
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to restore window state:', error);
                 isRestoringRef.current = false;
             }
@@ -97,7 +102,7 @@ export function useWindowState(app: App) {
 
                 console.log('[WindowState] Saving state:', state);
                 await app.windowConfigManager.saveWindowState(state);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to save window state:', error);
             }
         };

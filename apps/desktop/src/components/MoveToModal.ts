@@ -90,11 +90,11 @@ export class MoveToModal extends Modal {
         for (const dir of sortedDirs) {
             // Don't show the source file's current directory or any subdirectories of the source
             if (dir === currentDir) continue;
-            if (this.sourcePath.startsWith(dir + '/')) continue;
+            if (this.sourcePath.startsWith(`${dir}/`)) continue;
 
             // Prevent moving a directory into itself or its children
             if (dir === this.sourcePath) continue;
-            if (dir.startsWith(this.sourcePath + '/')) continue;
+            if (dir.startsWith(`${this.sourcePath}/`)) continue;
 
             const isCurrent = dir === currentDir;
             const displayName = this.getDisplayName(dir);

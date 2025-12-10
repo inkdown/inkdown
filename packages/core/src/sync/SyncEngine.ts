@@ -1,16 +1,16 @@
 import type { App } from '../App';
 import { Events } from '../Events';
-import { FileWatcherService } from './FileWatcherService';
-import { NoteSyncService } from './NoteSyncService';
-import { WebSocketService } from './WebSocketService';
-import { ConflictResolver } from './ConflictResolver';
-import { SelectiveSyncManager } from './SelectiveSyncManager';
-import { UploadQueue } from './UploadQueue';
-import { LocalDatabase } from './LocalDatabase';
-import { getSyncLogger } from './SyncLogger';
-import type { EncryptionManager } from './EncryptionManager';
-import type { FileChangeEvent, NoteResponse, SyncVerificationResult, LocalNoteInfo } from './types';
 import { loggers } from '../utils/logger';
+import { ConflictResolver } from './ConflictResolver';
+import type { EncryptionManager } from './EncryptionManager';
+import { FileWatcherService } from './FileWatcherService';
+import type { LocalDatabase } from './LocalDatabase';
+import { NoteSyncService } from './NoteSyncService';
+import { SelectiveSyncManager } from './SelectiveSyncManager';
+import { getSyncLogger } from './SyncLogger';
+import type { FileChangeEvent, LocalNoteInfo, NoteResponse, SyncVerificationResult } from './types';
+import { UploadQueue } from './UploadQueue';
+import { WebSocketService } from './WebSocketService';
 
 export class SyncEngine extends Events {
     private app: App;
@@ -35,7 +35,7 @@ export class SyncEngine extends Events {
         baseURL: string,
         wsURL: string,
         encryptionManager: EncryptionManager,
-        localDatabase: LocalDatabase
+        localDatabase: LocalDatabase,
     ) {
         super();
         this.app = app;
@@ -47,14 +47,10 @@ export class SyncEngine extends Events {
         this.fileWatcher = new FileWatcherService(app, this.selectiveSync);
         this.noteSyncService = new NoteSyncService(
             baseURL,
-            encryptionManager,
             app.syncManager.tokenManager,
-            app.syncManager.deviceManager
+            app.syncManager.deviceManager,
         );
-        this.webSocketService = new WebSocketService(
-            { url: wsURL },
-            app.syncManager.tokenManager
-        );
+        this.webSocketService = new WebSocketService({ url: wsURL }, app.syncManager.tokenManager);
         this.conflictResolver = new ConflictResolver(app);
 
         // Initialize upload queue with retry logic
@@ -126,7 +122,9 @@ export class SyncEngine extends Events {
                 const restored = await this.encryptionManager.restoreFromStorage(token);
 
                 if (!restored) {
-                    this.logger.warn('Encryption key not found in storage. User needs to enter password.');
+                    this.logger.warn(
+                        'Encryption key not found in storage. User needs to enter password.',
+                    );
                     // We can't proceed without encryption key
                     // The UI should prompt the user
                     this.isRunning = false;
@@ -162,7 +160,7 @@ export class SyncEngine extends Events {
             this.startPeriodicScan();
 
             this.logger.info('SyncEngine started successfully');
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Failed to start SyncEngine:', error);
             this.isRunning = false;
             throw error;
@@ -206,7 +204,7 @@ export class SyncEngine extends Events {
                 this.trigger('sync-complete');
             }
             // If queue has items, sync-complete will be emitted when queue empties
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Initial sync failed:', error);
             this.isSyncingActive = false;
             // Reset count on error too
@@ -236,8 +234,8 @@ export class SyncEngine extends Events {
         this.logger.info(`Local files: ${localFiles.length} markdown files`);
 
         // 3. Build server map for quick lookup
-        const serverNoteIds = new Set(manifestNotes.map(n => n.id));
-        const serverMap = new Map(manifestNotes.map(n => [n.id, n]));
+        const serverNoteIds = new Set(manifestNotes.map((n) => n.id));
+        const serverMap = new Map(manifestNotes.map((n) => [n.id, n]));
 
         // 4. Build local state for batch diff
         const localNotes: LocalNoteInfo[] = [];
@@ -260,7 +258,7 @@ export class SyncEngine extends Events {
                 // Check if this ID actually exists on the server
                 if (serverNoteIds.has(noteId)) {
                     // Valid mapping - include in batch diff
-                    const storedVersion = await this.localDatabase.getNoteVersion(file.path) || 0;
+                    const storedVersion = (await this.localDatabase.getNoteVersion(file.path)) || 0;
                     localNotes.push({
                         id: noteId,
                         content_hash: localHash,
@@ -269,7 +267,9 @@ export class SyncEngine extends Events {
                 } else {
                     // Orphaned mapping - ID doesn't exist on server anymore
                     // This can happen after account change, server reset, etc.
-                    this.logger.warn(`Orphaned mapping detected: ${file.path} -> ${noteId} (not on server)`);
+                    this.logger.warn(
+                        `Orphaned mapping detected: ${file.path} -> ${noteId} (not on server)`,
+                    );
                     orphanedFiles.push(file.path);
                     // Clear the invalid mapping
                     await this.localDatabase.deletePathMapping(file.path);
@@ -279,18 +279,26 @@ export class SyncEngine extends Events {
             }
         }
 
-        this.logger.info(`Mapped files: ${localNotes.length}, Unmapped files: ${unmappedFiles.length}, Orphaned files: ${orphanedFiles.length}`);
-        this.syncLogger.info(`Local: ${localNotes.length} mapped, ${unmappedFiles.length} new, ${orphanedFiles.length} orphaned`, undefined, 'Sync');
+        this.logger.info(
+            `Mapped files: ${localNotes.length}, Unmapped files: ${unmappedFiles.length}, Orphaned files: ${orphanedFiles.length}`,
+        );
+        this.syncLogger.info(
+            `Local: ${localNotes.length} mapped, ${unmappedFiles.length} new, ${orphanedFiles.length} orphaned`,
+            undefined,
+            'Sync',
+        );
 
         // 5. Use batch diff for efficient comparison
         if (localNotes.length > 0 && this.workspaceId) {
             const diff = await this.noteSyncService.batchDiff(this.workspaceId, localNotes);
 
-            this.logger.info(`Batch diff result: ${diff.to_download.length} to download, ${diff.to_upload.length} to upload, ${diff.to_delete.length} to delete, ${diff.conflicts.length} conflicts`);
+            this.logger.info(
+                `Batch diff result: ${diff.to_download.length} to download, ${diff.to_upload.length} to upload, ${diff.to_delete.length} to delete, ${diff.conflicts.length} conflicts`,
+            );
             this.syncLogger.info(
                 `Diff: ${diff.to_download.length} download, ${diff.to_upload.length} upload, ${diff.conflicts.length} conflicts`,
                 undefined,
-                'Sync'
+                'Sync',
             );
 
             // Process downloads (server has newer version)
@@ -308,7 +316,7 @@ export class SyncEngine extends Events {
                             type: 'modify',
                             path: path,
                             contentHash: fileData.hash,
-                            timestamp: new Date()
+                            timestamp: new Date(),
                         });
                     }
                 }
@@ -327,7 +335,7 @@ export class SyncEngine extends Events {
 
         // 6. Check for notes on server that we don't have locally
         // This handles cases where batchDiff might not return missing notes (e.g. empty local state)
-        const mappedNoteIds = new Set(localNotes.map(n => n.id));
+        const mappedNoteIds = new Set(localNotes.map((n) => n.id));
         for (const [noteId, entry] of serverMap) {
             // If note is not mapped locally AND not deleted on server
             if (!mappedNoteIds.has(noteId) && !entry.is_deleted) {
@@ -355,7 +363,7 @@ export class SyncEngine extends Events {
                         type: 'create',
                         path: path,
                         contentHash: fileData.hash,
-                        timestamp: new Date()
+                        timestamp: new Date(),
                     });
                 }
             }
@@ -395,7 +403,13 @@ export class SyncEngine extends Events {
     /**
      * Handle a sync conflict detected during reconciliation
      */
-    private async handleSyncConflict(conflict: { note_id: string; local_hash: string; server_hash: string; local_version: number; server_version: number }): Promise<void> {
+    private async handleSyncConflict(conflict: {
+        note_id: string;
+        local_hash: string;
+        server_hash: string;
+        local_version: number;
+        server_version: number;
+    }): Promise<void> {
         this.logger.warn(`Handling conflict for note ${conflict.note_id}`);
 
         const path = await this.localDatabase.getPathByNoteId(conflict.note_id);
@@ -426,7 +440,7 @@ export class SyncEngine extends Events {
             path,
             localContent,
             serverContent,
-            serverNote
+            serverNote,
         );
 
         // Update local file with resolved content (pause watcher to avoid re-triggering)
@@ -443,69 +457,73 @@ export class SyncEngine extends Events {
             type: 'modify',
             path: path,
             contentHash: resolvedHash,
-            timestamp: new Date()
+            timestamp: new Date(),
         });
     }
 
-    private async scanAndUploadLocalFiles(): Promise<void> {
-        this.logger.info('Scanning for local files to upload...');
+    // private async scanAndUploadLocalFiles(): Promise<void> {
+    //     this.logger.info('Scanning for local files to upload...');
 
-        try {
-            const files = await this.app.workspace.getFiles(['md']);
-            this.logger.info(`Found ${files.length} markdown files in workspace`);
+    //     try {
+    //         const files = await this.app.workspace.getFiles(['md']);
+    //         this.logger.info(`Found ${files.length} markdown files in workspace`);
 
-            let uploadCount = 0;
-            let modifiedCount = 0;
+    //         let uploadCount = 0;
+    //         let modifiedCount = 0;
 
-            for (const file of files) {
-                this.logger.debug(`Checking file: ${file.path}`);
+    //         for (const file of files) {
+    //             this.logger.debug(`Checking file: ${file.path}`);
 
-                // Check if already mapped
-                const noteId = await this.localDatabase.getNoteIdByPath(file.path);
-                if (!noteId) {
-                    // Not mapped, queue for upload as new file
-                    this.logger.info(`Found unmapped local file: ${file.path}, queuing for upload`);
+    //             // Check if already mapped
+    //             const noteId = await this.localDatabase.getNoteIdByPath(file.path);
+    //             if (noteId) {
+    //                 // File is mapped, check if content has changed
+    //                 const content = await this.app.fileManager.read(file);
+    //                 const localHash = await this.calculateHash(content);
+    //                 const storedHash = await this.localDatabase.getContentHash(file.path);
 
-                    const content = await this.app.fileManager.read(file);
-                    const contentHash = await this.calculateHash(content);
+    //                 if (storedHash && localHash !== storedHash) {
+    //                     // Content has changed since last sync
+    //                     this.logger.info(
+    //                         `Found modified local file: ${file.path}, queuing for update`,
+    //                     );
 
-                    this.uploadQueue.enqueue({
-                        type: 'create',
-                        path: file.path,
-                        contentHash: contentHash,
-                        timestamp: new Date()
-                    });
-                    uploadCount++;
-                } else {
-                    // File is mapped, check if content has changed
-                    const content = await this.app.fileManager.read(file);
-                    const localHash = await this.calculateHash(content);
-                    const storedHash = await this.localDatabase.getContentHash(file.path);
+    //                     this.uploadQueue.enqueue({
+    //                         type: 'modify',
+    //                         path: file.path,
+    //                         contentHash: localHash,
+    //                         timestamp: new Date(),
+    //                     });
+    //                     modifiedCount++;
+    //                 } else {
+    //                     this.logger.debug(`File unchanged: ${file.path}`);
+    //                 }
+    //             } else {
+    //                 // Not mapped, queue for upload as new file
+    //                 this.logger.info(`Found unmapped local file: ${file.path}, queuing for upload`);
 
-                    if (storedHash && localHash !== storedHash) {
-                        // Content has changed since last sync
-                        this.logger.info(`Found modified local file: ${file.path}, queuing for update`);
+    //                 const content = await this.app.fileManager.read(file);
+    //                 const contentHash = await this.calculateHash(content);
 
-                        this.uploadQueue.enqueue({
-                            type: 'modify',
-                            path: file.path,
-                            contentHash: localHash,
-                            timestamp: new Date()
-                        });
-                        modifiedCount++;
-                    } else {
-                        this.logger.debug(`File unchanged: ${file.path}`);
-                    }
-                }
-            }
+    //                 this.uploadQueue.enqueue({
+    //                     type: 'create',
+    //                     path: file.path,
+    //                     contentHash: contentHash,
+    //                     timestamp: new Date(),
+    //                 });
+    //                 uploadCount++;
+    //             }
+    //         }
 
-            this.logger.info(`Queued ${uploadCount} new files, ${modifiedCount} modified files for upload`);
-            this.logger.info(`Upload queue size: ${this.uploadQueue.size()}`);
-        } catch (error) {
-            this.logger.error('Error scanning local files:', error);
-            throw error;
-        }
-    }
+    //         this.logger.info(
+    //             `Queued ${uploadCount} new files, ${modifiedCount} modified files for upload`,
+    //         );
+    //         this.logger.info(`Upload queue size: ${this.uploadQueue.size()}`);
+    //     } catch (error: any) {
+    //         this.logger.error('Error scanning local files:', error);
+    //         throw error;
+    //     }
+    // }
 
     private async handleLocalChange(event: FileChangeEvent): Promise<void> {
         console.log('[SyncEngine] Local change detected:', event.type, event.path);
@@ -517,7 +535,7 @@ export class SyncEngine extends Events {
     /**
      * Process all items in the upload queue synchronously
      * Used during initial sync to ensure files are uploaded before completing
-     * 
+     *
      * IMPORTANT: We pause the queue's internal processing to prevent race conditions
      * where both processUploadQueue and handleUploadRequest try to process the same item
      */
@@ -536,10 +554,18 @@ export class SyncEngine extends Events {
                 await this.uploadChange(item);
                 this.uploadQueue.markSuccess(item.path);
                 this.logger.info(`Uploaded: ${item.path}`);
-                this.syncLogger.info(`Uploaded: ${item.path.split('/').pop()}`, item.path, 'Upload');
+                this.syncLogger.info(
+                    `Uploaded: ${item.path.split('/').pop()}`,
+                    item.path,
+                    'Upload',
+                );
             } catch (error: any) {
                 this.logger.error(`Failed to upload ${item.path}:`, error);
-                this.syncLogger.error(`Failed: ${item.path.split('/').pop()}`, error?.message || 'Unknown error', 'Upload');
+                this.syncLogger.error(
+                    `Failed: ${item.path.split('/').pop()}`,
+                    (error as any)?.message || 'Unknown error',
+                    'Upload',
+                );
                 this.uploadQueue.markFailure(item.path, error as Error);
             }
         }
@@ -575,7 +601,7 @@ export class SyncEngine extends Events {
             await this.uploadChange(event);
             // Mark as successful in queue
             this.uploadQueue.markSuccess(event.path);
-        } catch (error) {
+        } catch (error: any) {
             console.error('[SyncEngine] Upload failed:', error);
             // Mark as failed - queue will handle retry logic
             this.uploadQueue.markFailure(event.path, error as Error);
@@ -621,17 +647,26 @@ export class SyncEngine extends Events {
                 const updatedNote = await this.noteSyncService.updateNote(existingNoteId, {
                     encrypted_title: encryptedTitle,
                     encrypted_content: encryptedContent,
-                    nonce: 'embedded',  // Nonce is now embedded in each field
+                    nonce: 'embedded', // Nonce is now embedded in each field
                     encryption_algo: 'AES-256-GCM',
                     content_hash: contentHash,
                     expected_version: currentVersion,
                 });
 
-                await this.localDatabase.saveNoteVersion(path, updatedNote.version, existingNoteId, contentHash);
+                await this.localDatabase.saveNoteVersion(
+                    path,
+                    updatedNote.version,
+                    existingNoteId,
+                    contentHash,
+                );
                 this.syncLogger.info(`Updated note: ${path} → v${updatedNote.version}`);
             } catch (error: any) {
                 // Check if it's a version conflict (409 Conflict)
-                if (error?.message?.includes('409') || error?.message?.includes('conflict') || error?.message?.includes('version')) {
+                if (
+                    (error as any)?.message?.includes('409') ||
+                    (error as any)?.message?.includes('conflict') ||
+                    (error as any)?.message?.includes('version')
+                ) {
                     this.syncLogger.warn(`Version conflict for ${path}, resolving...`);
 
                     // Fetch the latest version from server
@@ -643,7 +678,8 @@ export class SyncEngine extends Events {
                     // After conflict resolution, retry the upload
                     // The conflict resolver should have updated the local file
                     const updatedContent = await this.app.fileManager.read(file);
-                    const updatedEncrypted = await this.encryptionManager.encryptBlob(updatedContent);
+                    const updatedEncrypted =
+                        await this.encryptionManager.encryptBlob(updatedContent);
                     const updatedTitleEncrypted = await this.encryptionManager.encryptBlob(title);
 
                     const retriedNote = await this.noteSyncService.updateNote(existingNoteId, {
@@ -652,11 +688,16 @@ export class SyncEngine extends Events {
                         nonce: 'embedded',
                         encryption_algo: 'AES-256-GCM',
                         content_hash: await this.calculateHash(updatedContent),
-                        expected_version: remoteNote.version,  // Use remote version now
+                        expected_version: remoteNote.version, // Use remote version now
                     });
 
                     const retriedHash = await this.calculateHash(updatedContent);
-                    await this.localDatabase.saveNoteVersion(path, retriedNote.version, existingNoteId, retriedHash);
+                    await this.localDatabase.saveNoteVersion(
+                        path,
+                        retriedNote.version,
+                        existingNoteId,
+                        retriedHash,
+                    );
                     this.syncLogger.info(`Conflict resolved: ${path} → v${retriedNote.version}`);
                 } else {
                     // Not a version conflict, rethrow
@@ -669,7 +710,9 @@ export class SyncEngine extends Events {
             const recheckNoteId = await this.localDatabase.getNoteIdByPath(path);
             if (recheckNoteId) {
                 // Another upload already created/mapped this note - upgrade to update
-                this.logger.info(`[uploadChange] Path was mapped concurrently, upgrading to update: ${path}`);
+                this.logger.info(
+                    `[uploadChange] Path was mapped concurrently, upgrading to update: ${path}`,
+                );
                 const currentVersion = (await this.localDatabase.getNoteVersion(path)) || 0;
                 const updatedNote = await this.noteSyncService.updateNote(recheckNoteId, {
                     encrypted_title: encryptedTitle,
@@ -679,7 +722,12 @@ export class SyncEngine extends Events {
                     content_hash: contentHash,
                     expected_version: currentVersion,
                 });
-                await this.localDatabase.saveNoteVersion(path, updatedNote.version, recheckNoteId, contentHash);
+                await this.localDatabase.saveNoteVersion(
+                    path,
+                    updatedNote.version,
+                    recheckNoteId,
+                    contentHash,
+                );
                 this.syncLogger.info(`Updated note (dedup): ${path} → v${updatedNote.version}`);
                 return;
             }
@@ -696,13 +744,18 @@ export class SyncEngine extends Events {
                 type: 'file',
                 encrypted_title: encryptedTitle,
                 encrypted_content: encryptedContent,
-                nonce: 'embedded',  // Nonce is now embedded in each field
+                nonce: 'embedded', // Nonce is now embedded in each field
                 encryption_algo: 'AES-256-GCM',
                 content_hash: contentHash,
             });
 
             await this.mapPathToNote(path, newNote.id);
-            await this.localDatabase.saveNoteVersion(path, newNote.version, newNote.id, contentHash);
+            await this.localDatabase.saveNoteVersion(
+                path,
+                newNote.version,
+                newNote.id,
+                contentHash,
+            );
             this.syncLogger.info(`Created note: ${path} (${newNote.id})`);
         }
     }
@@ -748,7 +801,7 @@ export class SyncEngine extends Events {
                     type: 'create',
                     path: newPath,
                     contentHash,
-                    timestamp: new Date()
+                    timestamp: new Date(),
                 });
                 this.syncLogger.info(`Renamed file has no mapping, creating as new: ${newPath}`);
             }
@@ -758,7 +811,12 @@ export class SyncEngine extends Events {
     private async handleRemoteUpdate(payload: any): Promise<void> {
         // Skip if this update came from current device
         const deviceId = this.app.syncManager.deviceManager.getDeviceId();
-        console.log('[SyncEngine] handleRemoteUpdate - payload.device_id:', payload.device_id, 'local deviceId:', deviceId);
+        console.log(
+            '[SyncEngine] handleRemoteUpdate - payload.device_id:',
+            payload.device_id,
+            'local deviceId:',
+            deviceId,
+        );
         if (payload.device_id === deviceId) {
             this.syncLogger.debug(`Ignoring own update: ${payload.note_id}`);
             return;
@@ -774,22 +832,29 @@ export class SyncEngine extends Events {
     /**
      * Try to decrypt with embedded nonce format, fall back to legacy format if it fails
      */
-    private async decryptWithFallback(encryptedData: string, legacyNonce?: string): Promise<string> {
+    private async decryptWithFallback(
+        encryptedData: string,
+        legacyNonce?: string,
+    ): Promise<string> {
         try {
             // Try new format (nonce embedded in blob)
             return await this.encryptionManager.decryptBlob(encryptedData);
-        } catch (error) {
+        } catch (error: any) {
             this.syncLogger.debug(`decryptBlob failed, trying legacy format. Error: ${error}`);
             // Fall back to legacy format (separate nonce)
             if (legacyNonce && legacyNonce !== 'embedded') {
-                this.syncLogger.debug(`Using legacy decryption with nonce: ${legacyNonce.substring(0, 10)}...`);
+                this.syncLogger.debug(
+                    `Using legacy decryption with nonce: ${legacyNonce.substring(0, 10)}...`,
+                );
                 return await this.encryptionManager.decrypt({
                     encrypted_content: encryptedData,
                     nonce: legacyNonce,
                     encryption_algo: 'AES-256-GCM',
                 });
             }
-            this.syncLogger.error(`Decryption failed - no valid legacy nonce. legacyNonce=${legacyNonce}`);
+            this.syncLogger.error(
+                `Decryption failed - no valid legacy nonce. legacyNonce=${legacyNonce}`,
+            );
             throw error;
         }
     }
@@ -842,7 +907,7 @@ export class SyncEngine extends Events {
                         path,
                         localContent,
                         content,
-                        note
+                        note,
                     );
                     // Pause watcher to avoid re-triggering sync
                     this.fileWatcher.pause();
@@ -854,7 +919,12 @@ export class SyncEngine extends Events {
                     this.syncLogger.info(`Conflict resolved for ${path}`);
                 } else {
                     // Same content - just update the version tracking to stay in sync
-                    await this.localDatabase.saveNoteVersion(path, note.version, note.id, note.content_hash);
+                    await this.localDatabase.saveNoteVersion(
+                        path,
+                        note.version,
+                        note.id,
+                        note.content_hash,
+                    );
                     this.syncLogger.debug(`Synced (same content): ${path} v${note.version}`);
                     return;
                 }
@@ -876,10 +946,15 @@ export class SyncEngine extends Events {
 
             // Update tracking
             await this.mapPathToNote(path, note.id);
-            await this.localDatabase.saveNoteVersion(path, note.version, note.id, note.content_hash);
+            await this.localDatabase.saveNoteVersion(
+                path,
+                note.version,
+                note.id,
+                note.content_hash,
+            );
             this.syncLogger.info(`Applied remote update: ${path} v${note.version}`);
             this.trigger('sync-remote-update', path);
-        } catch (error) {
+        } catch (error: any) {
             this.syncLogger.error(`Failed to apply remote update for note ${note.id}: ${error}`);
             console.error('[SyncEngine] Failed to apply remote update:', error);
             this.trigger('sync-error', error);
@@ -914,7 +989,7 @@ export class SyncEngine extends Events {
 
     // Helper methods
     private extractTitle(path: string): string {
-        return path.split('/').pop()!.replace(/\.md$/, '');
+        return (path.split('/').pop() || '').replace(/\.md$/, '');
     }
 
     private sanitizePath(title: string): string {
@@ -934,7 +1009,6 @@ export class SyncEngine extends Events {
         return this.arrayBufferToBase64(hashBuffer); // Use helper instead of manual map
     }
 
-
     private arrayBufferToBase64(buffer: ArrayBuffer): string {
         let binary = '';
         const bytes = new Uint8Array(buffer);
@@ -953,10 +1027,10 @@ export class SyncEngine extends Events {
         await this.localDatabase.deleteNoteVersion(path);
     }
 
-    private async getLastSyncTime(): Promise<Date> {
-        const config = await this.app.configManager.loadConfig<any>('sync');
-        return config?.lastSyncTime ? new Date(config.lastSyncTime) : new Date(0);
-    }
+    // private async getLastSyncTime(): Promise<Date> {
+    //     const config = await this.app.configManager.loadConfig<any>('sync');
+    //     return config?.lastSyncTime ? new Date(config.lastSyncTime) : new Date(0);
+    // }
 
     private async saveLastSyncTime(time: Date): Promise<void> {
         const config = (await this.app.configManager.loadConfig<any>('sync')) || {};
@@ -998,7 +1072,7 @@ export class SyncEngine extends Events {
                 this.isSyncingActive = false;
                 this.trigger('sync-complete');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('[SyncEngine] Manual sync failed:', error);
             this.isSyncingActive = false;
             this.trigger('sync-error', error);
@@ -1048,7 +1122,12 @@ export class SyncEngine extends Events {
                 expected_version: serverNote.version,
             });
 
-            await this.localDatabase.saveNoteVersion(path, updatedNote.version, noteId, contentHash);
+            await this.localDatabase.saveNoteVersion(
+                path,
+                updatedNote.version,
+                noteId,
+                contentHash,
+            );
             this.syncLogger.info(`Force uploaded: ${path} → v${updatedNote.version}`);
         } else {
             // Create new note if no mapping exists
@@ -1066,7 +1145,12 @@ export class SyncEngine extends Events {
             });
 
             await this.mapPathToNote(path, newNote.id);
-            await this.localDatabase.saveNoteVersion(path, newNote.version, newNote.id, contentHash);
+            await this.localDatabase.saveNoteVersion(
+                path,
+                newNote.version,
+                newNote.id,
+                contentHash,
+            );
             this.syncLogger.info(`Force created: ${path} → v${newNote.version}`);
         }
     }
@@ -1124,7 +1208,7 @@ export class SyncEngine extends Events {
         this.scanInterval = setInterval(async () => {
             try {
                 await this.scanForUndetectedChanges();
-            } catch (error) {
+            } catch (error: any) {
                 this.syncLogger.error('Periodic scan failed', error as any);
             }
         }, this.SCAN_INTERVAL_MS);
@@ -1167,7 +1251,7 @@ export class SyncEngine extends Events {
                         type: 'modify',
                         path: file.path,
                         contentHash: currentHash,
-                        timestamp: new Date()
+                        timestamp: new Date(),
                     });
                     changesFound++;
                 } else if (!storedHash) {
@@ -1179,7 +1263,7 @@ export class SyncEngine extends Events {
                             type: 'create',
                             path: file.path,
                             contentHash: currentHash,
-                            timestamp: new Date()
+                            timestamp: new Date(),
                         });
                         changesFound++;
                     }
@@ -1191,7 +1275,7 @@ export class SyncEngine extends Events {
             } else {
                 this.logger.debug('No undetected changes found');
             }
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Error scanning for changes:', error);
         }
 
@@ -1214,7 +1298,7 @@ export class SyncEngine extends Events {
             // Get server manifest
             const manifest = await this.noteSyncService.getManifest();
             const manifestNotes = manifest?.notes || [];
-            const serverMap = new Map(manifestNotes.map(n => [n.id, n]));
+            const serverMap = new Map(manifestNotes.map((n) => [n.id, n]));
 
             // Get local files
             const localFiles = await this.app.workspace.getFiles(['md']);
@@ -1227,10 +1311,7 @@ export class SyncEngine extends Events {
                 const localHash = await this.calculateHash(content);
                 const noteId = await this.localDatabase.getNoteIdByPath(file.path);
 
-                if (!noteId) {
-                    // Not yet uploaded
-                    pending++;
-                } else {
+                if (noteId) {
                     const serverEntry = serverMap.get(noteId);
                     if (!serverEntry) {
                         // Deleted on server
@@ -1240,7 +1321,8 @@ export class SyncEngine extends Events {
                         synced++;
                     } else {
                         // Content differs
-                        const storedVersion = await this.localDatabase.getNoteVersion(file.path) || 0;
+                        const storedVersion =
+                            (await this.localDatabase.getNoteVersion(file.path)) || 0;
                         if (storedVersion === serverEntry.version) {
                             // Same version but different hash = conflict
                             conflicts++;
@@ -1249,6 +1331,9 @@ export class SyncEngine extends Events {
                             pending++;
                         }
                     }
+                } else {
+                    // Not yet uploaded
+                    pending++;
                 }
             }
 
@@ -1265,8 +1350,7 @@ export class SyncEngine extends Events {
                     total++;
                 }
             }
-
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Error verifying sync status:', error);
         }
 
@@ -1275,10 +1359,12 @@ export class SyncEngine extends Events {
             pending,
             conflicts,
             total,
-            lastCheck: new Date()
+            lastCheck: new Date(),
         };
 
-        this.logger.info(`Sync status: ${synced}/${total} synced, ${pending} pending, ${conflicts} conflicts`);
+        this.logger.info(
+            `Sync status: ${synced}/${total} synced, ${pending} pending, ${conflicts} conflicts`,
+        );
         this.trigger('sync-status-verified', result);
 
         return result;

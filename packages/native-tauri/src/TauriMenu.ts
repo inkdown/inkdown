@@ -1,20 +1,20 @@
 /**
  * TauriMenu - Native Menu Implementation for Tauri v2
- * 
+ *
  * Uses Tauri's native menu API to display context menus.
  * Provides a native look and feel on all desktop platforms.
  */
 
-import { Menu, MenuItem, CheckMenuItem, PredefinedMenuItem } from '@tauri-apps/api/menu';
-import { LogicalPosition } from '@tauri-apps/api/dpi';
-import type { 
-    IMenu, 
-    ContextMenuOptions, 
+import type {
+    CheckboxMenuItem,
+    ContextMenuOptions,
+    IMenu,
     MenuItem as MenuItemConfig,
     NormalMenuItem,
-    CheckboxMenuItem,
-    SubmenuMenuItem
+    SubmenuMenuItem,
 } from '@inkdown/core/native';
+import { LogicalPosition } from '@tauri-apps/api/dpi';
+import { CheckMenuItem, Menu, MenuItem, PredefinedMenuItem } from '@tauri-apps/api/menu';
 
 export class TauriMenu implements IMenu {
     // Track if a menu is currently being shown to prevent duplicate calls
@@ -33,7 +33,7 @@ export class TauriMenu implements IMenu {
 
         try {
             const menuItems = await this.buildMenuItems(options.items);
-            
+
             const menu = await Menu.new({
                 items: menuItems,
             });
@@ -87,9 +87,11 @@ export class TauriMenu implements IMenu {
             text: item.text,
             enabled: item.enabled !== false,
             accelerator: item.accelerator,
-            action: item.action ? () => {
-                item.action?.();
-            } : undefined,
+            action: item.action
+                ? () => {
+                      item.action?.();
+                  }
+                : undefined,
         });
     }
 
@@ -103,9 +105,11 @@ export class TauriMenu implements IMenu {
             enabled: item.enabled !== false,
             checked: item.checked,
             accelerator: item.accelerator,
-            action: item.action ? () => {
-                item.action?.();
-            } : undefined,
+            action: item.action
+                ? () => {
+                      item.action?.();
+                  }
+                : undefined,
         });
     }
 
@@ -115,9 +119,9 @@ export class TauriMenu implements IMenu {
     private async buildSubmenu(item: SubmenuMenuItem): Promise<any> {
         // Import Submenu dynamically to avoid circular deps
         const { Submenu } = await import('@tauri-apps/api/menu');
-        
+
         const submenuItems = await this.buildMenuItems(item.items);
-        
+
         return Submenu.new({
             id: item.id,
             text: item.text,

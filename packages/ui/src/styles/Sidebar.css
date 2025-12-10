@@ -27,12 +27,6 @@
     flex-direction: column;
 }
 
-/* Make FileExplorer fill the sidebar content */
-.sidebar-content > .file-explorer {
-    width: 100%;
-    border-right: none;
-}
-
 /* Resize handle */
 .sidebar-resize-handle {
     position: absolute;

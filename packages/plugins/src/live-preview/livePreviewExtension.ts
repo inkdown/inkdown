@@ -1,4 +1,3 @@
-import type { App } from '@inkdown/core';
 import { syntaxTree } from '@codemirror/language';
 import { type Range, RangeSetBuilder } from '@codemirror/state';
 import {
@@ -8,6 +7,7 @@ import {
     ViewPlugin,
     type ViewUpdate,
 } from '@codemirror/view';
+import type { App } from '@inkdown/core';
 import { createBoldDecorations } from './decorations/bold';
 import { createCalloutDecorations } from './decorations/callout';
 import { createCodeBlockDecorations } from './decorations/codeblock';
@@ -79,7 +79,9 @@ class LivePreviewView {
                 allDecorations.push(...createHighlightDecorations(view, lineFrom, lineTo));
                 allDecorations.push(...createQuoteDecorations(view, lineFrom, lineTo));
                 allDecorations.push(...createTableDecorations(view, lineFrom, lineTo));
-                allDecorations.push(...createImageDecorations(view, lineFrom, lineTo, this.app, this.filePath));
+                allDecorations.push(
+                    ...createImageDecorations(view, lineFrom, lineTo, this.app, this.filePath),
+                );
 
                 // Move to next line
                 if (line.to >= to) break;
@@ -96,8 +98,8 @@ class LivePreviewView {
             if (a.to !== b.to) return a.to - b.to;
 
             // Tertiary sort: line decorations before inline decorations
-            const aIsLine = !!(a.value.spec as any).attributes?.class?.includes('cm-');
-            const bIsLine = !!(b.value.spec as any).attributes?.class?.includes('cm-');
+            // const aIsLine = !!(a.value.spec as any).attributes?.class?.includes('cm-');
+            // const bIsLine = !!(b.value.spec as any).attributes?.class?.includes('cm-');
 
             // Check if it's a Decoration.line() (has class in spec)
             const aHasLineClass = (a.value as any).map?.constructor?.name === 'LineDecoration';
@@ -134,7 +136,7 @@ class LivePreviewView {
                     const to = node.to;
 
                     // Apply line decoration to each line in the code block
-                    for (let pos = from; pos <= to;) {
+                    for (let pos = from; pos <= to; ) {
                         const line = view.state.doc.lineAt(pos);
                         decorations.push(codeBlockLineDeco.range(line.from));
 

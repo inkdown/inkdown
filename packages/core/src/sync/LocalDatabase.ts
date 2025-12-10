@@ -18,8 +18,8 @@ interface LocalDatabaseCache {
 export class LocalDatabase {
     private logger = loggers.sync || loggers.app;
     private db?: IDBDatabase;
-    private dbName: string = 'inkdown-sync-cache';
-    
+    private dbName = 'inkdown-sync-cache';
+
     // In-memory cache for fast lookups
     private cache: LocalDatabaseCache = {
         pathToNoteId: new Map(),
@@ -40,7 +40,7 @@ export class LocalDatabase {
         this.logger.debug(`Initializing IndexedDB: ${this.dbName}`);
 
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, 2);  // Version 2 - added new stores
+            const request = indexedDB.open(this.dbName, 2); // Version 2 - added new stores
 
             request.onerror = () => {
                 this.logger.error('Failed to open IndexedDB', request.error);
@@ -50,14 +50,14 @@ export class LocalDatabase {
             request.onsuccess = async () => {
                 this.db = request.result;
                 this.logger.debug(`IndexedDB opened: ${this.dbName}`);
-                
+
                 // Load cache from DB
                 try {
                     await this.loadCache();
-                } catch (error) {
+                } catch (error: any) {
                     this.logger.error('Failed to load cache:', error);
                 }
-                
+
                 resolve();
             };
 
@@ -65,7 +65,9 @@ export class LocalDatabase {
                 const db = (event.target as IDBOpenDBRequest).result;
                 const oldVersion = event.oldVersion;
 
-                this.logger.debug(`Upgrading IndexedDB schema from v${oldVersion} to v${db.version}`);
+                this.logger.debug(
+                    `Upgrading IndexedDB schema from v${oldVersion} to v${db.version}`,
+                );
 
                 // Version 1: notes and metadata stores
                 if (oldVersion < 1) {
@@ -85,13 +87,17 @@ export class LocalDatabase {
                 // Version 2: pathMappings and noteVersions stores
                 if (oldVersion < 2) {
                     if (!db.objectStoreNames.contains('pathMappings')) {
-                        const pathMappingsStore = db.createObjectStore('pathMappings', { keyPath: 'path' });
+                        const pathMappingsStore = db.createObjectStore('pathMappings', {
+                            keyPath: 'path',
+                        });
                         pathMappingsStore.createIndex('noteId', 'noteId', { unique: false });
                         this.logger.debug('Created "pathMappings" object store');
                     }
 
                     if (!db.objectStoreNames.contains('noteVersions')) {
-                        const noteVersionsStore = db.createObjectStore('noteVersions', { keyPath: 'path' });
+                        const noteVersionsStore = db.createObjectStore('noteVersions', {
+                            keyPath: 'path',
+                        });
                         noteVersionsStore.createIndex('noteId', 'noteId', { unique: false });
                         this.logger.debug('Created "noteVersions" object store');
                     }
@@ -105,7 +111,7 @@ export class LocalDatabase {
      */
     private async loadCache(): Promise<void> {
         this.logger.debug('Loading cache from IndexedDB...');
-        
+
         // Clear existing cache
         this.cache.pathToNoteId.clear();
         this.cache.noteIdToPath.clear();
@@ -131,7 +137,9 @@ export class LocalDatabase {
         }
 
         this.cache.initialized = true;
-        this.logger.debug(`Cache loaded: ${this.cache.pathToNoteId.size} mappings, ${this.cache.versions.size} versions`);
+        this.logger.debug(
+            `Cache loaded: ${this.cache.pathToNoteId.size} mappings, ${this.cache.versions.size} versions`,
+        );
     }
 
     /**
@@ -449,13 +457,24 @@ export class LocalDatabase {
     /**
      * Save note version with content hash (updates cache)
      */
-    async saveNoteVersion(path: string, version: number, noteId: string, contentHash?: string): Promise<void> {
+    async saveNoteVersion(
+        path: string,
+        version: number,
+        noteId: string,
+        contentHash?: string,
+    ): Promise<void> {
         if (!this.db) throw new Error('Database not initialized');
 
         return new Promise((resolve, reject) => {
             const transaction = this.db!.transaction(['noteVersions'], 'readwrite');
             const store = transaction.objectStore('noteVersions');
-            const request = store.put({ path, version, noteId, contentHash, updatedAt: new Date() });
+            const request = store.put({
+                path,
+                version,
+                noteId,
+                contentHash,
+                updatedAt: new Date(),
+            });
 
             request.onsuccess = () => {
                 // Update cache
@@ -579,7 +598,9 @@ export class LocalDatabase {
     /**
      * Get all note versions
      */
-    async getAllNoteVersions(): Promise<{ path: string; version: number; noteId: string; contentHash?: string }[]> {
+    async getAllNoteVersions(): Promise<
+        { path: string; version: number; noteId: string; contentHash?: string }[]
+    > {
         if (!this.db) throw new Error('Database not initialized');
 
         return new Promise((resolve, reject) => {

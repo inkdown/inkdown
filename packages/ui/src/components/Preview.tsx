@@ -46,7 +46,7 @@ export const Preview: React.FC<PreviewProps> = ({ content, mode }) => {
         blockquote: ({ ...props }) => <blockquote className="preview-quote" {...props} />,
         a: ({ ...props }) => <a className="preview-link" {...props} />,
         table: ({ ...props }) => <table className="preview-table" {...props} />,
-        img: ({ ...props }) => <img className="preview-image" {...props} />,
+        img: ({ alt, ...props }) => <img alt={alt || ''} className="preview-image" {...props} />,
     };
 
     return (

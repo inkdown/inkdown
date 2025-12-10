@@ -60,7 +60,8 @@ export function createLinkDecorations(
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
     let match;
 
-    while ((match = linkRegex.exec(text)) !== null) {
+    match = linkRegex.exec(text);
+    while (match !== null) {
         const matchFrom = from + match.index;
         const matchTo = matchFrom + match[0].length;
         const linkText = match[1];
@@ -72,6 +73,7 @@ export function createLinkDecorations(
                 widget: new LinkWidget(linkText, linkUrl),
             }).range(matchFrom, matchTo),
         );
+        match = linkRegex.exec(text);
     }
 
     return decorations;

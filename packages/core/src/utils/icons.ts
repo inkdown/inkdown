@@ -99,7 +99,7 @@ async function createLucideIcon(element: HTMLElement, iconName: string): Promise
         root.render(iconElement);
 
         console.log(`[setIcon] Icon "${iconName}" rendered successfully`);
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Failed to load icon "${iconName}":`, error);
         // Fallback to text
         const iconContainer = document.createSpan({ cls: 'lucide-icon fallback-icon' });

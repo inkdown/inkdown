@@ -1,8 +1,8 @@
-import { keymap } from '@codemirror/view';
-import type { EditorView } from '@codemirror/view';
-import { Prec } from '@codemirror/state';
 import type { Extension } from '@codemirror/state';
-import { getTableCellPositions, findCellAtCursor, navigateToCell } from '../decorations/table';
+import { Prec } from '@codemirror/state';
+import type { EditorView } from '@codemirror/view';
+import { keymap } from '@codemirror/view';
+import { findCellAtCursor, getTableCellPositions, navigateToCell } from '../decorations/table';
 
 /**
  * Check if cursor is inside a markdown table
@@ -12,7 +12,11 @@ function isInTable(view: EditorView): boolean {
     const line = view.state.doc.lineAt(from);
 
     // Check current line and nearby lines for table markers
-    for (let i = Math.max(1, line.number - 5); i <= Math.min(view.state.doc.lines, line.number + 5); i++) {
+    for (
+        let i = Math.max(1, line.number - 5);
+        i <= Math.min(view.state.doc.lines, line.number + 5);
+        i++
+    ) {
         const checkLine = view.state.doc.line(i);
         const text = view.state.doc.sliceString(checkLine.from, checkLine.to);
 
@@ -78,8 +82,8 @@ function getCurrentTableData(view: EditorView) {
     const lines = tableText.split('\n');
 
     // Simple parsing for headers
-    const headers = lines[0]?.split('|').filter(h => h.trim()).length || 0;
-    const rows = lines.slice(2).filter(l => l.includes('|')).length;
+    const headers = lines[0]?.split('|').filter((h) => h.trim()).length || 0;
+    const rows = lines.slice(2).filter((l) => l.includes('|')).length;
 
     return {
         startLine: tableStartLine,
@@ -108,14 +112,13 @@ function isAtCellBoundary(view: EditorView, direction: 'left' | 'right'): boolea
         let i = posInLine;
         while (i < text.length && text[i] === ' ') i++;
         return text[i] === '|';
-    } else {
-        // Check if previous char is | or start of line
-        if (posInLine <= 0) return true; // Start of line
-        // Skip leading spaces to check for |
-        let i = posInLine - 1;
-        while (i >= 0 && text[i] === ' ') i--;
-        return text[i] === '|';
     }
+    // Check if previous char is | or start of line
+    if (posInLine <= 0) return true; // Start of line
+    // Skip leading spaces to check for |
+    let i = posInLine - 1;
+    while (i >= 0 && text[i] === ' ') i--;
+    return text[i] === '|';
 }
 
 /**
@@ -141,7 +144,7 @@ function smartNavigateHorizontal(view: EditorView, direction: 'left' | 'right'):
 
     // If no next cell in same row and going right, try first cell of next row
     if (!next && direction === 'right') {
-        next = positions.find(p => p.row === current.row + 1 && p.col === 0) || null;
+        next = positions.find((p) => p.row === current.row + 1 && p.col === 0) || null;
     }
 
     // If no next cell, allow default behavior
@@ -214,15 +217,15 @@ function tabNavigate(view: EditorView, reverse: boolean): boolean {
 
     // Wrap to next/previous row
     if (!next) {
-        if (!reverse) {
-            // Tab at end of row: go to first cell of next row
-            next = positions.find(p => p.row === current.row + 1 && p.col === 0) || null;
-        } else {
+        if (reverse) {
             // Shift-Tab at start of row: go to last cell of previous row
-            const prevRowCells = positions.filter(p => p.row === current.row - 1);
+            const prevRowCells = positions.filter((p) => p.row === current.row - 1);
             if (prevRowCells.length > 0) {
                 next = prevRowCells[prevRowCells.length - 1];
             }
+        } else {
+            // Tab at end of row: go to first cell of next row
+            next = positions.find((p) => p.row === current.row + 1 && p.col === 0) || null;
         }
     }
 
@@ -251,12 +254,12 @@ function insertTableRow(view: EditorView): boolean {
     const endLine = view.state.doc.line(tableData.endLine);
 
     // Create new row with empty cells
-    const emptyRow = '| ' + Array(tableData.headers).fill('     ').join(' | ') + ' |';
+    const emptyRow = `| ${Array(tableData.headers).fill('     ').join(' | ')} |`;
 
     view.dispatch({
         changes: {
             from: endLine.to,
-            insert: '\n' + emptyRow,
+            insert: `\n${emptyRow}`,
         },
         selection: {
             anchor: endLine.to + 3, // Position in first cell of new row
@@ -272,40 +275,42 @@ function insertTableRow(view: EditorView): boolean {
  */
 export function createTableNavigationKeymap(): Extension {
     // Use Prec.high to override Tab indentation when inside tables
-    return Prec.high(keymap.of([
-        // Arrow keys - smart navigation (only jump at boundaries)
-        {
-            key: 'ArrowLeft',
-            run: (view) => smartNavigateHorizontal(view, 'left'),
-        },
-        {
-            key: 'ArrowRight',
-            run: (view) => smartNavigateHorizontal(view, 'right'),
-        },
-        {
-            key: 'ArrowUp',
-            run: (view) => navigateVertical(view, 'up'),
-        },
-        {
-            key: 'ArrowDown',
-            run: (view) => navigateVertical(view, 'down'),
-        },
-        // Tab navigation - jump directly between cells
-        {
-            key: 'Tab',
-            run: (view) => tabNavigate(view, false),
-        },
-        {
-            key: 'Shift-Tab',
-            run: (view) => tabNavigate(view, true),
-        },
-        // Enter to add new row (when in table)
-        {
-            key: 'Enter',
-            run: (view) => {
-                if (!isInTable(view)) return false;
-                return insertTableRow(view);
+    return Prec.high(
+        keymap.of([
+            // Arrow keys - smart navigation (only jump at boundaries)
+            {
+                key: 'ArrowLeft',
+                run: (view) => smartNavigateHorizontal(view, 'left'),
             },
-        },
-    ]));
+            {
+                key: 'ArrowRight',
+                run: (view) => smartNavigateHorizontal(view, 'right'),
+            },
+            {
+                key: 'ArrowUp',
+                run: (view) => navigateVertical(view, 'up'),
+            },
+            {
+                key: 'ArrowDown',
+                run: (view) => navigateVertical(view, 'down'),
+            },
+            // Tab navigation - jump directly between cells
+            {
+                key: 'Tab',
+                run: (view) => tabNavigate(view, false),
+            },
+            {
+                key: 'Shift-Tab',
+                run: (view) => tabNavigate(view, true),
+            },
+            // Enter to add new row (when in table)
+            {
+                key: 'Enter',
+                run: (view) => {
+                    if (!isInTable(view)) return false;
+                    return insertTableRow(view);
+                },
+            },
+        ]),
+    );
 }

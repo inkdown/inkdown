@@ -34,16 +34,16 @@ export function createCalloutDecorations(
     // Find all continuation lines (lines starting with >)
     const calloutLines: number[] = [lineNumber];
     let nextLineNum = lineNumber + 1;
-    
+
     // Find continuation lines for the entire callout block
     while (nextLineNum <= doc.lines) {
         const nextLine = doc.line(nextLineNum);
         const nextText = doc.sliceString(nextLine.from, nextLine.to);
-        
+
         if (!nextText.startsWith('>')) {
             break;
         }
-        
+
         calloutLines.push(nextLineNum);
         nextLineNum++;
     }
@@ -51,7 +51,7 @@ export function createCalloutDecorations(
     // Check if cursor is anywhere in the callout block
     let cursorInCallout = false;
     const selection = view.state.selection.main;
-    
+
     for (const lineNum of calloutLines) {
         const line = doc.line(lineNum);
         if (selection.from >= line.from && selection.from <= line.to) {
@@ -75,7 +75,7 @@ export function createCalloutDecorations(
                 widget: new CalloutHeaderWidget(type, customTitle),
             }).range(from, to),
         );
-        
+
         // Apply line decoration to mark this as a callout start
         decorations.push(
             Decoration.line({

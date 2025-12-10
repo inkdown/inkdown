@@ -102,7 +102,7 @@ export const ShortcutsSettings: React.FC = () => {
                         loadShortcuts();
                         setEditingId(null);
                         setRecordedKeys([]);
-                    } catch (error) {
+                    } catch (error: any) {
                         console.error('Failed to update shortcut:', error);
                     }
                 }
@@ -169,7 +169,7 @@ export const ShortcutsSettings: React.FC = () => {
         try {
             await app.shortcutManager.resetShortcut(id);
             loadShortcuts();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to reset shortcut:', error);
         }
     };
@@ -243,7 +243,15 @@ export const ShortcutsSettings: React.FC = () => {
             ) : (
                 Object.entries(filteredGroupedShortcuts)
                     .sort(([a], [b]) => {
-                        const order = ['tab', 'tab-switching', 'file', 'editor', 'app', 'plugins', 'other'];
+                        const order = [
+                            'tab',
+                            'tab-switching',
+                            'file',
+                            'editor',
+                            'app',
+                            'plugins',
+                            'other',
+                        ];
                         return order.indexOf(a) - order.indexOf(b);
                     })
                     .map(([category, categoryShortcuts]) => (
@@ -303,6 +311,7 @@ export const ShortcutsSettings: React.FC = () => {
                                             </kbd>
 
                                             <button
+                                                type="button"
                                                 className="shortcut-reset-btn"
                                                 onClick={() => resetShortcut(shortcut.id)}
                                                 disabled={!customized}

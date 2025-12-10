@@ -1,33 +1,39 @@
 import type React from 'react';
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import './components/EditorModes.css';
 import type { FileNode, RecentWorkspace, SyncConfig } from '@inkdown/core';
 import { OnboardingScreen, WorkspaceHistory } from '@inkdown/core';
-import { EmptyTabView, StatusBar, TabBar, WorkspaceSelector, WorkspaceLinkDialog } from '@inkdown/ui';
-import { Preview } from './components/Preview';
+import {
+    EmptyTabView,
+    StatusBar,
+    TabBar,
+    WorkspaceLinkDialog,
+    WorkspaceSelector,
+} from '@inkdown/ui';
 import { invoke } from '@tauri-apps/api/core';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { ask, open as openDialog } from '@tauri-apps/plugin-dialog';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import type { SelectedItem, SortOrder } from './components/FileExplorer';
 import { FileExplorer } from './components/FileExplorer';
+import { Preview } from './components/Preview';
 import { SettingsModal } from './components/SettingsModal';
 import { useEditorState } from './hooks/useEditorState';
 import { useFontSettings } from './hooks/useFontSettings';
 import { useTabManager } from './hooks/useTabManager';
 import { useWindowState } from './hooks/useWindowState';
 import './styles/FileExplorer.css';
-import { Editor, registerEditorCommands, DEFAULT_EDITOR_CONFIG } from '@inkdown/core';
 import type { EditorConfig } from '@inkdown/core';
+import { DEFAULT_EDITOR_CONFIG, Editor, registerEditorCommands } from '@inkdown/core';
+import { livePreviewExtension } from '@inkdown/plugins';
+import { BookmarkGroupModal } from './components/BookmarkGroupModal';
 import { EditorOptionsMenu, type ViewMode } from './components/EditorOptionsMenu';
 import { MoveToModal } from './components/MoveToModal';
 import { RenameModal } from './components/RenameModal';
 import { SyncStatus } from './components/SyncStatus';
 import { WindowControls } from './components/WindowControls';
-import { BookmarkGroupModal } from './components/BookmarkGroupModal';
-import { livePreviewExtension } from '@inkdown/plugins';
 
 const DEFAULT_SIDEBAR_WIDTH = 250;
 
@@ -74,7 +80,7 @@ const AppContent: React.FC = () => {
             try {
                 const config = await app.windowConfigManager.loadConfig();
                 setUseCustomTitleBar(config.customTitleBar);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load window config:', error);
             }
         };
@@ -89,7 +95,7 @@ const AppContent: React.FC = () => {
                 if (config) {
                     setEditorConfig(config);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load editor config:', error);
             }
         };
@@ -99,9 +105,15 @@ const AppContent: React.FC = () => {
         const handleConfigChange = (e: CustomEvent<EditorConfig>) => {
             setEditorConfig(e.detail);
         };
-        window.addEventListener('inkdown:editor-config-changed', handleConfigChange as EventListener);
+        window.addEventListener(
+            'inkdown:editor-config-changed',
+            handleConfigChange as EventListener,
+        );
         return () => {
-            window.removeEventListener('inkdown:editor-config-changed', handleConfigChange as EventListener);
+            window.removeEventListener(
+                'inkdown:editor-config-changed',
+                handleConfigChange as EventListener,
+            );
         };
     }, [app]);
 
@@ -111,12 +123,12 @@ const AppContent: React.FC = () => {
     // Prepare editor extensions based on enabled plugins
     const editorExtensions = useMemo(() => {
         const extensions = [];
-        
+
         // Add live preview extension if plugin is enabled
         if (app.pluginManager.isPluginEnabled('live-preview')) {
             extensions.push(livePreviewExtension(app, activeTab?.filePath));
         }
-        
+
         return extensions;
     }, [app, activeTab?.filePath]);
 
@@ -185,7 +197,7 @@ const AppContent: React.FC = () => {
                 if (config?.sortOrder) {
                     setSortOrder(config.sortOrder);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load workspace:', error);
             } finally {
                 setLoading(false);
@@ -200,7 +212,7 @@ const AppContent: React.FC = () => {
             try {
                 const syncConfig = await app.configManager.loadConfig<SyncConfig>('sync');
                 setNeedsOnboarding(!syncConfig?.onboardingCompleted);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to check onboarding:', error);
             }
         };
@@ -357,7 +369,7 @@ const AppContent: React.FC = () => {
                         const config = await app.configManager.loadConfig<AppConfig>('app');
                         const updated = WorkspaceHistory.addWorkspace(
                             config.recentWorkspaces || [],
-                            path
+                            path,
                         );
                         setRecentWorkspaces(updated);
                         config.recentWorkspaces = updated;
@@ -376,58 +388,64 @@ const AppContent: React.FC = () => {
         };
     }, [app]);
 
-    const handleWorkspaceSelected = async (path: string) => {
-        setRootPath(path);
+    const handleWorkspaceSelected = useCallback(
+        async (path: string) => {
+            setRootPath(path);
 
-        // Sync workspace path to core
-        app.fileSystemManager.setWorkspacePath(path);
-        await app.workspace.refreshFileTree();
+            // Sync workspace path to core
+            app.fileSystemManager.setWorkspacePath(path);
+            await app.workspace.refreshFileTree();
 
-        // Reset expanded dirs when changing workspace
-        setExpandedDirs([]);
+            // Reset expanded dirs when changing workspace
+            setExpandedDirs([]);
 
-        // Add to recent workspaces and save to config
-        const config = await app.configManager.loadConfig<AppConfig>('app');
-        const updated = WorkspaceHistory.addWorkspace(
-            config.recentWorkspaces || [],
-            path
-        );
-        setRecentWorkspaces(updated);
-        config.recentWorkspaces = updated;
-        config.workspace = path;
-        config.expandedDirs = [];
-        await app.configManager.saveConfig('app', config);
+            // Add to recent workspaces and save to config
+            const config = await app.configManager.loadConfig<AppConfig>('app');
+            const updated = WorkspaceHistory.addWorkspace(config.recentWorkspaces || [], path);
+            setRecentWorkspaces(updated);
+            config.recentWorkspaces = updated;
+            config.workspace = path;
+            config.expandedDirs = [];
+            await app.configManager.saveConfig('app', config);
 
-        // Check if we need to link a remote workspace
-        if (app.syncManager.isEnabled()) {
-            const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
-            if (!currentWorkspaceId) {
-                setShowWorkspaceLinkDialog(true);
+            // Check if we need to link a remote workspace
+            if (app.syncManager.isEnabled()) {
+                const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
+                if (!currentWorkspaceId) {
+                    setShowWorkspaceLinkDialog(true);
+                }
             }
-        }
-    };
+        },
+        [app],
+    );
 
-    const handleLinkWorkspace = async (workspaceId: string) => {
-        if (!rootPath) return;
-        try {
-            await app.syncManager.linkWorkspace(rootPath, workspaceId);
-            // Force refresh of sync status if needed
-        } catch (error) {
-            console.error('Failed to link workspace:', error);
-            alert('Failed to link workspace. Please try again.');
-        }
-    };
+    const handleLinkWorkspace = useCallback(
+        async (workspaceId: string) => {
+            if (!rootPath) return;
+            try {
+                await app.syncManager.linkWorkspace(rootPath, workspaceId);
+                // Force refresh of sync status if needed
+            } catch (error: any) {
+                console.error('Failed to link workspace:', error);
+                alert('Failed to link workspace. Please try again.');
+            }
+        },
+        [app, rootPath],
+    );
 
-    const handleCreateAndLinkWorkspace = async (name: string) => {
-        if (!rootPath) return;
-        try {
-            const newWorkspace = await app.syncManager.createWorkspace(name);
-            await app.syncManager.linkWorkspace(rootPath, newWorkspace.id);
-        } catch (error) {
-            console.error('Failed to create and link workspace:', error);
-            alert('Failed to create workspace. Please try again.');
-        }
-    };
+    const handleCreateAndLinkWorkspace = useCallback(
+        async (name: string) => {
+            if (!rootPath) return;
+            try {
+                const newWorkspace = await app.syncManager.createWorkspace(name);
+                await app.syncManager.linkWorkspace(rootPath, newWorkspace.id);
+            } catch (error: any) {
+                console.error('Failed to create and link workspace:', error);
+                alert('Failed to create workspace. Please try again.');
+            }
+        },
+        [app, rootPath],
+    );
 
     // Handler to persist expanded directories
     const handleExpandedDirsChange = useCallback(
@@ -495,7 +513,7 @@ const AppContent: React.FC = () => {
         try {
             const fileTree = await app.fileSystemManager.readDirectory(rootPath, true);
             setFiles(fileTree);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to load files:', error);
         }
     }, [rootPath, app]);
@@ -539,7 +557,7 @@ const AppContent: React.FC = () => {
                 // Create the file with empty content
                 await app.fileSystemManager.writeFile(filePath, '');
                 await loadFiles();
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to create file:', error);
             }
         },
@@ -551,7 +569,7 @@ const AppContent: React.FC = () => {
             try {
                 await app.fileSystemManager.createDirectory(dirPath);
                 await loadFiles();
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to create directory:', error);
             }
         },
@@ -573,12 +591,12 @@ const AppContent: React.FC = () => {
 
                 // Use FileSystemManager directly to avoid cache dependency
                 await app.fileSystemManager.rename(oldPath, newPath);
-                
+
                 // Update the tab if the renamed file is open
                 await app.tabManager.updateTabFilePath(oldPath, newPath);
-                
+
                 await loadFiles();
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to rename:', error);
             }
         },
@@ -596,7 +614,7 @@ const AppContent: React.FC = () => {
                     await app.fileSystemManager.delete(path);
                 }
                 await loadFiles();
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to delete:', error);
             }
         },
@@ -607,16 +625,18 @@ const AppContent: React.FC = () => {
         async (paths: Array<{ path: string; isDirectory: boolean }>) => {
             try {
                 // Delete in parallel for better performance
-                await Promise.all(paths.map(async (item) => {
-                    const file = app.workspace.getAbstractFileByPath(item.path);
-                    if (file) {
-                        await app.fileManager.trashFile(file);
-                    } else {
-                        await app.fileSystemManager.delete(item.path);
-                    }
-                }));
+                await Promise.all(
+                    paths.map(async (item) => {
+                        const file = app.workspace.getAbstractFileByPath(item.path);
+                        if (file) {
+                            await app.fileManager.trashFile(file);
+                        } else {
+                            await app.fileSystemManager.delete(item.path);
+                        }
+                    }),
+                );
                 await loadFiles();
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to delete multiple:', error);
             }
         },
@@ -628,7 +648,7 @@ const AppContent: React.FC = () => {
             try {
                 await app.fileSystemManager.move(source, destination);
                 await loadFiles();
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to move:', error);
             }
         },
@@ -643,7 +663,7 @@ const AppContent: React.FC = () => {
                     await app.fileSystemManager.move(source, destination);
                 }
                 await loadFiles();
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to move multiple:', error);
             }
         },
@@ -689,7 +709,7 @@ const AppContent: React.FC = () => {
                 // The backend copy_file command will automatically handle naming with " (copy)" suffix
                 await invoke('copy_file', { source: sourcePath, destination: parentDir });
                 await loadFiles();
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to copy file:', error);
             }
         },
@@ -700,7 +720,7 @@ const AppContent: React.FC = () => {
     const handleCopyPath = useCallback(async (path: string) => {
         try {
             await writeText(path);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to copy path:', error);
         }
     }, []);
@@ -709,9 +729,9 @@ const AppContent: React.FC = () => {
     const handleCopyRelativePath = useCallback(
         async (path: string) => {
             try {
-                const relativePath = path.replace(rootPath + '/', '');
+                const relativePath = path.replace(`${rootPath}/`, '');
                 await writeText(relativePath);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to copy relative path:', error);
             }
         },
@@ -722,7 +742,7 @@ const AppContent: React.FC = () => {
     const handleShowInExplorer = useCallback(async (path: string) => {
         try {
             await revealItemInDir(path);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to show in explorer:', error);
         }
     }, []);
@@ -738,7 +758,7 @@ const AppContent: React.FC = () => {
                 }
                 // Force refresh of file explorer to update UI if needed (though state is internal to selectiveSync)
                 // We might need a way to trigger re-render of context menu or file nodes if we add visual indicators later
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to toggle sync ignore:', error);
             }
         },
@@ -779,7 +799,7 @@ const AppContent: React.FC = () => {
                     try {
                         await app.fileSystemManager.move(sourcePath, destination);
                         await loadFiles();
-                    } catch (error) {
+                    } catch (error: any) {
                         console.error('Failed to move file:', error);
                     }
                 },
@@ -890,7 +910,11 @@ const AppContent: React.FC = () => {
                         windowControls={
                             useCustomTitleBar ? (
                                 <WindowControls
-                                    workspaceName={rootPath ? rootPath.split('/').pop() || 'Inkdown' : 'Inkdown'}
+                                    workspaceName={
+                                        rootPath
+                                            ? rootPath.split('/').pop() || 'Inkdown'
+                                            : 'Inkdown'
+                                    }
                                 />
                             ) : undefined
                         }
@@ -908,9 +932,13 @@ const AppContent: React.FC = () => {
                                         const filePath = activeTab.filePath;
                                         const currentName = filePath.split('/').pop() || '';
 
-                                        const modal = new RenameModal(app, currentName, (newName) => {
-                                            handleRename(filePath, newName);
-                                        });
+                                        const modal = new RenameModal(
+                                            app,
+                                            currentName,
+                                            (newName) => {
+                                                handleRename(filePath, newName);
+                                            },
+                                        );
                                         modal.open();
                                     }
                                 }}
@@ -971,7 +999,7 @@ const AppContent: React.FC = () => {
                     {/* Content Area */}
                     <div className="app-content">
                         {activeTab && !activeTab.filePath ? (
-                            <EmptyTabView/>
+                            <EmptyTabView />
                         ) : isLoadingContent ? (
                             <div className="app-loading-content">
                                 <div className="loading-spinner" />

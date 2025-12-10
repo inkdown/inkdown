@@ -7,8 +7,22 @@
 
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { indentWithTab } from '@codemirror/commands';
-import { type Extension, Compartment, StateField, StateEffect, RangeSetBuilder } from '@codemirror/state';
-import { EditorView, keymap, lineNumbers, Decoration, WidgetType, gutter, GutterMarker } from '@codemirror/view';
+import {
+    Compartment,
+    type Extension,
+    RangeSetBuilder,
+    StateEffect,
+    StateField,
+} from '@codemirror/state';
+import {
+    Decoration,
+    EditorView,
+    GutterMarker,
+    gutter,
+    keymap,
+    lineNumbers,
+    WidgetType,
+} from '@codemirror/view';
 import { vim } from '@replit/codemirror-vim';
 
 /**
@@ -82,41 +96,53 @@ export function createTabIndentationExtension(enabled: boolean): Extension {
 function htmlToMarkdown(html: string): string {
     // Create a temporary DOM element to parse HTML
     const doc = new DOMParser().parseFromString(html, 'text/html');
-    
+
     function processNode(node: Node): string {
         if (node.nodeType === Node.TEXT_NODE) {
             return node.textContent || '';
         }
-        
+
         if (node.nodeType !== Node.ELEMENT_NODE) {
             return '';
         }
-        
+
         const element = node as HTMLElement;
         const tagName = element.tagName.toLowerCase();
         const children = Array.from(element.childNodes).map(processNode).join('');
-        
+
         switch (tagName) {
             // Headers
-            case 'h1': return `# ${children}\n\n`;
-            case 'h2': return `## ${children}\n\n`;
-            case 'h3': return `### ${children}\n\n`;
-            case 'h4': return `#### ${children}\n\n`;
-            case 'h5': return `##### ${children}\n\n`;
-            case 'h6': return `###### ${children}\n\n`;
-            
+            case 'h1':
+                return `# ${children}\n\n`;
+            case 'h2':
+                return `## ${children}\n\n`;
+            case 'h3':
+                return `### ${children}\n\n`;
+            case 'h4':
+                return `#### ${children}\n\n`;
+            case 'h5':
+                return `##### ${children}\n\n`;
+            case 'h6':
+                return `###### ${children}\n\n`;
+
             // Formatting
             case 'strong':
-            case 'b': return `**${children}**`;
+            case 'b':
+                return `**${children}**`;
             case 'em':
-            case 'i': return `*${children}*`;
-            case 'u': return `<u>${children}</u>`;
+            case 'i':
+                return `*${children}*`;
+            case 'u':
+                return `<u>${children}</u>`;
             case 's':
             case 'strike':
-            case 'del': return `~~${children}~~`;
-            case 'code': return `\`${children}\``;
-            case 'mark': return `==${children}==`;
-            
+            case 'del':
+                return `~~${children}~~`;
+            case 'code':
+                return `\`${children}\``;
+            case 'mark':
+                return `==${children}==`;
+
             // Links and images
             case 'a': {
                 const href = element.getAttribute('href') || '';
@@ -127,10 +153,12 @@ function htmlToMarkdown(html: string): string {
                 const alt = element.getAttribute('alt') || '';
                 return `![${alt}](${src})`;
             }
-            
+
             // Lists
-            case 'ul': return `${children}\n`;
-            case 'ol': return `${children}\n`;
+            case 'ul':
+                return `${children}\n`;
+            case 'ol':
+                return `${children}\n`;
             case 'li': {
                 const parent = element.parentElement;
                 if (parent?.tagName.toLowerCase() === 'ol') {
@@ -139,22 +167,27 @@ function htmlToMarkdown(html: string): string {
                 }
                 return `- ${children}\n`;
             }
-            
+
             // Block elements
-            case 'p': return `${children}\n\n`;
-            case 'br': return '\n';
-            case 'hr': return '\n---\n\n';
-            case 'blockquote': return `> ${children.replace(/\n/g, '\n> ')}\n\n`;
+            case 'p':
+                return `${children}\n\n`;
+            case 'br':
+                return '\n';
+            case 'hr':
+                return '\n---\n\n';
+            case 'blockquote':
+                return `> ${children.replace(/\n/g, '\n> ')}\n\n`;
             case 'pre': {
                 const codeEl = element.querySelector('code');
                 const lang = codeEl?.className.match(/language-(\w+)/)?.[1] || '';
                 const code = codeEl?.textContent || children;
                 return `\`\`\`${lang}\n${code}\n\`\`\`\n\n`;
             }
-            
+
             // Table elements
-            case 'table': return processTable(element);
-            
+            case 'table':
+                return processTable(element);
+
             // Container elements - just return children
             case 'div':
             case 'span':
@@ -164,32 +197,32 @@ function htmlToMarkdown(html: string): string {
             case 'body':
             case 'html':
                 return children;
-            
+
             default:
                 return children;
         }
     }
-    
+
     function processTable(table: HTMLElement): string {
         const rows = Array.from(table.querySelectorAll('tr'));
         if (rows.length === 0) return '';
-        
+
         const result: string[] = [];
-        
+
         rows.forEach((row, rowIndex) => {
             const cells = Array.from(row.querySelectorAll('th, td'));
-            const cellContents = cells.map(cell => processNode(cell).trim());
+            const cellContents = cells.map((cell) => processNode(cell).trim());
             result.push(`| ${cellContents.join(' | ')} |`);
-            
+
             // Add separator after header row
             if (rowIndex === 0) {
                 result.push(`| ${cells.map(() => '---').join(' | ')} |`);
             }
         });
-        
-        return result.join('\n') + '\n\n';
+
+        return `${result.join('\n')}\n\n`;
     }
-    
+
     const result = processNode(doc.body);
     // Clean up extra newlines
     return result.replace(/\n{3,}/g, '\n\n').trim();
@@ -202,59 +235,67 @@ export function createPasteHtmlToMarkdownExtension(enabled: boolean): Extension 
     if (!enabled) {
         return [];
     }
-    
+
     return EditorView.domEventHandlers({
         paste(event, view) {
             const clipboardData = event.clipboardData;
             if (!clipboardData) return false;
-            
+
             // Skip if there are image files in clipboard - let image paste handler deal with it
             const items = Array.from(clipboardData.items);
-            const hasImageFile = items.some(item => item.kind === 'file' && item.type.startsWith('image/'));
+            const hasImageFile = items.some(
+                (item) => item.kind === 'file' && item.type.startsWith('image/'),
+            );
             if (hasImageFile) {
                 return false;
             }
-            
+
             // Check if HTML is available in text/html format (from rich content like web pages)
             const html = clipboardData.getData('text/html');
             // Also get plain text to check if it contains HTML tags
             const plainText = clipboardData.getData('text/plain');
-            
+
             // Determine which content to convert
             let contentToConvert: string | null = null;
-            
+
             // First priority: actual HTML content from clipboard
-            if (html && html.trim()) {
-                const hasRichContent = /<(h[1-6]|p|ul|ol|li|table|a|img|strong|em|b|i|code|pre|blockquote)/i.test(html);
+            if (html?.trim()) {
+                const hasRichContent =
+                    /<(h[1-6]|p|ul|ol|li|table|a|img|strong|em|b|i|code|pre|blockquote)/i.test(
+                        html,
+                    );
                 if (hasRichContent) {
                     contentToConvert = html;
                 }
             }
-            
+
             // Second priority: plain text that looks like HTML (e.g., pasted HTML code)
             if (!contentToConvert && plainText && plainText.trim()) {
                 // Check if plain text contains HTML tags
-                const looksLikeHtml = /^\s*<(!DOCTYPE|html|head|body|h[1-6]|p|div|span|ul|ol|li|table|a|img|strong|em|b|i|code|pre|blockquote|article|section|header|footer|nav|main)/i.test(plainText.trim());
-                
+                const looksLikeHtml =
+                    /^\s*<(!DOCTYPE|html|head|body|h[1-6]|p|div|span|ul|ol|li|table|a|img|strong|em|b|i|code|pre|blockquote|article|section|header|footer|nav|main)/i.test(
+                        plainText.trim(),
+                    );
+
                 if (looksLikeHtml) {
                     contentToConvert = plainText;
                 }
             }
-            
+
             if (contentToConvert) {
                 event.preventDefault();
-                
+
                 const markdown = htmlToMarkdown(contentToConvert);
-                
+
                 const { from, to } = view.state.selection.main;
                 view.dispatch({
                     changes: { from, to, insert: markdown },
                     selection: { anchor: from + markdown.length },
                 });
-                
+
                 return true;
             }
-            
+
             return false;
         },
     });
@@ -267,7 +308,7 @@ export function createVimModeExtension(enabled: boolean): Extension {
     if (!enabled) {
         return [];
     }
-    
+
     return vim();
 }
 
@@ -278,7 +319,7 @@ export function createLineNumbersExtension(enabled: boolean): Extension {
     if (!enabled) {
         return [];
     }
-    
+
     return lineNumbers();
 }
 
@@ -348,7 +389,10 @@ class FoldedIndicatorWidget extends WidgetType {
  * Gutter marker for fold toggle button
  */
 class HeadingFoldMarker extends GutterMarker {
-    constructor(readonly isFolded: boolean, readonly level: number) {
+    constructor(
+        readonly isFolded: boolean,
+        readonly level: number,
+    ) {
         super();
     }
 
@@ -364,10 +408,21 @@ class HeadingFoldMarker extends GutterMarker {
 /**
  * Parse document to find heading ranges
  */
-function findHeadingRanges(doc: { toString(): string; lineAt(pos: number): { from: number; to: number; number: number; text: string }; lines: number; line(n: number): { from: number; to: number; text: string } }): Array<{ level: number; from: number; to: number; lineStart: number; lineEnd: number }> {
-    const headings: Array<{ level: number; from: number; to: number; lineStart: number; lineEnd: number }> = [];
+function findHeadingRanges(doc: {
+    toString(): string;
+    lineAt(pos: number): { from: number; to: number; number: number; text: string };
+    lines: number;
+    line(n: number): { from: number; to: number; text: string };
+}): Array<{ level: number; from: number; to: number; lineStart: number; lineEnd: number }> {
+    const headings: Array<{
+        level: number;
+        from: number;
+        to: number;
+        lineStart: number;
+        lineEnd: number;
+    }> = [];
     const headingRegex = /^(#{1,6})\s+/;
-    
+
     for (let i = 1; i <= doc.lines; i++) {
         const line = doc.line(i);
         const match = line.text.match(headingRegex);
@@ -381,12 +436,12 @@ function findHeadingRanges(doc: { toString(): string; lineAt(pos: number): { fro
             });
         }
     }
-    
+
     // Calculate the end of each heading section
     for (let i = 0; i < headings.length; i++) {
         const current = headings[i];
         let endLine = doc.lines;
-        
+
         // Find next heading of same or higher level
         for (let j = i + 1; j < headings.length; j++) {
             if (headings[j].level <= current.level) {
@@ -394,55 +449,52 @@ function findHeadingRanges(doc: { toString(): string; lineAt(pos: number): { fro
                 break;
             }
         }
-        
+
         current.lineEnd = endLine;
         current.to = doc.line(endLine).to;
     }
-    
+
     return headings;
 }
 
 /**
  * Extension for fold decorations
  */
-const foldDecorationsExtension = EditorView.decorations.compute(
-    [foldedHeadingsField],
-    (state) => {
-        const folded = state.field(foldedHeadingsField);
-        if (folded.size === 0) {
-            return Decoration.none;
-        }
-        
-        const headings = findHeadingRanges(state.doc);
-        const builder = new RangeSetBuilder<Decoration>();
-        const decorations: Array<{ from: number; to: number; decoration: Decoration }> = [];
-        
-        for (const heading of headings) {
-            if (folded.has(heading.from)) {
-                const linesHidden = heading.lineEnd - heading.lineStart;
-                if (linesHidden > 0) {
-                    const headingLine = state.doc.line(heading.lineStart);
-                    const endLine = state.doc.line(heading.lineEnd);
-                    
-                    decorations.push({
-                        from: headingLine.to,
-                        to: endLine.to,
-                        decoration: Decoration.replace({
-                            widget: new FoldedIndicatorWidget(linesHidden),
-                        }),
-                    });
-                }
+const foldDecorationsExtension = EditorView.decorations.compute([foldedHeadingsField], (state) => {
+    const folded = state.field(foldedHeadingsField);
+    if (folded.size === 0) {
+        return Decoration.none;
+    }
+
+    const headings = findHeadingRanges(state.doc);
+    const builder = new RangeSetBuilder<Decoration>();
+    const decorations: Array<{ from: number; to: number; decoration: Decoration }> = [];
+
+    for (const heading of headings) {
+        if (folded.has(heading.from)) {
+            const linesHidden = heading.lineEnd - heading.lineStart;
+            if (linesHidden > 0) {
+                const headingLine = state.doc.line(heading.lineStart);
+                const endLine = state.doc.line(heading.lineEnd);
+
+                decorations.push({
+                    from: headingLine.to,
+                    to: endLine.to,
+                    decoration: Decoration.replace({
+                        widget: new FoldedIndicatorWidget(linesHidden),
+                    }),
+                });
             }
         }
-        
-        decorations.sort((a, b) => a.from - b.from);
-        for (const { from, to, decoration } of decorations) {
-            builder.add(from, to, decoration);
-        }
-        
-        return builder.finish();
     }
-);
+
+    decorations.sort((a, b) => a.from - b.from);
+    for (const { from, to, decoration } of decorations) {
+        builder.add(from, to, decoration);
+    }
+
+    return builder.finish();
+});
 
 /**
  * Gutter for heading fold toggle
@@ -453,25 +505,29 @@ const headingFoldGutter = gutter({
         const folded = view.state.field(foldedHeadingsField);
         const headings = findHeadingRanges(view.state.doc);
         const builder = new RangeSetBuilder<GutterMarker>();
-        
+
         for (const heading of headings) {
             const isFolded = folded.has(heading.from);
             // Only show marker if heading has content to fold
             if (heading.lineEnd > heading.lineStart) {
-                builder.add(heading.from, heading.from, new HeadingFoldMarker(isFolded, heading.level));
+                builder.add(
+                    heading.from,
+                    heading.from,
+                    new HeadingFoldMarker(isFolded, heading.level),
+                );
             }
         }
-        
+
         return builder.finish();
     },
     domEventHandlers: {
         click: (view, line) => {
             const headings = findHeadingRanges(view.state.doc);
-            const heading = headings.find(h => {
+            const heading = headings.find((h) => {
                 const headingLine = view.state.doc.lineAt(h.from);
                 return headingLine.from === line.from;
             });
-            
+
             if (heading && heading.lineEnd > heading.lineStart) {
                 view.dispatch({
                     effects: toggleHeadingFold.of({ from: heading.from, to: heading.to }),
@@ -494,7 +550,7 @@ const headingClickHandler = EditorView.domEventHandlers({
             const pos = view.posAtDOM(target);
             const line = view.state.doc.lineAt(pos);
             const headings = findHeadingRanges(view.state.doc);
-            
+
             // Find which heading this indicator belongs to
             for (const heading of headings) {
                 const headingLine = view.state.doc.line(heading.lineStart);
@@ -550,7 +606,7 @@ export function createHeadingFoldExtension(enabled: boolean): Extension {
     if (!enabled) {
         return [];
     }
-    
+
     return [
         foldedHeadingsField,
         foldDecorationsExtension,
@@ -568,7 +624,9 @@ export function createConfigurableExtensions(config: EditorConfig): Extension[] 
     return [
         editorCompartments.closeBrackets.of(createCloseBracketsExtension(config.autoPairBrackets)),
         editorCompartments.tabIndentation.of(createTabIndentationExtension(config.tabIndentation)),
-        editorCompartments.pasteHtmlToMarkdown.of(createPasteHtmlToMarkdownExtension(config.convertPastedHtmlToMarkdown)),
+        editorCompartments.pasteHtmlToMarkdown.of(
+            createPasteHtmlToMarkdownExtension(config.convertPastedHtmlToMarkdown),
+        ),
         editorCompartments.vimMode.of(createVimModeExtension(config.vimMode)),
         editorCompartments.lineNumbers.of(createLineNumbersExtension(config.showLineNumbers)),
         editorCompartments.foldHeading.of(createHeadingFoldExtension(config.foldHeading)),
@@ -582,23 +640,19 @@ export function createConfigurableExtensions(config: EditorConfig): Extension[] 
 export function getReconfigurationEffects(config: EditorConfig) {
     return [
         editorCompartments.closeBrackets.reconfigure(
-            createCloseBracketsExtension(config.autoPairBrackets)
+            createCloseBracketsExtension(config.autoPairBrackets),
         ),
         editorCompartments.tabIndentation.reconfigure(
-            createTabIndentationExtension(config.tabIndentation)
+            createTabIndentationExtension(config.tabIndentation),
         ),
         editorCompartments.pasteHtmlToMarkdown.reconfigure(
-            createPasteHtmlToMarkdownExtension(config.convertPastedHtmlToMarkdown)
+            createPasteHtmlToMarkdownExtension(config.convertPastedHtmlToMarkdown),
         ),
-        editorCompartments.vimMode.reconfigure(
-            createVimModeExtension(config.vimMode)
-        ),
+        editorCompartments.vimMode.reconfigure(createVimModeExtension(config.vimMode)),
         editorCompartments.lineNumbers.reconfigure(
-            createLineNumbersExtension(config.showLineNumbers)
+            createLineNumbersExtension(config.showLineNumbers),
         ),
-        editorCompartments.foldHeading.reconfigure(
-            createHeadingFoldExtension(config.foldHeading)
-        ),
+        editorCompartments.foldHeading.reconfigure(createHeadingFoldExtension(config.foldHeading)),
     ];
 }
 
@@ -614,9 +668,13 @@ import type { App } from '../../App';
 function generateImageFilename(mimeType: string): string {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
-    const extension = mimeType.includes('png') ? 'png' : 
-                      mimeType.includes('gif') ? 'gif' : 
-                      mimeType.includes('webp') ? 'webp' : 'jpg';
+    const extension = mimeType.includes('png')
+        ? 'png'
+        : mimeType.includes('gif')
+          ? 'gif'
+          : mimeType.includes('webp')
+            ? 'webp'
+            : 'jpg';
     return `pasted-image-${timestamp}-${random}.${extension}`;
 }
 
@@ -649,7 +707,7 @@ export function createImagePasteExtension(app: App): Extension {
 
             // Check for image files in clipboard
             const items = Array.from(clipboardData.items);
-            const imageItem = items.find(item => item.type.startsWith('image/'));
+            const imageItem = items.find((item) => item.type.startsWith('image/'));
 
             if (!imageItem) return false;
 
@@ -659,7 +717,7 @@ export function createImagePasteExtension(app: App): Extension {
             event.preventDefault();
 
             // Handle async operation in a non-blocking way
-            handleImagePaste(app, file, view).catch(error => {
+            handleImagePaste(app, file, view).catch((error) => {
                 console.error('Failed to paste image:', error);
             });
 
@@ -676,19 +734,19 @@ async function handleImagePaste(app: App, file: File, view: EditorView): Promise
         // Generate filename
         const filename = generateImageFilename(file.type);
         console.log('[ImagePaste] Generated filename:', filename);
-        
+
         // Get the path where image should be saved
         const imagePath = await app.filesConfigManager.getNewAttachmentPath(filename);
         console.log('[ImagePaste] Image path:', imagePath);
-        
+
         // Convert to base64 for saving via Tauri
         const base64Data = await blobToBase64(file);
         console.log('[ImagePaste] Base64 data length:', base64Data.length);
-        
+
         // Save image using fileSystemManager
         await app.fileSystemManager.writeFileBinary(imagePath, base64Data);
         console.log('[ImagePaste] Image saved successfully');
-        
+
         // Trigger file-create event to update file tree
         app.workspace._onFileCreate({
             path: imagePath,
@@ -697,23 +755,22 @@ async function handleImagePaste(app: App, file: File, view: EditorView): Promise
             stat: { mtime: Date.now(), ctime: Date.now(), size: base64Data.length },
             basename: filename.replace(/\.[^.]+$/, ''),
         });
-        
+
         // Get relative path for markdown link
         const relativePath = await app.filesConfigManager.getAttachmentRelativePath(filename);
         console.log('[ImagePaste] Relative path:', relativePath);
-        
+
         // Insert markdown image syntax
         const imageMarkdown = `![${filename}](${relativePath})`;
-        
+
         const { from, to } = view.state.selection.main;
         view.dispatch({
             changes: { from, to, insert: imageMarkdown },
             selection: { anchor: from + imageMarkdown.length },
         });
         console.log('[ImagePaste] Markdown inserted:', imageMarkdown);
-    } catch (error) {
+    } catch (error: any) {
         console.error('[ImagePaste] Failed to paste image:', error);
         throw error;
     }
 }
-

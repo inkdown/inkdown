@@ -1,31 +1,30 @@
-import type { EncryptionManager } from './EncryptionManager';
-import type { TokenManager } from './TokenManager';
 import type { DeviceManager } from './DeviceManager';
+// import type { EncryptionManager } from './EncryptionManager';
+import type { TokenManager } from './TokenManager';
 import type {
-    NoteResponse,
-    CreateNoteRequest,
-    UpdateNoteRequest,
-    SyncResponse,
-    NoteChange,
-    ManifestResponse,
-    LocalNoteInfo,
     BatchDiffResponse,
+    CreateNoteRequest,
+    LocalNoteInfo,
+    ManifestResponse,
+    NoteChange,
+    NoteResponse,
+    SyncResponse,
+    UpdateNoteRequest,
 } from './types';
 
 export class NoteSyncService {
     private baseURL: string;
-    private encryptionManager: EncryptionManager;
     private tokenManager: TokenManager;
     private deviceManager: DeviceManager;
 
     constructor(
         baseURL: string,
-        encryptionManager: EncryptionManager,
+        // private _encryptionManager: EncryptionManager;,
         tokenManager: TokenManager,
-        deviceManager: DeviceManager
+        deviceManager: DeviceManager,
     ) {
         this.baseURL = baseURL;
-        this.encryptionManager = encryptionManager;
+        // this._encryptionManager = encryptionManager;
         this.tokenManager = tokenManager;
         this.deviceManager = deviceManager;
     }
@@ -60,7 +59,7 @@ export class NoteSyncService {
 
     async updateNote(
         noteId: string,
-        request: Omit<UpdateNoteRequest, 'device_id'>
+        request: Omit<UpdateNoteRequest, 'device_id'>,
     ): Promise<NoteResponse> {
         const token = this.tokenManager.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -170,7 +169,7 @@ export class NoteSyncService {
 
     async processSync(
         lastSyncTime: Date,
-        noteVersions: Record<string, number>
+        noteVersions: Record<string, number>,
     ): Promise<SyncResponse> {
         const token = this.tokenManager.getToken();
         if (!token) throw new Error('Not authenticated');

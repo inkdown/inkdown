@@ -1,7 +1,7 @@
-import type { TokenManager } from './TokenManager';
-import type { WSMessage, WSMessageType, NoteUpdatePayload, NoteDeletePayload } from './types';
 import { Events } from '../Events';
+import type { TokenManager } from './TokenManager';
 import type { TokenRefreshService } from './TokenRefreshService';
+import type { WSMessage } from './types';
 
 interface WebSocketConfig {
     url: string;
@@ -74,7 +74,7 @@ export class WebSocketService extends Events {
             this.ws.onclose = this.handleClose.bind(this);
 
             console.log('[WebSocketService] Connecting to:', this.config.url);
-        } catch (error) {
+        } catch (error: any) {
             this.isConnecting = false;
             console.error('[WebSocketService] Connection error:', error);
             throw error;
@@ -143,7 +143,7 @@ export class WebSocketService extends Events {
 
             this.trigger('message', message);
             this.trigger(message.type, message.payload);
-        } catch (error) {
+        } catch (error: any) {
             console.error('[WebSocketService] Failed to parse message:', error);
         }
     }
@@ -181,11 +181,11 @@ export class WebSocketService extends Events {
         const delay = this.config.reconnectInterval! * this.reconnectAttempts;
 
         console.log(
-            `[WebSocketService] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`
+            `[WebSocketService] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`,
         );
 
         this.reconnectTimer = setTimeout(() => {
-            this.connect().catch(error => {
+            this.connect().catch((error) => {
                 console.error('[WebSocketService] Reconnect failed:', error);
             });
         }, delay);

@@ -28,13 +28,13 @@ function toggleListType(view: EditorView, listType: ListType): boolean {
 
         switch (listType) {
             case 'bullet':
-                prefix = indent + '- ';
+                prefix = `${indent}- `;
                 break;
             case 'numbered':
-                prefix = indent + '1. ';
+                prefix = `${indent}1. `;
                 break;
             case 'task':
-                prefix = indent + '- [ ] ';
+                prefix = `${indent}- [ ] `;
                 break;
         }
 
@@ -99,7 +99,7 @@ export function toggleTaskList(view: EditorView): boolean {
     if (startLine.number === endLine.number) {
         const lineText = startLine.text;
         const taskMatch = lineText.match(/^(\s*[-*+]\s\[)([x\s])(\]\s)/i);
-        
+
         if (taskMatch) {
             const checkPos = startLine.from + taskMatch[1].length;
             const isChecked = taskMatch[2].toLowerCase() === 'x';
@@ -128,7 +128,7 @@ export function toggleTaskList(view: EditorView): boolean {
 
         // Determine the prefix based on list type
         const indent = listInfo.indent || getLeadingWhitespace(lineText);
-        const prefix = indent + '- [ ] ';
+        const prefix = `${indent}- [ ] `;
 
         if (listInfo.type === 'task') {
             // Same type - remove the list marker
@@ -166,12 +166,12 @@ export function toggleTaskList(view: EditorView): boolean {
 
     if (changes.length > 0) {
         const transaction: any = { changes };
-        
+
         // Position cursor after [ ] if we added a new task list
         if (newCursorPos !== null) {
             transaction.selection = { anchor: newCursorPos };
         }
-        
+
         view.dispatch(transaction);
     }
 

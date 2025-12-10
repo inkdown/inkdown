@@ -1,23 +1,23 @@
 /**
  * Native Interfaces
- * 
+ *
  * Re-export all interfaces
  */
 
-export type { IFileSystem } from './IFileSystem';
+export type { IClipboard } from './IClipboard';
 export type { IConfig } from './IConfig';
 export type { IDialog } from './IDialog';
-export type { IClipboard } from './IClipboard';
-export type { IPlatform, IWindowControls, IShell, IProcessControl } from './IPlatform';
 export type { IExport } from './IExport';
+export type { IFileSystem } from './IFileSystem';
 export type { IFont } from './IFont';
-export type { 
-    IMenu, 
-    MenuItem, 
-    NormalMenuItem, 
-    SeparatorMenuItem, 
-    CheckboxMenuItem, 
-    SubmenuMenuItem,
+export type {
+    CheckboxMenuItem,
     ContextMenuOptions,
-    MenuPosition 
+    IMenu,
+    MenuItem,
+    MenuPosition,
+    NormalMenuItem,
+    SeparatorMenuItem,
+    SubmenuMenuItem,
 } from './IMenu';
+export type { IPlatform, IProcessControl, IShell, IWindowControls } from './IPlatform';

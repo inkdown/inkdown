@@ -1,15 +1,38 @@
-import type { App as InkdownApp, PluginSettingTab, FileNode, WindowConfig } from '@inkdown/core';
-import { Button, Select, Setting, Slider, TextInput, Toggle, WorkspaceLinkDialog, type WorkspaceLinkWorkspace } from '@inkdown/ui';
-import { Cloud, FolderOpen, Keyboard, Palette, Paintbrush, Puzzle, RefreshCw, Settings as SettingsIcon, Trash2, Type, X, Link, Unlink } from 'lucide-react';
+import type { FileNode, App as InkdownApp, PluginSettingTab, WindowConfig } from '@inkdown/core';
+import {
+    Button,
+    Select,
+    Setting,
+    Slider,
+    TextInput,
+    Toggle,
+    WorkspaceLinkDialog,
+    type WorkspaceLinkWorkspace,
+} from '@inkdown/ui';
+import {
+    Cloud,
+    FolderOpen,
+    Keyboard,
+    Link,
+    Paintbrush,
+    Palette,
+    Puzzle,
+    RefreshCw,
+    Settings as SettingsIcon,
+    Trash2,
+    Type,
+    Unlink,
+    X,
+} from 'lucide-react';
 import type React from 'react';
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useConfig } from '../hooks/useConfig';
+import { EncryptionPasswordModal } from './EncryptionPasswordModal';
 import { PluginsSettings } from './PluginsSettings';
 import { ShortcutsSettings } from './ShortcutsSettings';
 import { ThemesSettings } from './ThemesSettings';
-import { EncryptionPasswordModal } from './EncryptionPasswordModal';
 import './SettingsModal.css';
 
 /**
@@ -39,9 +62,9 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
     useEffect(() => {
         const trimmedValue = (value || '').trim();
         if (trimmedValue) {
-            const filtered = suggestions.filter(s =>
-                s.toLowerCase().includes(trimmedValue.toLowerCase())
-            ).slice(0, 8); // Limit to 8 suggestions
+            const filtered = suggestions
+                .filter((s) => s.toLowerCase().includes(trimmedValue.toLowerCase()))
+                .slice(0, 8); // Limit to 8 suggestions
             setFilteredSuggestions(filtered);
         } else {
             // Show first 8 suggestions when input is empty but focused
@@ -67,13 +90,13 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
-                setSelectedIndex(prev =>
-                    prev < filteredSuggestions.length - 1 ? prev + 1 : prev
+                setSelectedIndex((prev) =>
+                    prev < filteredSuggestions.length - 1 ? prev + 1 : prev,
                 );
                 break;
             case 'ArrowUp':
                 e.preventDefault();
-                setSelectedIndex(prev => prev > 0 ? prev - 1 : -1);
+                setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
                 break;
             case 'Enter':
                 e.preventDefault();
@@ -212,13 +235,17 @@ const PluginSettingTabContent: React.FC<{
 /**
  * Settings Modal Component - Modal-based settings interface with sidebar
  */
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onShowLoginScreen }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({
+    isOpen,
+    onClose,
+    onShowLoginScreen,
+}) => {
     const app = useApp();
     const { currentTheme, colorScheme, setTheme, setColorScheme, themes } = useTheme();
     const [config, saveConfig] = useConfig<AppConfig>('app');
     const [activeTab, setActiveTab] = useState<SettingsTab>('general');
     const [localDbName, setLocalDbName] = useState<string>('inkdown-sync-cache');
-    const [forceUpdateValue, forceUpdate] = useState(0);
+    const [_forceUpdateValue, forceUpdate] = useState(0);
     const [, setPluginVersion] = useState(0); // Used to trigger re-render when plugins change
 
     // Encryption Modal State
@@ -263,7 +290,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 if (config) {
                     setEditorConfig(config);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load editor config:', error);
             }
         };
@@ -278,7 +305,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 if (config) {
                     setFilesConfig(config);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load files config:', error);
             }
         };
@@ -287,14 +314,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
             try {
                 const appConfig = await app.configManager.loadConfig<AppConfig>('app');
                 if (appConfig?.workspace) {
-                    const files = await app.fileSystemManager.readDirectory(appConfig.workspace, true);
+                    const files = await app.fileSystemManager.readDirectory(
+                        appConfig.workspace,
+                        true,
+                    );
                     const folders: string[] = [];
 
                     const collectFolders = (nodes: FileNode[]) => {
                         for (const node of nodes) {
                             if (node.isDirectory) {
                                 // Get relative path from workspace root
-                                const relativePath = node.path.replace(appConfig.workspace + '/', '');
+                                const relativePath = node.path.replace(
+                                    `${appConfig.workspace}/`,
+                                    '',
+                                );
                                 folders.push(relativePath);
                                 if (node.children) {
                                     collectFolders(node.children);
@@ -306,7 +339,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                     collectFolders(files);
                     setWorkspaceFolders(folders.sort());
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load workspace folders:', error);
             }
         };
@@ -323,7 +356,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 if (config) {
                     setWindowConfig(config);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load window config:', error);
             }
         };
@@ -350,7 +383,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 if (currentWorkspaceId) {
                     try {
                         const allWorkspaces = await app.syncManager.listWorkspaces();
-                        const linked = allWorkspaces.find(w => w.id === currentWorkspaceId);
+                        const linked = allWorkspaces.find((w) => w.id === currentWorkspaceId);
                         if (linked) {
                             setLinkedWorkspace(linked);
                         }
@@ -358,24 +391,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                         console.error('Failed to load linked workspace:', err);
                     }
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load sync data:', error);
             }
         };
         loadSyncData();
-    }, [app, forceUpdateValue]);
+    }, [app]);
 
     // Memoize sync state to prevent unnecessary re-renders
-    const isLoggedIn = useMemo(() => app.syncManager.isLoggedIn(), [
-        app.syncManager,
-        forceUpdateValue, // Recompute when forceUpdate changes
-    ]);
+    const isLoggedIn = useMemo(() => app.syncManager.isLoggedIn(), [app.syncManager]);
 
-    const isSyncEnabled = useMemo(() => app.syncManager.isEnabled(), [
-        app.syncManager,
-        forceUpdateValue, // Recompute when forceUpdate changes
-    ]);
-
+    const isSyncEnabled = useMemo(() => app.syncManager.isEnabled(), [app.syncManager]);
 
     // Subscribe to plugin changes to update sidebar
     useEffect(() => {
@@ -402,71 +428,81 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
     }, [isOpen, onClose]);
 
     // Handler callbacks - must be hooks called before early return
-    const handleEnableSync = useCallback(async (enabled: boolean) => {
-        if (!enabled) {
-            await app.syncManager.disable();
-            forceUpdate((v) => v + 1);
-            return;
-        }
-
-        // If enabling, check if we need encryption setup
-        if (isLoggedIn) {
-            try {
-                // Check if keys exist on server to decide setup vs unlock
-                const hasKeys = await app.syncManager.hasKeysOnServer();
-
-                if (hasKeys) {
-                    setEncryptionMode('unlock');
-                } else {
-                    setEncryptionMode('setup');
-                }
-
-                setShowEncryptionModal(true);
-            } catch (error) {
-                console.error('Failed to prepare sync enablement:', error);
-                // Fallback to unlock if check fails
-                setEncryptionMode('unlock');
-                setShowEncryptionModal(true);
+    const handleEnableSync = useCallback(
+        async (enabled: boolean) => {
+            if (!enabled) {
+                await app.syncManager.disable();
+                forceUpdate((v) => v + 1);
+                return;
             }
-        } else {
-            // Not logged in, just enable (will prompt login later or show login link)
-            await app.syncManager.enable();
-            forceUpdate((v) => v + 1);
-        }
-    }, [app.syncManager, isLoggedIn, forceUpdate, setEncryptionMode, setShowEncryptionModal]);
 
-    const handleEncryptionConfirm = useCallback(async (password: string) => {
-        try {
-            if (encryptionMode === 'setup') {
-                await app.syncManager.setupEncryption(password);
-            } else {
-                // Try to unlock
+            // If enabling, check if we need encryption setup
+            if (isLoggedIn) {
                 try {
-                    await app.syncManager.unlockEncryption(password);
-                } catch (error: any) {
-                    // If unlock fails because keys not found (404), maybe we need setup?
-                    if (error.message && (error.message.includes('404') || error.message.includes('Key not found'))) {
-                        // HACK: If unlock fails with 404, we assume it's a new user and try setup
-                        console.log('Unlock failed, trying setup...', error);
-                        await app.syncManager.setupEncryption(password);
+                    // Check if keys exist on server to decide setup vs unlock
+                    const hasKeys = await app.syncManager.hasKeysOnServer();
+
+                    if (hasKeys) {
+                        setEncryptionMode('unlock');
                     } else {
-                        throw error;
+                        setEncryptionMode('setup');
+                    }
+
+                    setShowEncryptionModal(true);
+                } catch (error: any) {
+                    console.error('Failed to prepare sync enablement:', error);
+                    // Fallback to unlock if check fails
+                    setEncryptionMode('unlock');
+                    setShowEncryptionModal(true);
+                }
+            } else {
+                // Not logged in, just enable (will prompt login later or show login link)
+                await app.syncManager.enable();
+                forceUpdate((v) => v + 1);
+            }
+        },
+        [app.syncManager, isLoggedIn],
+    );
+
+    const handleEncryptionConfirm = useCallback(
+        async (password: string) => {
+            try {
+                if (encryptionMode === 'setup') {
+                    await app.syncManager.setupEncryption(password);
+                } else {
+                    // Try to unlock
+                    try {
+                        await app.syncManager.unlockEncryption(password);
+                    } catch (error: any) {
+                        // If unlock fails because keys not found (404), maybe we need setup?
+                        if (
+                            error.message &&
+                            (error.message.includes('404') ||
+                                error.message.includes('Key not found'))
+                        ) {
+                            // HACK: If unlock fails with 404, we assume it's a new user and try setup
+                            console.log('Unlock failed, trying setup...', error);
+                            await app.syncManager.setupEncryption(password);
+                        } else {
+                            throw error;
+                        }
                     }
                 }
+                setShowEncryptionModal(false);
+                forceUpdate((v) => v + 1);
+            } catch (error: any) {
+                console.error('Encryption setup/unlock failed:', error);
+                throw error; // Modal will display error
             }
-            setShowEncryptionModal(false);
-            forceUpdate((v) => v + 1);
-        } catch (error) {
-            console.error('Encryption setup/unlock failed:', error);
-            throw error; // Modal will display error
-        }
-    }, [app.syncManager, encryptionMode, setShowEncryptionModal, forceUpdate]);
+        },
+        [app.syncManager, encryptionMode],
+    );
 
     const handleSyncNow = async () => {
         setIsSyncing(true);
         try {
             await app.syncManager.syncNow();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Sync failed:', error);
         } finally {
             setIsSyncing(false);
@@ -474,11 +510,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
     };
 
     const handleClearLocalData = async () => {
-        if (window.confirm('Are you sure you want to clear all local sync data? This will remove cached notes and metadata. Your local files will NOT be deleted.')) {
+        if (
+            window.confirm(
+                'Are you sure you want to clear all local sync data? This will remove cached notes and metadata. Your local files will NOT be deleted.',
+            )
+        ) {
             try {
                 await app.syncManager.localDatabase.clear();
                 alert('Local sync data cleared.');
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to clear local data:', error);
                 alert('Failed to clear local data.');
             }
@@ -502,13 +542,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
         try {
             await app.syncManager.linkWorkspace(config.workspace, workspaceId);
             const allWorkspaces = await app.syncManager.listWorkspaces();
-            const linked = allWorkspaces.find(w => w.id === workspaceId);
+            const linked = allWorkspaces.find((w) => w.id === workspaceId);
             if (linked) {
                 setLinkedWorkspace(linked);
             }
             // Force re-render of sync status
-            forceUpdate(v => v + 1);
-        } catch (error) {
+            forceUpdate((v) => v + 1);
+        } catch (error: any) {
             console.error('Failed to link workspace:', error);
             alert('Failed to link workspace. Please try again.');
         }
@@ -521,8 +561,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
             await app.syncManager.linkWorkspace(config.workspace, newWorkspace.id);
             setLinkedWorkspace(newWorkspace);
             // Force re-render of sync status
-            forceUpdate(v => v + 1);
-        } catch (error) {
+            forceUpdate((v) => v + 1);
+        } catch (error: any) {
             console.error('Failed to create and link workspace:', error);
             alert('Failed to create workspace. Please try again.');
         }
@@ -530,13 +570,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
 
     const handleUnlinkWorkspace = async () => {
         if (!config?.workspace) return;
-        if (window.confirm('Are you sure you want to unlink this folder from the remote workspace? Local files will not be deleted.')) {
+        if (
+            window.confirm(
+                'Are you sure you want to unlink this folder from the remote workspace? Local files will not be deleted.',
+            )
+        ) {
             try {
                 await app.syncManager.unlinkWorkspace(config.workspace);
                 setLinkedWorkspace(null);
                 // Force re-render of sync status
-                forceUpdate(v => v + 1);
-            } catch (error) {
+                forceUpdate((v) => v + 1);
+            } catch (error: any) {
                 console.error('Failed to unlink workspace:', error);
                 alert('Failed to unlink workspace.');
             }
@@ -569,7 +613,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
 
     const handleCustomTitleBarChange = async (useCustom: boolean) => {
         const confirmed = window.confirm(
-            'Changing the window style requires restarting the app. The app will close and you need to open it again. Continue?'
+            'Changing the window style requires restarting the app. The app will close and you need to open it again. Continue?',
         );
 
         if (!confirmed) return;
@@ -581,7 +625,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                 const { exit } = await import('@tauri-apps/plugin-process');
                 await exit(0);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to change window style:', error);
         }
     };
@@ -606,17 +650,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
             const keysToRemove: string[] = [];
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
-                if (key && key.startsWith('inkdown')) {
+                if (key?.startsWith('inkdown')) {
                     keysToRemove.push(key);
                 }
             }
-            keysToRemove.forEach((key) => localStorage.removeItem(key));
+            keysToRemove.forEach((key) => {
+                localStorage.removeItem(key);
+            });
             console.log(`[Settings] Cleared ${keysToRemove.length} localStorage entries`);
 
             // Clear IndexedDB databases
             const databases = await indexedDB.databases();
             for (const db of databases) {
-                if (db.name && db.name.startsWith('inkdown')) {
+                if (db.name?.startsWith('inkdown')) {
                     indexedDB.deleteDatabase(db.name);
                     console.log(`[Settings] Deleted IndexedDB: ${db.name}`);
                 }
@@ -624,7 +670,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
 
             // Reload the app
             window.location.reload();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to clear cache:', error);
             alert('Failed to clear cache. Check console for details.');
         }
@@ -649,17 +695,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
     // Handler for updating editor config
     const handleEditorConfigChange = async <K extends keyof EditorConfig>(
         key: K,
-        value: EditorConfig[K]
+        value: EditorConfig[K],
     ) => {
         const newConfig = { ...editorConfig, [key]: value };
         setEditorConfig(newConfig);
         try {
             await app.configManager.saveConfig('editor', newConfig);
             // Dispatch custom event to notify App.tsx of config changes
-            window.dispatchEvent(new CustomEvent('inkdown:editor-config-changed', {
-                detail: newConfig
-            }));
-        } catch (error) {
+            window.dispatchEvent(
+                new CustomEvent('inkdown:editor-config-changed', {
+                    detail: newConfig,
+                }),
+            );
+        } catch (error: any) {
             console.error('Failed to save editor config:', error);
         }
     };
@@ -667,14 +715,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
     // Handler for updating files config
     const handleFilesConfigChange = async <K extends keyof FilesConfig>(
         key: K,
-        value: FilesConfig[K]
+        value: FilesConfig[K],
     ) => {
         const newConfig = { ...filesConfig, [key]: value };
         setFilesConfig(newConfig);
         try {
             // Use FilesConfigManager to save - this ensures the internal cache is updated
             await app.filesConfigManager.saveConfig(newConfig);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save files config:', error);
         }
     };
@@ -692,8 +740,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
     // Find the active plugin tab if one is selected
     const activePluginTab = pluginSettingTabs.find((tab) => activeTab === `plugin-${tab.pluginId}`);
 
-
-
     return (
         <>
             <div className="settings-modal-overlay" onClick={onClose}>
@@ -701,7 +747,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                     {/* Modal Header */}
                     <div className="settings-modal-header">
                         <h2>Settings</h2>
-                        <button className="settings-modal-close" onClick={onClose}>
+                        <button type="button" className="settings-modal-close" onClick={onClose}>
                             <X size={18} />
                         </button>
                     </div>
@@ -711,6 +757,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                         <nav className="settings-sidebar">
                             {tabs.map((tab) => (
                                 <button
+                                    type="button"
                                     key={tab.id}
                                     className={`settings-sidebar-item ${activeTab === tab.id ? 'active' : ''}`}
                                     onClick={() => setActiveTab(tab.id)}
@@ -730,6 +777,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                             {/* Plugin setting tabs */}
                             {pluginTabs.map((tab) => (
                                 <button
+                                    type="button"
                                     key={tab.id}
                                     className={`settings-sidebar-item ${activeTab === tab.id ? 'active' : ''}`}
                                     onClick={() => setActiveTab(tab.id)}
@@ -783,32 +831,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                             variant="danger"
                                             size="small"
                                             onClick={async () => {
-                                                if (!window.confirm('⚠️ FACTORY RESET ⚠️\n\nThis will:\n• Delete ALL localStorage data\n• Delete ALL IndexedDB databases\n• Clear sync tokens and encryption keys\n• Return to onboarding\n\nYour local markdown files will NOT be deleted.\n\nContinue?')) {
+                                                if (
+                                                    !window.confirm(
+                                                        '⚠️ FACTORY RESET ⚠️\n\nThis will:\n• Delete ALL localStorage data\n• Delete ALL IndexedDB databases\n• Clear sync tokens and encryption keys\n• Return to onboarding\n\nYour local markdown files will NOT be deleted.\n\nContinue?',
+                                                    )
+                                                ) {
                                                     return;
                                                 }
 
                                                 try {
                                                     // 1. Clear ALL localStorage
                                                     localStorage.clear();
-                                                    console.log('[FactoryReset] Cleared localStorage');
+                                                    console.log(
+                                                        '[FactoryReset] Cleared localStorage',
+                                                    );
 
                                                     // 2. Clear ALL IndexedDB databases
                                                     const databases = await indexedDB.databases();
                                                     for (const db of databases) {
                                                         if (db.name) {
                                                             indexedDB.deleteDatabase(db.name);
-                                                            console.log(`[FactoryReset] Deleted IndexedDB: ${db.name}`);
+                                                            console.log(
+                                                                `[FactoryReset] Deleted IndexedDB: ${db.name}`,
+                                                            );
                                                         }
                                                     }
 
                                                     // 3. Clear sessionStorage too
                                                     sessionStorage.clear();
-                                                    console.log('[FactoryReset] Cleared sessionStorage');
+                                                    console.log(
+                                                        '[FactoryReset] Cleared sessionStorage',
+                                                    );
 
                                                     // 4. Close modal and reload app (will show onboarding since no config)
                                                     onClose();
                                                     window.location.reload();
-                                                } catch (error) {
+                                                } catch (error: any) {
                                                     console.error('[FactoryReset] Failed:', error);
                                                     alert('Factory reset failed. Check console.');
                                                 }
@@ -858,7 +916,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                     >
                                         <Slider
                                             value={config.font?.size || 14}
-                                            onChange={(value: number) => handleFontSizeChange(value)}
+                                            onChange={(value: number) =>
+                                                handleFontSizeChange(value)
+                                            }
                                             min={12}
                                             max={24}
                                             unit="px"
@@ -871,7 +931,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                     >
                                         <Select
                                             value={config.font?.family || 'System UI'}
-                                            onChange={(value: string) => handleFontFamilyChange(value)}
+                                            onChange={(value: string) =>
+                                                handleFontFamilyChange(value)
+                                            }
                                             options={[
                                                 {
                                                     value: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
@@ -910,7 +972,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                     >
                                         <Toggle
                                             checked={editorConfig.autoPairBrackets}
-                                            onChange={(checked) => handleEditorConfigChange('autoPairBrackets', checked)}
+                                            onChange={(checked) =>
+                                                handleEditorConfigChange(
+                                                    'autoPairBrackets',
+                                                    checked,
+                                                )
+                                            }
                                         />
                                     </Setting>
 
@@ -920,7 +987,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                     >
                                         <Toggle
                                             checked={editorConfig.tabIndentation}
-                                            onChange={(checked) => handleEditorConfigChange('tabIndentation', checked)}
+                                            onChange={(checked) =>
+                                                handleEditorConfigChange('tabIndentation', checked)
+                                            }
                                         />
                                     </Setting>
 
@@ -930,7 +999,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                     >
                                         <Toggle
                                             checked={editorConfig.convertPastedHtmlToMarkdown}
-                                            onChange={(checked) => handleEditorConfigChange('convertPastedHtmlToMarkdown', checked)}
+                                            onChange={(checked) =>
+                                                handleEditorConfigChange(
+                                                    'convertPastedHtmlToMarkdown',
+                                                    checked,
+                                                )
+                                            }
                                         />
                                     </Setting>
 
@@ -940,7 +1014,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                     >
                                         <Toggle
                                             checked={editorConfig.vimMode}
-                                            onChange={(checked) => handleEditorConfigChange('vimMode', checked)}
+                                            onChange={(checked) =>
+                                                handleEditorConfigChange('vimMode', checked)
+                                            }
                                         />
                                     </Setting>
 
@@ -950,7 +1026,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                     >
                                         <Toggle
                                             checked={editorConfig.showLineNumbers}
-                                            onChange={(checked) => handleEditorConfigChange('showLineNumbers', checked)}
+                                            onChange={(checked) =>
+                                                handleEditorConfigChange('showLineNumbers', checked)
+                                            }
                                         />
                                     </Setting>
 
@@ -960,7 +1038,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                     >
                                         <Toggle
                                             checked={editorConfig.foldHeading}
-                                            onChange={(checked) => handleEditorConfigChange('foldHeading', checked)}
+                                            onChange={(checked) =>
+                                                handleEditorConfigChange('foldHeading', checked)
+                                            }
                                         />
                                     </Setting>
                                 </div>
@@ -979,10 +1059,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                     >
                                         <Select
                                             value={filesConfig.newNotesLocation}
-                                            onChange={(value: string) => handleFilesConfigChange('newNotesLocation', value as 'root' | 'folder')}
+                                            onChange={(value: string) =>
+                                                handleFilesConfigChange(
+                                                    'newNotesLocation',
+                                                    value as 'root' | 'folder',
+                                                )
+                                            }
                                             options={[
                                                 { value: 'root', label: 'Workspace root' },
-                                                { value: 'folder', label: 'In folder specified below' },
+                                                {
+                                                    value: 'folder',
+                                                    label: 'In folder specified below',
+                                                },
                                             ]}
                                         />
                                     </Setting>
@@ -994,7 +1082,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                         >
                                             <AutocompleteInput
                                                 value={filesConfig.newNotesFolder}
-                                                onChange={(value) => handleFilesConfigChange('newNotesFolder', value)}
+                                                onChange={(value) =>
+                                                    handleFilesConfigChange('newNotesFolder', value)
+                                                }
                                                 suggestions={workspaceFolders}
                                                 placeholder="notes"
                                             />
@@ -1007,10 +1097,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                     >
                                         <Select
                                             value={filesConfig.newAttachmentsLocation}
-                                            onChange={(value: string) => handleFilesConfigChange('newAttachmentsLocation', value as 'root' | 'folder')}
+                                            onChange={(value: string) =>
+                                                handleFilesConfigChange(
+                                                    'newAttachmentsLocation',
+                                                    value as 'root' | 'folder',
+                                                )
+                                            }
                                             options={[
                                                 { value: 'root', label: 'Workspace root' },
-                                                { value: 'folder', label: 'In folder specified below' },
+                                                {
+                                                    value: 'folder',
+                                                    label: 'In folder specified below',
+                                                },
                                             ]}
                                         />
                                     </Setting>
@@ -1022,7 +1120,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                         >
                                             <AutocompleteInput
                                                 value={filesConfig.newAttachmentsFolder}
-                                                onChange={(value) => handleFilesConfigChange('newAttachmentsFolder', value)}
+                                                onChange={(value) =>
+                                                    handleFilesConfigChange(
+                                                        'newAttachmentsFolder',
+                                                        value,
+                                                    )
+                                                }
                                                 suggestions={workspaceFolders}
                                                 placeholder="attachments"
                                             />
@@ -1035,7 +1138,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                 <div className="settings-section">
                                     <h3>Sync Settings</h3>
                                     <p className="settings-description">
-                                        Synchronize your notes across devices with end-to-end encryption.
+                                        Synchronize your notes across devices with end-to-end
+                                        encryption.
                                     </p>
 
                                     <Setting
@@ -1068,19 +1172,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
 
                                             <Setting
                                                 name="Workspace Link"
-                                                description={linkedWorkspace
-                                                    ? `Linked to workspace: ${linkedWorkspace.name}`
-                                                    : "Link this folder to a remote workspace to sync notes"}
+                                                description={
+                                                    linkedWorkspace
+                                                        ? `Linked to workspace: ${linkedWorkspace.name}`
+                                                        : 'Link this folder to a remote workspace to sync notes'
+                                                }
                                             >
                                                 {linkedWorkspace ? (
-                                                    <div className="workspace-link-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                                        <span className="workspace-badge" style={{
-                                                            fontSize: 12,
-                                                            padding: '2px 8px',
-                                                            background: 'var(--accent-bg)',
-                                                            color: 'var(--accent-color)',
-                                                            borderRadius: 4
-                                                        }}>
+                                                    <div
+                                                        className="workspace-link-actions"
+                                                        style={{
+                                                            display: 'flex',
+                                                            gap: 8,
+                                                            alignItems: 'center',
+                                                        }}
+                                                    >
+                                                        <span
+                                                            className="workspace-badge"
+                                                            style={{
+                                                                fontSize: 12,
+                                                                padding: '2px 8px',
+                                                                background: 'var(--accent-bg)',
+                                                                color: 'var(--accent-color)',
+                                                                borderRadius: 4,
+                                                            }}
+                                                        >
                                                             {linkedWorkspace.name}
                                                         </span>
                                                         <Button
@@ -1089,7 +1205,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                                             onClick={handleUnlinkWorkspace}
                                                             title="Unlink workspace"
                                                         >
-                                                            <Unlink size={14} style={{ marginRight: 4 }} />
+                                                            <Unlink
+                                                                size={14}
+                                                                style={{ marginRight: 4 }}
+                                                            />
                                                             Unlink
                                                         </Button>
                                                     </div>
@@ -1099,7 +1218,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                                         size="small"
                                                         onClick={() => setShowWorkspaceDialog(true)}
                                                     >
-                                                        <Link size={14} style={{ marginRight: 6 }} />
+                                                        <Link
+                                                            size={14}
+                                                            style={{ marginRight: 6 }}
+                                                        />
                                                         Link Workspace
                                                     </Button>
                                                 )}
@@ -1112,12 +1234,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                                 >
                                                     <TextInput
                                                         value={localDbName}
-                                                        onChange={(value: string) => setLocalDbName(value)}
+                                                        onChange={(value: string) =>
+                                                            setLocalDbName(value)
+                                                        }
                                                         onBlur={async () => {
                                                             try {
-                                                                await app.syncManager.localDatabase.changeDatabaseName(localDbName);
-                                                            } catch (error) {
-                                                                console.error('Failed to change database:', error);
+                                                                await app.syncManager.localDatabase.changeDatabaseName(
+                                                                    localDbName,
+                                                                );
+                                                            } catch (error: any) {
+                                                                console.error(
+                                                                    'Failed to change database:',
+                                                                    error,
+                                                                );
                                                             }
                                                         }}
                                                         placeholder="inkdown-sync-cache"
@@ -1134,7 +1263,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                                     onClick={handleSyncNow}
                                                     disabled={isSyncing}
                                                 >
-                                                    <RefreshCw size={14} className={isSyncing ? 'spin' : ''} />
+                                                    <RefreshCw
+                                                        size={14}
+                                                        className={isSyncing ? 'spin' : ''}
+                                                    />
                                                     {isSyncing ? 'Syncing...' : 'Sync Now'}
                                                 </Button>
                                             </Setting>
@@ -1149,17 +1281,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                                             value={newPattern}
                                                             onChange={setNewPattern}
                                                             placeholder="e.g. *.tmp, node_modules/**"
-                                                            onKeyDown={(e) => e.key === 'Enter' && handleAddPattern()}
+                                                            onKeyDown={(e) =>
+                                                                e.key === 'Enter' &&
+                                                                handleAddPattern()
+                                                            }
                                                         />
-                                                        <Button size="small" onClick={handleAddPattern}>Add</Button>
+                                                        <Button
+                                                            size="small"
+                                                            onClick={handleAddPattern}
+                                                        >
+                                                            Add
+                                                        </Button>
                                                     </div>
                                                     <div className="patterns-container">
-                                                        {ignoredPatterns.map(pattern => (
-                                                            <div key={pattern} className="pattern-item">
+                                                        {ignoredPatterns.map((pattern) => (
+                                                            <div
+                                                                key={pattern}
+                                                                className="pattern-item"
+                                                            >
                                                                 <span>{pattern}</span>
                                                                 <button
+                                                                    type="button"
                                                                     className="remove-pattern-btn"
-                                                                    onClick={() => handleRemovePattern(pattern)}
+                                                                    onClick={() =>
+                                                                        handleRemovePattern(pattern)
+                                                                    }
                                                                 >
                                                                     <X size={12} />
                                                                 </button>
@@ -1184,10 +1330,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                             </Setting>
                                         </>
                                     ) : (
-                                        <Setting
-                                            name="Account"
-                                            description="Not logged in"
-                                        >
+                                        <Setting name="Account" description="Not logged in">
                                             <Button
                                                 variant="primary"
                                                 size="small"
@@ -1217,8 +1360,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
                                 <div className="settings-section">
                                     <h3>Plugins</h3>
                                     <p className="settings-description">
-                                        Manage your installed plugins. Disable plugins to reduce memory
-                                        usage.
+                                        Manage your installed plugins. Disable plugins to reduce
+                                        memory usage.
                                     </p>
                                     <PluginsSettings />
                                 </div>

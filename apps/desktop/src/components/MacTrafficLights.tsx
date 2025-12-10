@@ -33,7 +33,12 @@ const icons = {
     ),
     maximize: (
         <svg width="8" height="8" viewBox="0 0 8 8">
-            <path stroke="rgba(0,0,0,0.5)" strokeWidth="1.2" d="M1 4l3-3 3 3M1 4l3 3 3-3" fill="none" />
+            <path
+                stroke="rgba(0,0,0,0.5)"
+                strokeWidth="1.2"
+                d="M1 4l3-3 3 3M1 4l3 3 3-3"
+                fill="none"
+            />
         </svg>
     ),
 };
@@ -49,8 +54,8 @@ interface TrafficLightButtonProps {
     isGroupHovered: boolean;
 }
 
-const TrafficLightButton: React.FC<TrafficLightButtonProps> = ({ 
-    type, 
+const TrafficLightButton: React.FC<TrafficLightButtonProps> = ({
+    type,
     onClick,
     isFocused,
     isGroupHovered,
@@ -77,10 +82,10 @@ export interface MacTrafficLightsProps {
 
 /**
  * MacTrafficLights Component
- * 
+ *
  * Renders macOS-style traffic light buttons (close, minimize, maximize)
  * positioned in the FileExplorer header area.
- * 
+ *
  * Behavior matches native macOS:
  * - All icons appear when hovering any button in the group
  * - Icons only show when window is focused
@@ -90,22 +95,19 @@ export const MacTrafficLights: React.FC<MacTrafficLightsProps> = ({ enabled = tr
     const [isFocused, setIsFocused] = useState(true);
     const [isGroupHovered, setIsGroupHovered] = useState(false);
 
-    // Don't render on non-macOS or when disabled
-    if (!isMacOS || !enabled) {
-        return null;
-    }
-
     // Check focus state on mount
     useEffect(() => {
+        if (!isMacOS || !enabled) return;
+
         // Listen for focus changes
         const unlistenFocus = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
             setIsFocused(focused);
         });
 
         return () => {
-            unlistenFocus.then(fn => fn());
+            unlistenFocus.then((fn) => fn());
         };
-    }, []);
+    }, [enabled]);
 
     const appWindow = getCurrentWindow();
 
@@ -121,8 +123,13 @@ export const MacTrafficLights: React.FC<MacTrafficLightsProps> = ({ enabled = tr
         appWindow.toggleMaximize();
     }, [appWindow]);
 
+    // Don't render on non-macOS or when disabled
+    if (!isMacOS || !enabled) {
+        return null;
+    }
+
     return (
-        <div 
+        <div
             className="mac-traffic-lights"
             onMouseEnter={() => setIsGroupHovered(true)}
             onMouseLeave={() => setIsGroupHovered(false)}

@@ -8,13 +8,11 @@ import './extensions'; // Load DOM extensions
 
 // Core classes
 export { App } from './App';
+export { CommunityPluginManager } from './CommunityPluginManager';
+export { CommunityThemeManager } from './CommunityThemeManager';
 // Views
 export { Component } from './Component';
 export { ConfigManager } from './ConfigManager';
-export { CommunityThemeManager } from './CommunityThemeManager';
-export { CommunityPluginManager } from './CommunityPluginManager';
-export { DialogManager } from './DialogManager';
-export type { FileDialogOptions, FileFilter, FolderDialogOptions } from './DialogManager';
 export type {
     EditorSuggestContext,
     EditorSuggestTriggerInfo,
@@ -24,7 +22,6 @@ export type { FuzzyMatch, SearchMatch } from './components/FuzzySuggestModal';
 export { FuzzySuggestModal, PopoverSuggest } from './components/FuzzySuggestModal';
 export { ConfirmModal, KeyboardScope, Modal } from './components/Modal';
 export { injectNoticeStyles, Notice } from './components/Notice';
-export { OnboardingScreen } from './components/sync/OnboardingScreen';
 export { PluginSettingTab } from './components/PluginSettingTab';
 export type {
     SettingButtonComponent,
@@ -38,6 +35,9 @@ export type {
 } from './components/Setting';
 // Plugin API Components
 export { Setting } from './components/Setting';
+export { OnboardingScreen } from './components/sync/OnboardingScreen';
+export type { FileDialogOptions, FileFilter, FolderDialogOptions } from './DialogManager';
+export { DialogManager } from './DialogManager';
 export { EditorRegistry } from './EditorRegistry';
 export { EditorStateManager } from './EditorStateManager';
 export type { EventRef } from './Events';
@@ -53,6 +53,7 @@ export type {
     EditorTransaction,
 } from './editor/EditorAdapter';
 export { EditorAdapter } from './editor/EditorAdapter';
+export type { EditorConfig } from './editor/extensions';
 // Editor configurable extensions
 export {
     createCloseBracketsExtension,
@@ -66,7 +67,6 @@ export {
     editorCompartments,
     getReconfigurationEffects,
 } from './editor/extensions';
-export type { EditorConfig } from './editor/extensions';
 export {
     createCustomizableKeymap,
     createMarkdownKeymap,
@@ -79,13 +79,12 @@ export { createInkdownTheme } from './editor/theme/codemirror-theme';
 export type { DomElementInfo } from './extensions';
 export type { FileNode } from './filesystem/FileSystemManager';
 export { FileSystemManager } from './filesystem/FileSystemManager';
-export { FontManager } from './managers/FontManager';
+export { BookmarkManager } from './managers/BookmarkManager';
 export type { DataWriteOptions } from './managers/FileManager';
 export { FileManager } from './managers/FileManager';
 export type { FilesConfig } from './managers/FilesConfigManager';
-export { FilesConfigManager, DEFAULT_FILES_CONFIG } from './managers/FilesConfigManager';
-export type { WindowConfig, WindowState } from './managers/WindowConfigManager';
-export { WindowConfigManager, DEFAULT_WINDOW_CONFIG, DEFAULT_WINDOW_STATE } from './managers/WindowConfigManager';
+export { DEFAULT_FILES_CONFIG, FilesConfigManager } from './managers/FilesConfigManager';
+export { FontManager } from './managers/FontManager';
 export type {
     BlockCache,
     CachedMetadata,
@@ -99,20 +98,16 @@ export type {
 } from './managers/MetadataCache';
 export { MetadataCache } from './managers/MetadataCache';
 export { SyncManager } from './managers/SyncManager';
+export type { WindowConfig, WindowState } from './managers/WindowConfigManager';
+export {
+    DEFAULT_WINDOW_CONFIG,
+    DEFAULT_WINDOW_STATE,
+    WindowConfigManager,
+} from './managers/WindowConfigManager';
 export type { TAbstractFile, TFile, TFolder } from './managers/Workspace';
 export { Workspace } from './managers/Workspace';
 export { WorkspaceHistory } from './managers/WorkspaceHistory';
 export { WorkspaceUI } from './managers/WorkspaceUI';
-export { BookmarkManager } from './managers/BookmarkManager';
-// Sync
-export { AuthService } from './sync/AuthService';
-export { LocalDatabase } from './sync/LocalDatabase';
-export { TokenManager } from './sync/TokenManager';
-export { DeviceManager } from './sync/DeviceManager';
-export { EncryptionManager } from './sync/EncryptionManager';
-export { getSyncLogger, SyncLogger } from './sync/SyncLogger';
-export type { SyncLogEntry, SyncConflict, SyncLogLevel } from './sync/SyncLogger';
-export * from './sync/types';
 export type {
     MarkdownCodeBlockProcessor,
     MarkdownPostProcessor,
@@ -130,8 +125,42 @@ export type {
 } from './PluginManager';
 export { PluginManager } from './PluginManager';
 export { ShortcutManager } from './ShortcutManager';
+// Sync
+export { AuthService } from './sync/AuthService';
+export { DeviceManager } from './sync/DeviceManager';
+export { EncryptionManager } from './sync/EncryptionManager';
+export { LocalDatabase } from './sync/LocalDatabase';
+export type { SyncConflict, SyncLogEntry, SyncLogLevel } from './sync/SyncLogger';
+export { getSyncLogger, SyncLogger } from './sync/SyncLogger';
+export { TokenManager } from './sync/TokenManager';
+export * from './sync/types';
 export { TabManager } from './TabManager';
 export { ThemeManager } from './ThemeManager';
+export type {
+    Bookmark,
+    BookmarkEvents,
+    BookmarkGroup,
+    BookmarksConfig,
+} from './types/bookmarks';
+export type {
+    CommunityPlugin,
+    CommunityPluginCache,
+    CommunityPluginListing,
+    CommunityPluginManifest,
+    InstalledCommunityPlugin,
+    InstalledPluginsConfig,
+    PluginInstallResult,
+    PluginLoadResult,
+    PluginUpdateInfo,
+} from './types/community-plugin';
+export type {
+    CommunityTheme,
+    CommunityThemeCache,
+    CommunityThemeListing,
+    CommunityThemeManifest,
+    InstalledCommunityTheme,
+    InstalledThemesConfig,
+} from './types/community-theme';
 export type {
     AppConfig,
     FontConfig,
@@ -166,32 +195,6 @@ export type {
     ThemeConfig,
     ThemeManifest,
 } from './types/theme';
-export type {
-    CommunityTheme,
-    CommunityThemeCache,
-    CommunityThemeListing,
-    CommunityThemeManifest,
-    InstalledCommunityTheme,
-    InstalledThemesConfig,
-    ThemeVariant,
-} from './types/community-theme';
-export type {
-    Bookmark,
-    BookmarkGroup,
-    BookmarksConfig,
-    BookmarkEvents,
-} from './types/bookmarks';
-export type {
-    CommunityPlugin,
-    CommunityPluginCache,
-    CommunityPluginListing,
-    CommunityPluginManifest,
-    InstalledCommunityPlugin,
-    InstalledPluginsConfig,
-    PluginInstallResult,
-    PluginLoadResult,
-    PluginUpdateInfo,
-} from './types/community-plugin';
 // Icon utilities (only setIcon is exported - addIcon/hasIcon/getIcon are internal)
 export { setIcon } from './utils/icons';
 export type { Logger } from './utils/logger';

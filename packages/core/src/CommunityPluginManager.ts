@@ -1,10 +1,10 @@
 /**
  * CommunityPluginManager
  * Manages discovery, installation, and updating of community plugins
- * 
+ *
  * Community plugins are JavaScript bundles that follow the Inkdown plugin API.
  * They are loaded dynamically from the user's config directory.
- * 
+ *
  * Directory structure:
  * ~/Library/Application Support/com.furqas.inkdown/
  * └── plugins/
@@ -14,8 +14,17 @@
  *         └── styles.css       # Optional styles
  */
 
-import { native } from './native';
 import type { App } from './App';
+import { Component } from './Component';
+import { EditorSuggest } from './components/EditorSuggest';
+import { FuzzySuggestModal, PopoverSuggest } from './components/FuzzySuggestModal';
+import { ConfirmModal, Modal } from './components/Modal';
+import { Notice } from './components/Notice';
+import { PluginSettingTab } from './components/PluginSettingTab';
+import { Setting } from './components/Setting';
+import { native } from './native';
+// Import core exports for plugin API
+import { Plugin } from './Plugin';
 import type {
     CommunityPlugin,
     CommunityPluginCache,
@@ -27,17 +36,8 @@ import type {
     PluginUpdateInfo,
 } from './types/community-plugin';
 import { createLogger } from './utils/logger';
-
-// Import core exports for plugin API
-import { Plugin } from './Plugin';
-import { Component } from './Component';
-import { Modal, ConfirmModal } from './components/Modal';
-import { Notice } from './components/Notice';
-import { Setting } from './components/Setting';
-import { PluginSettingTab } from './components/PluginSettingTab';
-import { FuzzySuggestModal, PopoverSuggest } from './components/FuzzySuggestModal';
-import { EditorSuggest } from './components/EditorSuggest';
 import { ItemView } from './views/ItemView';
+
 // Cache TTL in milliseconds (1 hour)
 const CACHE_TTL = 60 * 60 * 1000;
 
@@ -85,7 +85,7 @@ export class CommunityPluginManager {
 
             this.logger.info(`Community plugins directory: ${this.pluginsDir}`);
             this.logger.info(`Installed community plugins: ${this.installedPlugins.size}`);
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Failed to initialize CommunityPluginManager', error);
         }
     }
@@ -96,7 +96,7 @@ export class CommunityPluginManager {
     private async ensurePluginsDir(): Promise<void> {
         try {
             await native.fs.ensureDir(this.pluginsDir);
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Failed to create plugins directory', error);
         }
     }
@@ -106,15 +106,16 @@ export class CommunityPluginManager {
      */
     private async loadInstalledPlugins(): Promise<void> {
         try {
-            const config = await this.app.configManager.loadConfig<InstalledPluginsConfig>(
-                'installed-plugins',
-            );
+            const config =
+                await this.app.configManager.loadConfig<InstalledPluginsConfig>(
+                    'installed-plugins',
+                );
             if (config?.plugins) {
                 for (const plugin of config.plugins) {
                     this.installedPlugins.set(plugin.id, plugin);
                 }
             }
-        } catch (error) {
+        } catch (_error) {
             this.logger.debug('No installed plugins config found');
         }
     }
@@ -152,7 +153,7 @@ export class CommunityPluginManager {
 
             this.logger.info(`Fetched ${listings.length} community plugins`);
             return listings;
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Failed to fetch plugin listings', error);
             // Return cached data if available
             return this.cache.listings;
@@ -229,7 +230,7 @@ export class CommunityPluginManager {
             // Cache the result
             this.cache.plugins[listing.id] = plugin;
             return plugin;
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to get details for plugin ${listing.id}`, error);
             return null;
         }
@@ -300,7 +301,7 @@ export class CommunityPluginManager {
 
             this.logger.info(`Successfully installed plugin ${id}`);
             return { success: true, pluginId: id, version: latestVersion };
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to install plugin ${id}`, error);
             return {
                 success: false,
@@ -349,7 +350,7 @@ export class CommunityPluginManager {
 
             this.logger.info(`Successfully uninstalled plugin ${pluginId}`);
             return true;
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to uninstall plugin ${pluginId}`, error);
             return false;
         }
@@ -377,7 +378,7 @@ export class CommunityPluginManager {
                     latestVersion: plugin.latestVersion,
                     hasUpdate,
                 });
-            } catch (error) {
+            } catch (error: any) {
                 this.logger.error(`Failed to check updates for ${pluginId}`, error);
             }
         }
@@ -467,13 +468,15 @@ export class CommunityPluginManager {
                         '@inkdown/core',
                         'inkdown',
                     ];
-                    
+
                     if (validModuleNames.includes(id)) {
                         return coreExports;
                     }
-                    
+
                     this.logger.warn(`Plugin ${pluginId} tried to require unknown module: ${id}`);
-                    throw new Error(`Cannot require '${id}' - only Inkdown API modules are available`);
+                    throw new Error(
+                        `Cannot require '${id}' - only Inkdown API modules are available`,
+                    );
                 };
 
                 // Execute the plugin code in a controlled context
@@ -481,18 +484,18 @@ export class CommunityPluginManager {
                     // eslint-disable-next-line no-new-func
                     const fn = new Function('module', 'exports', 'require', mainJs);
                     fn(module, exports, require);
-                } catch (error) {
+                } catch (error: any) {
                     this.logger.error(`Failed to execute plugin ${pluginId}:`, error);
                     throw error;
                 }
 
                 // Return the plugin class
                 const PluginClass = module.exports.default || module.exports;
-                
+
                 if (!PluginClass) {
                     throw new Error(`Plugin ${pluginId} does not export a default class`);
                 }
-                
+
                 return { default: PluginClass };
             };
 
@@ -505,7 +508,7 @@ export class CommunityPluginManager {
 
             this.logger.info(`Loaded community plugin: ${manifest.name}`);
             return true;
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to load plugin ${pluginId}:`, error);
             return false;
         }
@@ -527,7 +530,7 @@ export class CommunityPluginManager {
         styleEl.setAttribute('data-plugin-id', pluginId);
         styleEl.textContent = css;
         document.head.appendChild(styleEl);
-        
+
         this.logger.debug(`Injected styles for plugin: ${pluginId}`);
     }
 

@@ -1,6 +1,6 @@
 /**
  * WindowConfigManager - Manages window appearance and state settings
- * 
+ *
  * Handles configuration for native vs custom window decorations,
  * and persists window size/position/state between sessions.
  * Requires app restart to apply decoration changes.
@@ -77,7 +77,7 @@ export class WindowConfigManager {
                 this.config = { ...DEFAULT_WINDOW_CONFIG, ...config };
             }
             this.configLoaded = true;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to load window config:', error);
         }
 
@@ -120,7 +120,7 @@ export class WindowConfigManager {
         if (currentConfig.customTitleBar === enabled) {
             return false;
         }
-        
+
         await this.saveConfig({ customTitleBar: enabled });
         return true;
     }

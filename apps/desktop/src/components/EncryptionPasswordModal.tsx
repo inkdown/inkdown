@@ -1,6 +1,7 @@
 import { Button, TextInput } from '@inkdown/ui';
-import { Lock, ShieldCheck, ShieldAlert } from 'lucide-react';
-import React, { useState } from 'react';
+import { Lock, ShieldAlert, ShieldCheck } from 'lucide-react';
+import type React from 'react';
+import { useState } from 'react';
 import './EncryptionPasswordModal.css';
 
 interface EncryptionPasswordModalProps {
@@ -76,36 +77,44 @@ export const EncryptionPasswordModal: React.FC<EncryptionPasswordModalProps> = (
                             <>
                                 Create a dedicated password to encrypt your notes.
                                 <br />
-                                <strong>Warning:</strong> If you lose this password, you will lose access to your encrypted data. We cannot recover it for you.
+                                <strong>Warning:</strong> If you lose this password, you will lose
+                                access to your encrypted data. We cannot recover it for you.
                             </>
                         ) : (
                             <>
-                                Please enter your encryption password to unlock your notes and enable synchronization.
+                                Please enter your encryption password to unlock your notes and
+                                enable synchronization.
                             </>
                         )}
                     </p>
 
                     <form onSubmit={handleSubmit}>
                         <div className="form-group">
-                            <label>Password</label>
-                            <TextInput
-                                type="password"
-                                value={password}
-                                onChange={setPassword}
-                                placeholder="Enter encryption password"
-                                autoFocus
-                            />
+                            {/* biome-ignore lint/a11y/noLabelWithoutControl: TextInput is a custom control */}
+                            <label>
+                                Password
+                                <TextInput
+                                    type="password"
+                                    value={password}
+                                    onChange={setPassword}
+                                    placeholder="Enter encryption password"
+                                    autoFocus
+                                />
+                            </label>
                         </div>
 
                         {mode === 'setup' && (
                             <div className="form-group">
-                                <label>Confirm Password</label>
-                                <TextInput
-                                    type="password"
-                                    value={confirmPassword}
-                                    onChange={setConfirmPassword}
-                                    placeholder="Confirm encryption password"
-                                />
+                                {/* biome-ignore lint/a11y/noLabelWithoutControl: TextInput is a custom control */}
+                                <label>
+                                    Confirm Password
+                                    <TextInput
+                                        type="password"
+                                        value={confirmPassword}
+                                        onChange={setConfirmPassword}
+                                        placeholder="Confirm encryption password"
+                                    />
+                                </label>
                             </div>
                         )}
 
@@ -134,8 +143,8 @@ export const EncryptionPasswordModal: React.FC<EncryptionPasswordModalProps> = (
                                 {isLoading
                                     ? 'Processing...'
                                     : mode === 'setup'
-                                        ? 'Enable Encryption'
-                                        : 'Unlock & Sync'}
+                                      ? 'Enable Encryption'
+                                      : 'Unlock & Sync'}
                             </Button>
                         </div>
                     </form>

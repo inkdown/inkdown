@@ -10,7 +10,6 @@
 @import './UI.css';
 @import './TabBar.css';
 @import './StatusBar.css';
-@import './FileExplorer.css';
 @import '../components/Preview.css';
 @import './WorkspaceSelector.css';
 @import './EmptyTabView.css';

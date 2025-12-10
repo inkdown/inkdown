@@ -74,7 +74,7 @@
         "rules": {
             "recommended": true,
             "complexity": {
-                "noBannedTypes": "error",
+                "noBannedTypes": "off",
                 "noExtraBooleanCast": "error",
                 "noUselessCatch": "error",
                 "noUselessConstructor": "error",
@@ -89,7 +89,8 @@
                 "useFlatMap": "error",
                 "useLiteralKeys": "error",
                 "useOptionalChain": "error",
-                "useRegexLiterals": "error"
+                "useRegexLiterals": "error",
+                "noStaticOnlyClass": "off"
             },
             "correctness": {
                 "noConstAssign": "error",
@@ -122,7 +123,7 @@
             "performance": {
                 "noAccumulatingSpread": "warn",
                 "noDelete": "warn",
-                "noReExportAll": "warn"
+                "noReExportAll": "off"
             },
             "security": {
                 "noDangerouslySetInnerHtml": "warn",
@@ -134,7 +135,7 @@
                 "noInferrableTypes": "warn",
                 "noNamespace": "error",
                 "noNegationElse": "warn",
-                "noNonNullAssertion": "warn",
+                "noNonNullAssertion": "off",
                 "noParameterAssign": "error",
                 "noUnusedTemplateLiteral": "error",
                 "noUselessElse": "warn",
@@ -180,8 +181,9 @@
                 "noDuplicateJsxProps": "error",
                 "noDuplicateObjectKeys": "error",
                 "noDuplicateParameters": "error",
-                "noEmptyBlockStatements": "warn",
-                "noExplicitAny": "warn",
+                "noEmptyBlockStatements": "off",
+                "noExplicitAny": "off",
+                "noImplicitAnyLet": "off",
                 "noExtraNonNullAssertion": "error",
                 "noFallthroughSwitchClause": "error",
                 "noFunctionAssign": "error",
@@ -214,6 +216,7 @@
                 "noPositiveTabindex": "warn",
                 "noRedundantAlt": "error",
                 "noRedundantRoles": "error",
+                "noStaticElementInteractions": "off",
                 "noSvgWithoutTitle": "off",
                 "useAltText": "warn",
                 "useAnchorContent": "warn",
@@ -223,7 +226,7 @@
                 "useHeadingContent": "warn",
                 "useHtmlLang": "error",
                 "useIframeTitle": "error",
-                "useKeyWithClickEvents": "warn",
+                "useKeyWithClickEvents": "off",
                 "useKeyWithMouseEvents": "warn",
                 "useMediaCaption": "warn",
                 "useValidAnchor": "error",

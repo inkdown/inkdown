@@ -1,8 +1,8 @@
 import type { Range } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
 import { Decoration } from '@codemirror/view';
-import { LanguageBadgeWidget } from '../widgets/LanguageBadge';
 import { CopyButtonWidget } from '../widgets/CopyButton';
+import { LanguageBadgeWidget } from '../widgets/LanguageBadge';
 
 /**
  * Create decorations for code block markers (```lang ... ```)
@@ -56,7 +56,7 @@ export function createCodeBlockDecorations(
 
             // Always add both language badge AND copy button
             // CSS will handle showing/hiding based on hover and cursor position
-            
+
             // Add language badge
             decorations.push(
                 Decoration.widget({
@@ -65,7 +65,7 @@ export function createCodeBlockDecorations(
                     block: false,
                 }).range(matchTo),
             );
-            
+
             // Add copy button
             decorations.push(
                 Decoration.widget({

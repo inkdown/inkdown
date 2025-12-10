@@ -23,11 +23,11 @@ const baseLogger = pino({
  * Logger interface for different modules
  */
 export interface Logger {
-    debug(msg: string, ...args: any[]): void;
-    info(msg: string, ...args: any[]): void;
-    warn(msg: string, ...args: any[]): void;
-    error(msg: string, error?: any, ...args: any[]): void;
-    child(bindings: Record<string, any>): Logger;
+    debug(msg: string, ...args: unknown[]): void;
+    info(msg: string, ...args: unknown[]): void;
+    warn(msg: string, ...args: unknown[]): void;
+    error(msg: string, error?: unknown, ...args: unknown[]): void;
+    child(bindings: Record<string, unknown>): Logger;
 }
 
 /**
@@ -37,23 +37,23 @@ export function createLogger(module: string): Logger {
     const logger = baseLogger.child({ module });
 
     return {
-        debug: (msg: string, ...args: any[]) => {
+        debug: (msg: string, ...args: unknown[]) => {
             logger.debug({ ...args }, msg);
         },
-        info: (msg: string, ...args: any[]) => {
+        info: (msg: string, ...args: unknown[]) => {
             logger.info({ ...args }, msg);
         },
-        warn: (msg: string, ...args: any[]) => {
+        warn: (msg: string, ...args: unknown[]) => {
             logger.warn({ ...args }, msg);
         },
-        error: (msg: string, error?: any, ...args: any[]) => {
+        error: (msg: string, error?: unknown, ...args: unknown[]) => {
             if (error instanceof Error) {
                 logger.error({ err: error, ...args }, msg);
             } else {
                 logger.error({ error, ...args }, msg);
             }
         },
-        child: (bindings: Record<string, any>) => {
+        child: (bindings: Record<string, unknown>) => {
             const childLogger = logger.child(bindings);
             // Return a new logger wrapper with the child logger
             return createLoggerFromPino(childLogger, module);
@@ -64,26 +64,26 @@ export function createLogger(module: string): Logger {
 /**
  * Internal helper to create logger from existing pino instance
  */
-function createLoggerFromPino(pinoLogger: pino.Logger, module: string): Logger {
+function createLoggerFromPino(pinoLogger: pino.Logger, _module: string): Logger {
     return {
-        debug: (msg: string, ...args: any[]) => {
+        debug: (msg: string, ...args: unknown[]) => {
             pinoLogger.debug({ ...args }, msg);
         },
-        info: (msg: string, ...args: any[]) => {
+        info: (msg: string, ...args: unknown[]) => {
             pinoLogger.info({ ...args }, msg);
         },
-        warn: (msg: string, ...args: any[]) => {
+        warn: (msg: string, ...args: unknown[]) => {
             pinoLogger.warn({ ...args }, msg);
         },
-        error: (msg: string, error?: any, ...args: any[]) => {
+        error: (msg: string, error?: unknown, ...args: unknown[]) => {
             if (error instanceof Error) {
                 pinoLogger.error({ err: error, ...args }, msg);
             } else {
                 pinoLogger.error({ error, ...args }, msg);
             }
         },
-        child: (bindings: Record<string, any>) => {
-            return createLoggerFromPino(pinoLogger.child(bindings), module);
+        child: (bindings: Record<string, unknown>) => {
+            return createLoggerFromPino(pinoLogger.child(bindings), _module);
         },
     };
 }

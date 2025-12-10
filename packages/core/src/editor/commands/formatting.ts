@@ -63,11 +63,11 @@ export function insertLink(view: EditorView): boolean {
     let selectionLength: number;
 
     if (isUrl) {
-        link = '[](' + selectedText + ')';
+        link = `[](${selectedText})`;
         cursorPos = from + 1; // Position inside []
         selectionLength = 0;
     } else if (selectedText) {
-        link = '[' + selectedText + '](url)';
+        link = `[${selectedText}](url)`;
         cursorPos = from + selectedText.length + 3; // Position at 'url'
         selectionLength = 3;
     } else {
@@ -79,31 +79,6 @@ export function insertLink(view: EditorView): boolean {
     view.dispatch({
         changes: { from, to, insert: link },
         selection: { anchor: cursorPos, head: cursorPos + selectionLength },
-    });
-
-    view.focus();
-    return true;
-}
-
-/**
- * Insert an image at the current position
- * Wraps as ![alt](url)
- */
-export function insertImage(view: EditorView): boolean {
-    const { from, to } = view.state.selection.main;
-    const selectedText = view.state.sliceDoc(from, to);
-    const altText = selectedText || 'image';
-
-    view.dispatch({
-        changes: {
-            from,
-            to,
-            insert: `![${altText}](url)`,
-        },
-        selection: {
-            anchor: from + altText.length + 4, // Selection at 'url'
-            head: from + altText.length + 7,
-        },
     });
 
     view.focus();

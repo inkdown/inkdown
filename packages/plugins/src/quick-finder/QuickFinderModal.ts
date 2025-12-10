@@ -1,10 +1,10 @@
 import type { TFile } from '@inkdown/core';
-import { FuzzySuggestModal, type App, Notice } from '@inkdown/core';
+import { type App, FuzzySuggestModal, Notice } from '@inkdown/core';
 import './QuickFinderModal.css';
 
 /**
  * Quick Finder Modal - Search and create notes interface
- * 
+ *
  * Uses FuzzySuggestModal for fuzzy search with keyboard navigation
  * Shows 10 most recently opened files at the top (from Workspace API)
  */
@@ -111,7 +111,8 @@ export class QuickFinderModal extends FuzzySuggestModal<TFile> {
      * Recent files tracking is handled automatically by WorkspaceUI
      */
     async onChooseItem(file: TFile, evt: MouseEvent | KeyboardEvent): Promise<void> {
-        const openInNewTab = (evt instanceof KeyboardEvent && (evt.ctrlKey || evt.metaKey)) ||
+        const openInNewTab =
+            (evt instanceof KeyboardEvent && (evt.ctrlKey || evt.metaKey)) ||
             (evt instanceof MouseEvent && (evt.ctrlKey || evt.metaKey));
 
         try {
@@ -162,7 +163,7 @@ export class QuickFinderModal extends FuzzySuggestModal<TFile> {
 
             hintEl.appendChild(keyEl);
             hintEl.appendChild(textEl);
-            this.footerEl!.appendChild(hintEl);
+            this.footerEl?.appendChild(hintEl);
         });
 
         // Append to modal container (not content)
@@ -184,17 +185,17 @@ export class QuickFinderModal extends FuzzySuggestModal<TFile> {
             if (noteName.startsWith('/')) {
                 noteName = noteName.substring(1);
             }
-            
+
             // Check if user provided a path (contains /)
             const hasPath = noteName.includes('/');
-            
+
             let notePath: string;
-            
+
             if (hasPath) {
                 // User specified a path - use it directly relative to workspace
                 const fullPath = this.app.fileSystemManager.joinPath(this.workspacePath, noteName);
-                notePath = fullPath.endsWith('.md') ? fullPath : fullPath + '.md';
-                
+                notePath = fullPath.endsWith('.md') ? fullPath : `${fullPath}.md`;
+
                 // Create parent directories if they don't exist
                 const parentDir = this.app.fileSystemManager.getParentPath(notePath);
                 if (parentDir && parentDir !== this.workspacePath) {
@@ -215,7 +216,7 @@ export class QuickFinderModal extends FuzzySuggestModal<TFile> {
             this.close();
         } catch (error) {
             console.error('Failed to create note:', error);
-            new Notice('Failed to create note: ' + error);
+            new Notice(`Failed to create note: ${error}`);
         }
     }
 
@@ -235,7 +236,7 @@ export class QuickFinderModal extends FuzzySuggestModal<TFile> {
 
     onClose() {
         // Remove footer if it exists
-        if (this.footerEl && this.footerEl.parentNode) {
+        if (this.footerEl?.parentNode) {
             this.footerEl.parentNode.removeChild(this.footerEl);
             this.footerEl = null;
         }

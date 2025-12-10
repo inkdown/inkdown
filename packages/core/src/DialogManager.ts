@@ -76,16 +76,16 @@ export class DialogManager {
             console.warn('Dialog module not available');
             return null;
         }
-        
+
         try {
-            const result = await native.dialog!.showSaveDialog?.({
+            const result = await native.dialog?.showSaveDialog?.({
                 title: options.title,
                 defaultPath: options.defaultPath,
                 defaultName: options.defaultName,
                 filters: options.filters,
             });
             return result ?? null;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to show save dialog:', error);
             throw error;
         }
@@ -113,15 +113,15 @@ export class DialogManager {
             console.warn('Dialog module not available');
             return null;
         }
-        
+
         try {
-            const result = await native.dialog!.showOpenFileDialog?.({
+            const result = await native.dialog?.showOpenFileDialog?.({
                 title: options.title,
                 defaultPath: options.defaultPath,
                 filters: options.filters,
             });
             return result ?? null;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to show open file dialog:', error);
             throw error;
         }
@@ -149,15 +149,15 @@ export class DialogManager {
             console.warn('Dialog module not available');
             return [];
         }
-        
+
         try {
-            const result = await native.dialog!.showOpenFilesDialog?.({
+            const result = await native.dialog?.showOpenFilesDialog?.({
                 title: options.title,
                 defaultPath: options.defaultPath,
                 filters: options.filters,
             });
             return result ?? [];
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to show open files dialog:', error);
             throw error;
         }
@@ -184,14 +184,14 @@ export class DialogManager {
             console.warn('Dialog module not available');
             return null;
         }
-        
+
         try {
-            const result = await native.dialog!.showOpenFolderDialog?.({
+            const result = await native.dialog?.showOpenFolderDialog?.({
                 title: options.title,
                 defaultPath: options.defaultPath,
             });
             return result ?? null;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to show open folder dialog:', error);
             throw error;
         }

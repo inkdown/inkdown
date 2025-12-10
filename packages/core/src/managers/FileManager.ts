@@ -22,12 +22,10 @@ export interface DataWriteOptions {
  * - Frontmatter processing
  */
 export class FileManager {
-    private _app: App;
     private fileSystemManager: FileSystemManager;
     private workspace: Workspace;
 
     constructor(app: App) {
-        this._app = app;
         this.fileSystemManager = app.fileSystemManager;
         this.workspace = app.workspace;
     }
@@ -211,7 +209,7 @@ export class FileManager {
                 mtime = fileEntry.modified || Date.now();
                 ctime = fileEntry.modified || Date.now();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.warn('Could not read file metadata:', error);
         }
 

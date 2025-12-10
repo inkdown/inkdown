@@ -26,7 +26,7 @@ export class EditorStateManager {
 
     // Auto-save debounce timers: filePath -> timer
     private autoSaveTimers: Map<string, NodeJS.Timeout> = new Map();
-    
+
     // Auto-save delay in milliseconds (2 seconds after last change)
     private readonly AUTO_SAVE_DELAY_MS = 2000;
 
@@ -53,7 +53,7 @@ export class EditorStateManager {
             this.contentCache.set(filePath, content);
             this.lastSavedContent.set(filePath, content);
             return content;
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Failed to load file ${filePath}:`, error);
             throw error;
         }
@@ -87,7 +87,7 @@ export class EditorStateManager {
         const lastSaved = this.lastSavedContent.get(filePath);
         if (lastSaved !== content) {
             this.dirtyFiles.add(filePath);
-            
+
             // Schedule auto-save with debounce
             this.scheduleAutoSave(filePath);
         } else {
@@ -107,13 +107,13 @@ export class EditorStateManager {
         // Schedule new auto-save
         const timer = setTimeout(async () => {
             this.autoSaveTimers.delete(filePath);
-            
+
             // Only save if still dirty
             if (this.dirtyFiles.has(filePath)) {
                 try {
                     await this.saveFile(filePath);
                     console.log(`[EditorStateManager] Auto-saved: ${filePath}`);
-                } catch (error) {
+                } catch (error: any) {
                     console.error(`[EditorStateManager] Auto-save failed for ${filePath}:`, error);
                 }
             }
@@ -137,7 +137,9 @@ export class EditorStateManager {
      * Cancel all pending auto-saves
      */
     cancelAllAutoSaves(): void {
-        this.autoSaveTimers.forEach(timer => clearTimeout(timer));
+        this.autoSaveTimers.forEach((timer) => {
+            clearTimeout(timer);
+        });
         this.autoSaveTimers.clear();
     }
 
@@ -164,7 +166,7 @@ export class EditorStateManager {
             }
             this.lastSavedContent.set(filePath, content);
             this.dirtyFiles.delete(filePath);
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Failed to save file ${filePath}:`, error);
             throw error;
         }
@@ -191,7 +193,7 @@ export class EditorStateManager {
             this.contentCache.set(filePath, content);
             this.lastSavedContent.set(filePath, content);
             this.dirtyFiles.delete(filePath);
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Failed to save file ${filePath}:`, error);
             throw error;
         }

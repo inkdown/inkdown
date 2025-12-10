@@ -1,4 +1,3 @@
-import type { App, PluginManifest } from '@inkdown/core';
 import { Plugin } from '@inkdown/core';
 import { QuickFinderModal } from './QuickFinderModal';
 
@@ -13,10 +12,6 @@ import { QuickFinderModal } from './QuickFinderModal';
  */
 export default class QuickFinderPlugin extends Plugin {
     private modal: QuickFinderModal | null = null;
-
-    constructor(app: App, manifest: PluginManifest) {
-        super(app, manifest);
-    }
 
     async onload(): Promise<void> {
         console.log('QuickFinderPlugin loaded');

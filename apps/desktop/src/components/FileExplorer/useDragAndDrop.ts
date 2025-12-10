@@ -4,22 +4,20 @@ export const useDragAndDrop = (
     rootPath: string,
     selectedPaths: Set<string>,
     onMove?: (source: string, destination: string) => Promise<void>,
-    onMoveMultiple?: (sources: string[], destination: string) => Promise<void>
+    onMoveMultiple?: (sources: string[], destination: string) => Promise<void>,
 ) => {
     const [draggedPaths, setDraggedPaths] = useState<Set<string>>(new Set());
     const [dragOverPath, setDragOverPath] = useState<string | null>(null);
 
     const handleDragStart = useCallback(
         (e: React.DragEvent, path: string) => {
-            const pathsToDrag = selectedPaths.has(path)
-                ? Array.from(selectedPaths)
-                : [path];
+            const pathsToDrag = selectedPaths.has(path) ? Array.from(selectedPaths) : [path];
 
             setDraggedPaths(new Set(pathsToDrag));
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', JSON.stringify(pathsToDrag));
         },
-        [selectedPaths]
+        [selectedPaths],
     );
 
     const handleDragEnd = useCallback(() => {
@@ -53,24 +51,21 @@ export const useDragAndDrop = (
                 } else if (paths.length === 1 && onMove) {
                     await onMove(paths[0], targetPath);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to move items:', error);
             }
 
             setDraggedPaths(new Set());
         },
-        [onMove, onMoveMultiple]
+        [onMove, onMoveMultiple],
     );
 
-    const handleRootDragOver = useCallback(
-        (e: React.DragEvent) => {
-            e.preventDefault();
-            e.stopPropagation();
-            e.dataTransfer.dropEffect = 'move';
-            setDragOverPath('__root__');
-        },
-        []
-    );
+    const handleRootDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'move';
+        setDragOverPath('__root__');
+    }, []);
 
     const handleRootDragLeave = useCallback(() => {
         setDragOverPath(null);
@@ -91,13 +86,13 @@ export const useDragAndDrop = (
                 } else if (paths.length === 1 && onMove) {
                     await onMove(paths[0], rootPath);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to move items to root:', error);
             }
 
             setDraggedPaths(new Set());
         },
-        [rootPath, onMove, onMoveMultiple]
+        [rootPath, onMove, onMoveMultiple],
     );
 
     return {

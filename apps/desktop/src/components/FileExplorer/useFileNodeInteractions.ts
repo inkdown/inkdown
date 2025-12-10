@@ -1,11 +1,11 @@
-import { useCallback, useState } from 'react';
 import type { FileNode } from '@inkdown/core';
+import { useCallback, useState } from 'react';
 
 export const useFileNodeInteractions = (
     setExpandedDirs: React.Dispatch<React.SetStateAction<Set<string>>>,
     setExpandingDirs: React.Dispatch<React.SetStateAction<Set<string>>>,
     onExpandedDirsChange?: (expandedDirs: string[]) => void,
-    onFileSelect?: (filePath: string, openInNewTab?: boolean) => void
+    onFileSelect?: (filePath: string, openInNewTab?: boolean) => void,
 ) => {
     const [lastClickTime, setLastClickTime] = useState<number>(0);
     const [lastClickPath, setLastClickPath] = useState<string | null>(null);
@@ -14,7 +14,7 @@ export const useFileNodeInteractions = (
         (path: string) => {
             setExpandedDirs((prev) => {
                 const newExpanded = new Set(prev);
-                
+
                 if (newExpanded.has(path)) {
                     newExpanded.delete(path);
                 } else {
@@ -41,7 +41,7 @@ export const useFileNodeInteractions = (
                 return newExpanded;
             });
         },
-        [onExpandedDirsChange, setExpandedDirs, setExpandingDirs]
+        [onExpandedDirsChange, setExpandedDirs, setExpandingDirs],
     );
 
     const handleItemClick = useCallback(
@@ -62,7 +62,7 @@ export const useFileNodeInteractions = (
             setLastClickTime(now);
             setLastClickPath(node.path);
         },
-        [lastClickTime, lastClickPath, toggleDirectory, onFileSelect]
+        [lastClickTime, lastClickPath, toggleDirectory, onFileSelect],
     );
 
     return {

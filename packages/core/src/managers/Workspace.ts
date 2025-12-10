@@ -25,7 +25,7 @@ export interface TFolder {
 
 export type TAbstractFile = TFile | TFolder;
 
-import { Editor, EditorAdapter } from '../editor/EditorAdapter';
+import { type Editor, EditorAdapter } from '../editor/EditorAdapter';
 
 /**
  * Workspace - Manages file operations and file events
@@ -74,7 +74,7 @@ export class Workspace extends Events {
      */
     addRecentFile(filePath: string): void {
         // Remove if already exists
-        this._recentFiles = this._recentFiles.filter(p => p !== filePath);
+        this._recentFiles = this._recentFiles.filter((p) => p !== filePath);
 
         // Add to front
         this._recentFiles.unshift(filePath);
@@ -100,7 +100,7 @@ export class Workspace extends Events {
             }>('app');
 
             this._recentFiles = config?.recentFiles || [];
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to load recent files:', error);
             this._recentFiles = [];
         }
@@ -112,10 +112,10 @@ export class Workspace extends Events {
      */
     private async saveRecentFiles(): Promise<void> {
         try {
-            const config: any = await this._app.configManager.loadConfig('app') || {};
+            const config: any = (await this._app.configManager.loadConfig('app')) || {};
             config.recentFiles = this._recentFiles;
             await this._app.configManager.saveConfig('app', config);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save recent files:', error);
         }
     }
@@ -192,15 +192,11 @@ export class Workspace extends Events {
         if (typeof pattern === 'string') {
             // Simple glob: *.md, notes/*.md, etc.
             // Escape dots, replace * with .*
-            const regex = new RegExp(
-                '^' + pattern
-                    .replace(/\./g, '\\.')
-                    .replace(/\*/g, '.*') + '$'
-            );
-            return allFiles.filter(f => regex.test(f.path));
+            const regex = new RegExp(`^${pattern.replace(/\./g, '\\.').replace(/\*/g, '.*')}$`);
+            return allFiles.filter((f) => regex.test(f.path));
         }
 
-        return allFiles.filter(f => pattern.test(f.path));
+        return allFiles.filter((f) => pattern.test(f.path));
     }
 
     /**
@@ -263,16 +259,19 @@ export class Workspace extends Events {
      * @deprecated Use app.workspaceUI.openFile() instead
      */
     async openFile(file: TFile | string): Promise<void> {
+        let targetFile: TFile;
         if (typeof file === 'string') {
             const fileObj = this.getAbstractFileByPath(file) as TFile;
             if (!fileObj) {
                 console.warn('File not found:', file);
                 return;
             }
-            file = fileObj;
+            targetFile = fileObj;
+        } else {
+            targetFile = file;
         }
 
-        await this._app.workspaceUI?.openFile(file);
+        await this._app.workspaceUI?.openFile(targetFile);
     }
 
     /**
@@ -380,7 +379,7 @@ export class Workspace extends Events {
                     this._fileCache.set(fullPath, file);
                 }
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error collecting files from', dirPath, error);
         }
     }
@@ -460,7 +459,7 @@ export class Workspace extends Events {
         this.trigger('sync-conflict', {
             path,
             resolution,
-            timestamp: timestamp || new Date()
+            timestamp: timestamp || new Date(),
         });
     }
 

@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Modal } from './Modal';
+import { Check, Folder, Plus } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from './Button';
-import { Folder, Plus, Check } from 'lucide-react';
+import { Modal } from './Modal';
 import '../styles/WorkspaceLinkDialog.css';
 
 export interface Workspace {
@@ -48,7 +48,7 @@ export function WorkspaceLinkDialog({
             const list = await listWorkspaces();
             setWorkspaces(list);
             // Auto-select default workspace if exists
-            const defaultWs = list.find(w => w.is_default);
+            const defaultWs = list.find((w) => w.is_default);
             if (defaultWs) {
                 setSelectedId(defaultWs.id);
             }
@@ -105,7 +105,7 @@ export function WorkspaceLinkDialog({
         return date.toLocaleDateString(undefined, {
             year: 'numeric',
             month: 'short',
-            day: 'numeric'
+            day: 'numeric',
         });
     };
 
@@ -119,16 +119,10 @@ export function WorkspaceLinkDialog({
                     </p>
                 )}
 
-                {error && (
-                    <div className="error-state">
-                        {error}
-                    </div>
-                )}
+                {error && <div className="error-state">{error}</div>}
 
                 {isLoading ? (
-                    <div className="loading-state">
-                        Loading workspaces...
-                    </div>
+                    <div className="loading-state">Loading workspaces...</div>
                 ) : workspaces.length === 0 && !showCreateForm ? (
                     <div className="empty-state">
                         <p>No workspaces found. Create your first workspace to start syncing.</p>
@@ -140,7 +134,7 @@ export function WorkspaceLinkDialog({
                 ) : (
                     <>
                         <div className="workspace-list">
-                            {workspaces.map(workspace => (
+                            {workspaces.map((workspace) => (
                                 <div
                                     key={workspace.id}
                                     className={`workspace-item ${selectedId === workspace.id ? 'selected' : ''}`}

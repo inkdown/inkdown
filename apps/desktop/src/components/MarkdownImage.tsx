@@ -1,5 +1,6 @@
 import type { App } from '@inkdown/core';
-import React, { useEffect, useState } from 'react';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 
 interface MarkdownImageProps {
     src?: string;
@@ -128,11 +129,14 @@ export const MarkdownImage: React.FC<MarkdownImageProps> = ({
 
     if (loading) {
         return (
-            <div className="markdown-image-loading" style={{ 
-                padding: '8px', 
-                color: 'var(--text-muted)',
-                fontStyle: 'italic',
-            }}>
+            <div
+                className="markdown-image-loading"
+                style={{
+                    padding: '8px',
+                    color: 'var(--text-muted)',
+                    fontStyle: 'italic',
+                }}
+            >
                 Loading image...
             </div>
         );
@@ -140,12 +144,15 @@ export const MarkdownImage: React.FC<MarkdownImageProps> = ({
 
     if (error) {
         return (
-            <div className="markdown-image-error" style={{ 
-                padding: '8px', 
-                color: 'var(--text-error, red)',
-                border: '1px dashed var(--border-color)',
-                borderRadius: '4px',
-            }}>
+            <div
+                className="markdown-image-error"
+                style={{
+                    padding: '8px',
+                    color: 'var(--text-error, red)',
+                    border: '1px dashed var(--border-color)',
+                    borderRadius: '4px',
+                }}
+            >
                 ❌ {error}
             </div>
         );

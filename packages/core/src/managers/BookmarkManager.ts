@@ -1,13 +1,13 @@
 /**
  * BookmarkManager - Manages bookmarks and bookmark groups
- * 
+ *
  * Provides API for creating, reading, updating, and deleting bookmarks.
  * Bookmarks are organized into groups and persisted to disk.
  */
 
 import type { App } from '../App';
-import type { Bookmark, BookmarkGroup, BookmarksConfig } from '../types/bookmarks';
 import { Events } from '../Events';
+import type { Bookmark, BookmarkGroup, BookmarksConfig } from '../types/bookmarks';
 
 /**
  * Default bookmarks configuration
@@ -50,7 +50,7 @@ export class BookmarkManager extends Events {
             }
             this.configLoaded = true;
             this.trigger('bookmarks-reloaded');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to load bookmarks config:', error);
         }
 
@@ -63,7 +63,7 @@ export class BookmarkManager extends Events {
     private async saveConfig(): Promise<void> {
         try {
             await this.app.configManager.saveConfig('bookmarks', this.config);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save bookmarks config:', error);
             throw error;
         }
@@ -127,7 +127,7 @@ export class BookmarkManager extends Events {
         }
 
         this.config.groups.splice(index, 1);
-        
+
         // Clear last selected if it was this group
         if (this.config.lastSelectedGroupId === groupId) {
             this.config.lastSelectedGroupId = undefined;
@@ -164,7 +164,7 @@ export class BookmarkManager extends Events {
         groupId: string,
         filePath: string,
         title?: string,
-        note?: string
+        note?: string,
     ): Promise<Bookmark> {
         const group = this.config.groups.find((g) => g.id === groupId);
         if (!group) {
@@ -190,7 +190,7 @@ export class BookmarkManager extends Events {
 
         group.bookmarks.push(bookmark);
         group.updatedAt = Date.now();
-        
+
         // Remember last selected group
         this.config.lastSelectedGroupId = groupId;
 
@@ -225,7 +225,7 @@ export class BookmarkManager extends Events {
      */
     async removeBookmarkByPath(filePath: string): Promise<void> {
         let removed = false;
-        
+
         for (const group of this.config.groups) {
             const index = group.bookmarks.findIndex((b) => b.filePath === filePath);
             if (index !== -1) {
@@ -248,7 +248,7 @@ export class BookmarkManager extends Events {
     async updateBookmark(
         groupId: string,
         bookmarkId: string,
-        updates: Partial<Pick<Bookmark, 'title' | 'note'>>
+        updates: Partial<Pick<Bookmark, 'title' | 'note'>>,
     ): Promise<void> {
         const group = this.config.groups.find((g) => g.id === groupId);
         if (!group) {
@@ -271,7 +271,7 @@ export class BookmarkManager extends Events {
      */
     isBookmarked(filePath: string): boolean {
         return this.config.groups.some((group) =>
-            group.bookmarks.some((bookmark) => bookmark.filePath === filePath)
+            group.bookmarks.some((bookmark) => bookmark.filePath === filePath),
         );
     }
 
@@ -280,7 +280,7 @@ export class BookmarkManager extends Events {
      */
     getGroupsForFile(filePath: string): BookmarkGroup[] {
         return this.config.groups.filter((group) =>
-            group.bookmarks.some((bookmark) => bookmark.filePath === filePath)
+            group.bookmarks.some((bookmark) => bookmark.filePath === filePath),
         );
     }
 
@@ -300,7 +300,7 @@ export class BookmarkManager extends Events {
     async moveBookmark(
         sourceGroupId: string,
         bookmarkId: string,
-        targetGroupId: string
+        targetGroupId: string,
     ): Promise<void> {
         const sourceGroup = this.config.groups.find((g) => g.id === sourceGroupId);
         const targetGroup = this.config.groups.find((g) => g.id === targetGroupId);

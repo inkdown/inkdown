@@ -36,7 +36,7 @@ export function useFontSettings(): void {
                     root.style.setProperty('--font-size-base', `${config.font.size}px`);
                     root.style.setProperty('--font-size-editor', `${config.font.size}px`);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load font settings:', error);
             }
         };

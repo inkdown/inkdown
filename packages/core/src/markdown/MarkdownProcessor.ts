@@ -62,7 +62,7 @@ export class MarkdownProcessorRegistry {
         if (!this.codeBlockProcessors.has(language)) {
             this.codeBlockProcessors.set(language, new Set());
         }
-        this.codeBlockProcessors.get(language)!.add(processor);
+        this.codeBlockProcessors.get(language)?.add(processor);
     }
 
     /**
@@ -90,7 +90,7 @@ export class MarkdownProcessorRegistry {
         for (const processor of processors) {
             try {
                 await processor(source, el, ctx);
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`Error in code block processor for ${language}:`, error);
             }
         }
@@ -105,7 +105,7 @@ export class MarkdownProcessorRegistry {
         for (const processor of this.postProcessors) {
             try {
                 await processor(el, ctx);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Error in markdown post processor:', error);
             }
         }
@@ -118,7 +118,7 @@ export class MarkdownProcessorRegistry {
     hasCodeBlockProcessor(language: string): boolean {
         return (
             this.codeBlockProcessors.has(language) &&
-            this.codeBlockProcessors.get(language)!.size > 0
+            (this.codeBlockProcessors.get(language)?.size ?? 0) > 0
         );
     }
 

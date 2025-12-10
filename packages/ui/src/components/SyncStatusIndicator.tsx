@@ -1,7 +1,14 @@
-import { Cloud, CloudOff, RefreshCw, AlertCircle, Check, AlertTriangle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Check, Cloud, CloudOff, RefreshCw } from 'lucide-react';
 import '../styles/SyncStatusIndicator.css';
 
-export type SyncStatus = 'synced' | 'syncing' | 'error' | 'offline' | 'pending' | 'conflict' | 'idle';
+export type SyncStatus =
+    | 'synced'
+    | 'syncing'
+    | 'error'
+    | 'offline'
+    | 'pending'
+    | 'conflict'
+    | 'idle';
 
 export interface SyncStatusIndicatorProps {
     status: SyncStatus;
@@ -71,15 +78,9 @@ export function SyncStatusIndicator({
             onClick={onClick}
             title={tooltip || errorMessage || getStatusText()}
         >
-            <span className={`status-icon ${status}`}>
-                {getStatusIcon()}
-            </span>
-            {workspaceName && (
-                <span className="workspace-name">{workspaceName}</span>
-            )}
-            {pendingCount > 0 && (
-                <span className="sync-count">{pendingCount}</span>
-            )}
+            <span className={`status-icon ${status}`}>{getStatusIcon()}</span>
+            {workspaceName && <span className="workspace-name">{workspaceName}</span>}
+            {pendingCount > 0 && <span className="sync-count">{pendingCount}</span>}
         </div>
     );
 }

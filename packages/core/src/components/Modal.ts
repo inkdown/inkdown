@@ -93,7 +93,7 @@ export abstract class Modal {
         // Create modal structure
         this.modalEl = document.createDiv({ cls: 'modal-container' });
 
-        const overlay = this.modalEl.createDiv({ cls: 'modal-bg' });
+        this.modalEl.createDiv({ cls: 'modal-bg' });
 
         this.containerEl = this.modalEl.createDiv({
             cls: 'modal',
@@ -234,7 +234,7 @@ export abstract class Modal {
  * Keyboard scope for managing keyboard shortcuts within a context
  */
 export class KeyboardScope {
-    private handlers: Map<string, ((e: KeyboardEvent) => boolean | void)[]> = new Map();
+    private handlers: Map<string, ((e: KeyboardEvent) => boolean | undefined)[]> = new Map();
 
     /**
      * Register a keyboard handler
@@ -245,13 +245,13 @@ export class KeyboardScope {
     register(
         modifiers: string[],
         key: string,
-        callback: (e: KeyboardEvent) => boolean | void,
+        callback: (e: KeyboardEvent) => boolean | undefined,
     ): void {
         const combo = [...modifiers.sort(), key].join('+').toLowerCase();
         if (!this.handlers.has(combo)) {
             this.handlers.set(combo, []);
         }
-        this.handlers.get(combo)!.push(callback);
+        this.handlers.get(combo)?.push(callback);
     }
 
     /**

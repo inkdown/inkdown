@@ -1,5 +1,5 @@
-import type { EncryptedData, EncryptionKeys, KeySyncResponse } from './types';
 import type { TokenRefreshService } from './TokenRefreshService';
+import type { EncryptedData, EncryptionKeys, KeySyncResponse } from './types';
 
 /**
  * EncryptionManager - Handles E2EE encryption/decryption using Web Crypto API
@@ -10,7 +10,7 @@ export class EncryptionManager {
     private baseURL: string;
     private tokenRefresh: TokenRefreshService | null = null;
 
-    constructor(baseURL: string = 'http://localhost:8080/api/v1') {
+    constructor(baseURL = 'http://localhost:8080/api/v1') {
         this.baseURL = baseURL;
     }
 
@@ -39,20 +39,20 @@ export class EncryptionManager {
             encoder.encode(password),
             'PBKDF2',
             false,
-            ['deriveBits', 'deriveKey']
+            ['deriveBits', 'deriveKey'],
         );
 
         return crypto.subtle.deriveKey(
             {
                 name: 'PBKDF2',
-                salt: salt as any,
+                salt: salt,
                 iterations: 100000, // High iteration count
                 hash: 'SHA-256',
             },
             passwordKey,
             { name: 'AES-GCM', length: 256 },
             true, // extractable
-            ['encrypt', 'decrypt']
+            ['encrypt', 'decrypt'],
         );
     }
 
@@ -73,11 +73,11 @@ export class EncryptionManager {
     /**
      * Convert BufferSource to base64 string
      */
-    private arrayBufferToBase64(buffer: any): string {
+    private arrayBufferToBase64(buffer: ArrayBuffer | Uint8Array): string {
         const bytes = new Uint8Array(buffer);
         let binary = '';
-        for (let i = 0; i < bytes.length; i++) {
-            binary += String.fromCharCode(bytes[i]);
+        for (const byte of bytes) {
+            binary += String.fromCharCode(byte);
         }
         return btoa(binary);
     }
@@ -116,13 +116,10 @@ export class EncryptionManager {
         const hashBuffer = await crypto.subtle.digest('SHA-256', tokenData);
 
         // Import as encryption key
-        return crypto.subtle.importKey(
-            'raw',
-            hashBuffer,
-            { name: 'AES-GCM', length: 256 },
-            false,
-            ['encrypt', 'decrypt']
-        );
+        return crypto.subtle.importKey('raw', hashBuffer, { name: 'AES-GCM', length: 256 }, false, [
+            'encrypt',
+            'decrypt',
+        ]);
     }
 
     /**
@@ -146,9 +143,9 @@ export class EncryptionManager {
             // Encrypt master key
             const nonce = this.generateNonce();
             const encrypted = await crypto.subtle.encrypt(
-                { name: 'AES-GCM', iv: nonce as any },
+                { name: 'AES-GCM', iv: nonce },
                 sessionKey,
-                exported
+                exported,
             );
 
             // Concatenate nonce + encrypted data
@@ -157,11 +154,10 @@ export class EncryptionManager {
             blob.set(new Uint8Array(encrypted), nonce.length);
 
             // Store in localStorage
-            localStorage.setItem('inkdown-encrypted-master-key',
-                this.arrayBufferToBase64(blob));
+            localStorage.setItem('inkdown-encrypted-master-key', this.arrayBufferToBase64(blob));
 
             console.log('[EncryptionManager] Key saved successfully');
-        } catch (error) {
+        } catch (error: any) {
             console.error('[EncryptionManager] Failed to save key:', error);
             throw error;
         }
@@ -190,9 +186,9 @@ export class EncryptionManager {
 
             // Decrypt master key
             const decrypted = await crypto.subtle.decrypt(
-                { name: 'AES-GCM', iv: nonce as any },
+                { name: 'AES-GCM', iv: nonce },
                 sessionKey,
-                encrypted as any
+                encrypted,
             );
 
             // Import master key
@@ -201,12 +197,12 @@ export class EncryptionManager {
                 decrypted,
                 { name: 'AES-GCM', length: 256 },
                 true,
-                ['encrypt', 'decrypt']
+                ['encrypt', 'decrypt'],
             );
 
             console.log('[EncryptionManager] Key restored successfully');
             return true;
-        } catch (error) {
+        } catch (error: any) {
             console.error('[EncryptionManager] Failed to restore key:', error);
             // Clear invalid session data
             localStorage.removeItem('inkdown-encrypted-master-key');
@@ -243,9 +239,9 @@ export class EncryptionManager {
         // Encrypt the master key with the derived key (self-encryption)
         const nonce = this.generateNonce();
         const encryptedKeyBuffer = await crypto.subtle.encrypt(
-            { name: 'AES-GCM', iv: nonce as any },
+            { name: 'AES-GCM', iv: nonce },
             this.masterKey,
-            exportedKey
+            exportedKey,
         );
 
         // Concatenate nonce + encrypted data for storage
@@ -307,7 +303,7 @@ export class EncryptionManager {
                 });
                 return response.ok;
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error('[EncryptionManager] Failed to check key existence:', error);
             return false;
         }
@@ -360,9 +356,9 @@ export class EncryptionManager {
 
         try {
             const decryptedKeyBuffer = await crypto.subtle.decrypt(
-                { name: 'AES-GCM', iv: nonce as any },
+                { name: 'AES-GCM', iv: nonce },
                 derivedKey,
-                encryptedKey as any
+                encryptedKey,
             );
 
             // Import the decrypted master key
@@ -371,7 +367,7 @@ export class EncryptionManager {
                 decryptedKeyBuffer,
                 { name: 'AES-GCM', length: 256 },
                 true,
-                ['encrypt', 'decrypt']
+                ['encrypt', 'decrypt'],
             );
 
             // Save to local storage for persistence
@@ -380,7 +376,7 @@ export class EncryptionManager {
             }
 
             console.log('[EncryptionManager] Keys synced successfully');
-        } catch (error) {
+        } catch (error: any) {
             console.error('[EncryptionManager] Failed to decrypt master key:', error);
             throw new Error('Failed to decrypt master key - incorrect password?');
         }
@@ -399,9 +395,9 @@ export class EncryptionManager {
         const nonce = this.generateNonce();
 
         const encryptedBuffer = await crypto.subtle.encrypt(
-            { name: 'AES-GCM', iv: nonce as any },
+            { name: 'AES-GCM', iv: nonce },
             this.masterKey,
-            data
+            data,
         );
 
         return {
@@ -426,9 +422,9 @@ export class EncryptionManager {
         const nonce = this.generateNonce();
 
         const encryptedBuffer = await crypto.subtle.encrypt(
-            { name: 'AES-GCM', iv: nonce as any },
+            { name: 'AES-GCM', iv: nonce },
             this.masterKey,
-            data
+            data,
         );
 
         // Concatenate nonce + encrypted data
@@ -449,7 +445,7 @@ export class EncryptionManager {
         }
 
         const combined = this.base64ToArrayBuffer(encryptedBlob);
-        
+
         if (combined.byteLength < 12) {
             throw new Error('Invalid encrypted blob: too short');
         }
@@ -458,9 +454,9 @@ export class EncryptionManager {
         const encryptedData = combined.slice(12);
 
         const decryptedBuffer = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv: nonce as any },
+            { name: 'AES-GCM', iv: nonce },
             this.masterKey,
-            encryptedData as any
+            encryptedData,
         );
 
         const decoder = new TextDecoder();
@@ -479,9 +475,9 @@ export class EncryptionManager {
         const nonce = this.base64ToArrayBuffer(encryptedData.nonce);
 
         const decryptedBuffer = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv: nonce as any },
+            { name: 'AES-GCM', iv: nonce },
             this.masterKey,
-            encryptedBuffer as any
+            encryptedBuffer,
         );
 
         const decoder = new TextDecoder();
@@ -511,7 +507,10 @@ export class EncryptionManager {
      * Encrypt entire note (title + content)
      * SECURITY: Combines title and content into single encrypted blob to avoid nonce reuse
      */
-    async encryptNote(title: string, content: string): Promise<{
+    async encryptNote(
+        title: string,
+        content: string,
+    ): Promise<{
         encrypted_title: string;
         encrypted_content: string;
         nonce: string;
@@ -533,9 +532,9 @@ export class EncryptionManager {
         const data = encoder.encode(combinedData);
 
         const encryptedBuffer = await crypto.subtle.encrypt(
-            { name: 'AES-GCM', iv: nonce as any },
+            { name: 'AES-GCM', iv: nonce },
             this.masterKey,
-            data
+            data,
         );
 
         const encryptedBase64 = this.arrayBufferToBase64(encryptedBuffer);
@@ -553,7 +552,6 @@ export class EncryptionManager {
             content_hash: contentHash,
         };
     }
-
 
     /**
      * Decrypt entire note
@@ -576,9 +574,9 @@ export class EncryptionManager {
             // NEW FORMAT: Combined encryption
             const encryptedBuffer = this.base64ToArrayBuffer(encryptedNote.encrypted_title);
             const decryptedBuffer = await crypto.subtle.decrypt(
-                { name: 'AES-GCM', iv: nonce as any },
+                { name: 'AES-GCM', iv: nonce },
                 this.masterKey,
-                encryptedBuffer as any
+                encryptedBuffer,
             );
             const combinedData = decoder.decode(decryptedBuffer);
 
@@ -588,7 +586,7 @@ export class EncryptionManager {
                     title: parsed.title || '',
                     content: parsed.content || '',
                 };
-            } catch (error) {
+            } catch (error: any) {
                 console.error('[EncryptionManager] Failed to parse combined data:', error);
                 throw new Error('Failed to decrypt note: invalid format');
             }
@@ -597,18 +595,20 @@ export class EncryptionManager {
             // Decrypt title
             const encryptedTitleBuffer = this.base64ToArrayBuffer(encryptedNote.encrypted_title);
             const decryptedTitleBuffer = await crypto.subtle.decrypt(
-                { name: 'AES-GCM', iv: nonce as any },
+                { name: 'AES-GCM', iv: nonce },
                 this.masterKey,
-                encryptedTitleBuffer as any
+                encryptedTitleBuffer,
             );
             const title = decoder.decode(decryptedTitleBuffer);
 
             // Decrypt content
-            const encryptedContentBuffer = this.base64ToArrayBuffer(encryptedNote.encrypted_content);
+            const encryptedContentBuffer = this.base64ToArrayBuffer(
+                encryptedNote.encrypted_content,
+            );
             const decryptedContentBuffer = await crypto.subtle.decrypt(
-                { name: 'AES-GCM', iv: nonce as any },
+                { name: 'AES-GCM', iv: nonce },
                 this.masterKey,
-                encryptedContentBuffer as any
+                encryptedContentBuffer,
             );
             const content = decoder.decode(decryptedContentBuffer);
 

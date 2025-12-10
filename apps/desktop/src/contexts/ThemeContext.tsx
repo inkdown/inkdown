@@ -51,7 +51,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
                 // Get available themes
                 setThemes(app.themeManager.getThemes());
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load theme config:', error);
             }
         };

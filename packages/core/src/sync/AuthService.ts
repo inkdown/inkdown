@@ -7,7 +7,7 @@ export class AuthError extends Error {
     public readonly status: number;
     public readonly code: string;
 
-    constructor(message: string, status: number = 0, code: string = 'AUTH_ERROR') {
+    constructor(message: string, status = 0, code = 'AUTH_ERROR') {
         super(message);
         this.name = 'AuthError';
         this.status = status;
@@ -17,7 +17,7 @@ export class AuthError extends Error {
 
 /**
  * AuthService - Handles communication with Inkdown Sync Server
- * 
+ *
  * Features:
  * - Configurable timeout for requests
  * - Detailed error messages
@@ -27,7 +27,7 @@ export class AuthService {
     private baseURL: string;
     private readonly DEFAULT_TIMEOUT_MS = 30000; // 30 seconds
 
-    constructor(baseURL: string = 'http://localhost:8080/api/v1') {
+    constructor(baseURL = 'http://localhost:8080/api/v1') {
         this.baseURL = baseURL;
     }
 
@@ -50,20 +50,20 @@ export class AuthService {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                 },
-                timeoutMs
+                timeoutMs,
             );
 
             if (!response.ok) {
                 const error = await this.parseErrorResponse(response);
                 throw new AuthError(
-                    error.message || 'Login failed. Please check your credentials.',
+                    (error as any).message || 'Login failed. Please check your credentials.',
                     response.status,
-                    error.code || 'LOGIN_FAILED'
+                    error.code || 'LOGIN_FAILED',
                 );
             }
 
             return response.json();
-        } catch (error) {
+        } catch (error: any) {
             if (error instanceof AuthError) throw error;
             throw this.wrapError(error, 'Login failed');
         }
@@ -81,23 +81,25 @@ export class AuthService {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                 },
-                timeoutMs
+                timeoutMs,
             );
 
             if (!response.ok) {
                 const error = await this.parseErrorResponse(response);
 
                 // Provide user-friendly error messages
-                let message = error.message || 'Registration failed';
+                let message = (error as any).message || 'Registration failed';
                 if (response.status === 409) {
                     message = 'An account with this email already exists.';
                 } else if (response.status === 400) {
-                    message = error.message || 'Invalid registration data. Please check your input.';
+                    message =
+                        (error as any).message ||
+                        'Invalid registration data. Please check your input.';
                 }
 
                 throw new AuthError(message, response.status, error.code || 'REGISTRATION_FAILED');
             }
-        } catch (error) {
+        } catch (error: any) {
             if (error instanceof AuthError) throw error;
             throw this.wrapError(error, 'Registration failed');
         }
@@ -115,20 +117,20 @@ export class AuthService {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ refresh_token: refreshToken }),
                 },
-                timeoutMs
+                timeoutMs,
             );
 
             if (!response.ok) {
                 const error = await this.parseErrorResponse(response);
                 throw new AuthError(
-                    error.message || 'Session expired. Please login again.',
+                    (error as any).message || 'Session expired. Please login again.',
                     response.status,
-                    'TOKEN_REFRESH_FAILED'
+                    'TOKEN_REFRESH_FAILED',
                 );
             }
 
             return response.json();
-        } catch (error) {
+        } catch (error: any) {
             if (error instanceof AuthError) throw error;
             throw this.wrapError(error, 'Token refresh failed');
         }
@@ -153,7 +155,7 @@ export class AuthService {
                         Authorization: `Bearer ${accessToken}`,
                     },
                 },
-                5000 // Short timeout for logout
+                5000, // Short timeout for logout
             );
         } catch {
             // Ignore logout errors - client-side cleanup is sufficient
@@ -167,7 +169,7 @@ export class AuthService {
     private async fetchWithTimeout(
         url: string,
         options: RequestInit,
-        timeoutMs: number = this.DEFAULT_TIMEOUT_MS
+        timeoutMs: number = this.DEFAULT_TIMEOUT_MS,
     ): Promise<Response> {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -183,7 +185,7 @@ export class AuthService {
                 throw new AuthError(
                     'Request timed out. Please check your connection and try again.',
                     0,
-                    'TIMEOUT'
+                    'TIMEOUT',
                 );
             }
             throw error;
@@ -195,7 +197,9 @@ export class AuthService {
     /**
      * Parse error response from server
      */
-    private async parseErrorResponse(response: Response): Promise<{ message?: string; code?: string }> {
+    private async parseErrorResponse(
+        response: Response,
+    ): Promise<{ message?: string; code?: string }> {
         try {
             const data = await response.json();
             return {
@@ -211,18 +215,17 @@ export class AuthService {
      * Wrap generic errors with context
      */
     private wrapError(error: any, context: string): AuthError {
-        if (error instanceof TypeError && error.message.includes('fetch')) {
+        if (error instanceof TypeError && (error as any).message.includes('fetch')) {
             return new AuthError(
                 'Unable to connect to the server. Please check your internet connection.',
                 0,
-                'NETWORK_ERROR'
+                'NETWORK_ERROR',
             );
         }
         return new AuthError(
-            error?.message || context,
+            (error as any)?.message || context,
             error?.status || 0,
-            'UNKNOWN_ERROR'
+            'UNKNOWN_ERROR',
         );
     }
 }
-

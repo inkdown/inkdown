@@ -1,6 +1,6 @@
 /**
  * IMenu - Native Menu Interface
- * 
+ *
  * Provides cross-platform native context menu support.
  * On desktop (Tauri), uses native OS menus.
  * On other platforms, can fall back to custom implementations.
@@ -47,11 +47,7 @@ export interface SubmenuMenuItem extends MenuItemBase {
     items: MenuItem[];
 }
 
-export type MenuItem = 
-    | NormalMenuItem 
-    | SeparatorMenuItem 
-    | CheckboxMenuItem 
-    | SubmenuMenuItem;
+export type MenuItem = NormalMenuItem | SeparatorMenuItem | CheckboxMenuItem | SubmenuMenuItem;
 
 // ============================================================================
 // Menu Position
@@ -84,7 +80,7 @@ export interface IMenu {
      * @returns Promise that resolves when menu is closed
      */
     showContextMenu(options: ContextMenuOptions): Promise<void>;
-    
+
     /**
      * Check if native menus are supported
      */

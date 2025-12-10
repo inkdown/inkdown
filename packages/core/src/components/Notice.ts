@@ -53,7 +53,7 @@ export class Notice {
         }
 
         // Add to container
-        Notice.container!.appendChild(this.noticeEl);
+        Notice.container?.appendChild(this.noticeEl);
 
         // Animate in
         requestAnimationFrame(() => {

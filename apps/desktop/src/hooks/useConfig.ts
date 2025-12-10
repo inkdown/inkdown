@@ -17,7 +17,7 @@ export function useConfig<T>(configName: string): [T | null, (data: T) => Promis
             try {
                 const data = await app.configManager.loadConfig<T>(configName);
                 setConfig(data);
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`Failed to load config ${configName}:`, error);
             } finally {
                 setLoading(false);
@@ -32,7 +32,7 @@ export function useConfig<T>(configName: string): [T | null, (data: T) => Promis
             try {
                 await app.configManager.saveConfig(configName, data);
                 setConfig(data);
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`Failed to save config ${configName}:`, error);
                 throw error;
             }

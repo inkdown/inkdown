@@ -10,7 +10,7 @@ export interface AuthResponse {
             username: string;
             email: string;
         };
-    }
+    };
 }
 
 export interface RegisterData {
@@ -328,10 +328,10 @@ export interface ConflictInfo {
  * Response from /sync/batch-diff endpoint
  */
 export interface BatchDiffResponse {
-    to_download: NoteResponse[];  // Server has newer version
-    to_upload: string[];          // Client has newer version (note IDs)
-    to_delete: string[];          // Deleted on server (note IDs)
-    conflicts: ConflictInfo[];    // Need manual resolution
+    to_download: NoteResponse[]; // Server has newer version
+    to_upload: string[]; // Client has newer version (note IDs)
+    to_delete: string[]; // Deleted on server (note IDs)
+    conflicts: ConflictInfo[]; // Need manual resolution
     sync_time: string;
 }
 

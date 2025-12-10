@@ -110,7 +110,7 @@ export class ShortcutManager {
                     }
                 }
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to load shortcut overrides:', error);
         }
     }
@@ -222,10 +222,10 @@ export class ShortcutManager {
                     try {
                         // Create a new note using FilesConfigManager
                         const newNotePath = await this.app.filesConfigManager.createNewNote();
-                        
+
                         // Open the new note in a tab
                         await this.app.tabManager.openTab(newNotePath);
-                        
+
                         // Trigger file-create event to refresh file tree
                         const filename = newNotePath.split('/').pop() || 'Untitled.md';
                         this.app.workspace._onFileCreate({
@@ -239,7 +239,7 @@ export class ShortcutManager {
                                 ctime: Date.now(),
                             },
                         });
-                    } catch (error) {
+                    } catch (error: any) {
                         console.error('Failed to create new note:', error);
                     }
                 },
@@ -271,11 +271,11 @@ export class ShortcutManager {
      */
     private convertHotkeysToKeys(hotkeys: Array<{ modifiers: string[]; key: string }>): string[] {
         if (!hotkeys || hotkeys.length === 0) return [];
-        
+
         // Use the first hotkey definition
         const hotkey = hotkeys[0];
         if (!hotkey) return [];
-        
+
         const keys: string[] = [...(hotkey.modifiers || [])];
         if (hotkey.key) {
             // Normalize key to uppercase for consistency
@@ -293,7 +293,7 @@ export class ShortcutManager {
         source: 'core' | 'plugin' = 'plugin',
         pluginId?: string,
     ): void {
-        console.log(`[ShortcutManager] registerCommand called:`, {
+        console.log('[ShortcutManager] registerCommand called:', {
             commandId: command.id,
             commandName: command.name,
             source,
@@ -301,29 +301,32 @@ export class ShortcutManager {
             hotkey: command.hotkey,
             hotkeys: command.hotkeys,
         });
-        
+
         this.commands.set(command.id, command);
 
         // Get default keys from our defaults or from command
         // Support both hotkey (string[]) and hotkeys (Hotkey[]) formats
         const defaultConfig = this.defaultShortcuts[command.id];
         let defaultKeys = defaultConfig?.keys || command.hotkey || [];
-        
+
         // Convert hotkeys format if hotkey is empty but hotkeys exists
         if (defaultKeys.length === 0 && command.hotkeys && command.hotkeys.length > 0) {
             defaultKeys = this.convertHotkeysToKeys(command.hotkeys);
-            console.log(`[ShortcutManager] Converted hotkeys to:`, defaultKeys);
+            console.log('[ShortcutManager] Converted hotkeys to:', defaultKeys);
         }
 
-        console.log(`[ShortcutManager] defaultKeys:`, defaultKeys);
+        console.log('[ShortcutManager] defaultKeys:', defaultKeys);
 
         if (defaultKeys.length > 0) {
             const existingShortcut = this.shortcuts.get(command.id);
-            console.log(`[ShortcutManager] existingShortcut:`, existingShortcut);
+            console.log('[ShortcutManager] existingShortcut:', existingShortcut);
             if (!existingShortcut) {
                 // Use user override if available, otherwise default
                 const effectiveKeys = this.getEffectiveKeys(command.id, defaultKeys);
-                console.log(`[ShortcutManager] Registering shortcut with effectiveKeys:`, effectiveKeys);
+                console.log(
+                    '[ShortcutManager] Registering shortcut with effectiveKeys:',
+                    effectiveKeys,
+                );
 
                 this.registerShortcut(
                     command.id,
@@ -482,7 +485,7 @@ export class ShortcutManager {
         for (const listener of this.changeListeners) {
             try {
                 listener(id, keys);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Error in shortcut change listener:', error);
             }
         }
@@ -609,7 +612,7 @@ export class ShortcutManager {
     executeCommand(action: string): void {
         // Handle built-in actions
         if (action.startsWith('switch-tab-')) {
-            const tabIndex = Number.parseInt(action.split('-')[2]) - 1;
+            const tabIndex = Number.parseInt(action.split('-')[2], 10) - 1;
             this.app.tabManager.switchToTabByIndex(tabIndex);
             return;
         }

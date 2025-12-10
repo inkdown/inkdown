@@ -1,6 +1,15 @@
 import type { CommunityPlugin, CommunityPluginListing, Plugin } from '@inkdown/core';
 import { Button, Setting, Toggle } from '@inkdown/ui';
-import { ArrowLeft, ArrowUpDown, Check, Download, ExternalLink, RefreshCw, Search, Trash2 } from 'lucide-react';
+import {
+    ArrowLeft,
+    ArrowUpDown,
+    Check,
+    Download,
+    ExternalLink,
+    RefreshCw,
+    Search,
+    Trash2,
+} from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApp, usePluginManager } from '../contexts/AppContext';
@@ -187,9 +196,11 @@ const PluginDetail: React.FC<{
                     <div className="plugin-detail-meta">
                         <h2 className="plugin-detail-name">{plugin.manifest.name}</h2>
                         <p className="plugin-detail-author">by {plugin.manifest.author}</p>
-                        
+
                         {plugin.manifest.description && (
-                            <p className="plugin-detail-description">{plugin.manifest.description}</p>
+                            <p className="plugin-detail-description">
+                                {plugin.manifest.description}
+                            </p>
                         )}
 
                         <div className="plugin-detail-info-grid">
@@ -201,7 +212,9 @@ const PluginDetail: React.FC<{
                                 <span className="label">Status</span>
                                 <span className="value">
                                     {plugin.installed ? (
-                                        <span className="status-installed">Installed (v{plugin.installedVersion})</span>
+                                        <span className="status-installed">
+                                            Installed (v{plugin.installedVersion})
+                                        </span>
                                     ) : (
                                         <span className="status-not-installed">Not installed</span>
                                     )}
@@ -265,7 +278,7 @@ const PluginDetail: React.FC<{
                 {plugin.readme && (
                     <div className="plugin-detail-readme">
                         <div className="plugin-detail-readme-content">
-                            <Preview content={plugin.readme} mode="preview-only" />
+                            <Preview content={plugin.readme} mode="preview-only" app={app} />
                         </div>
                     </div>
                 )}
@@ -310,7 +323,9 @@ const InstalledPluginsTab: React.FC = () => {
         return (
             <div className="plugins-empty">
                 <p>No plugins installed yet.</p>
-                <p className="plugins-empty-hint">Browse the Library to discover and install plugins.</p>
+                <p className="plugins-empty-hint">
+                    Browse the Library to discover and install plugins.
+                </p>
             </div>
         );
     }
@@ -385,28 +400,31 @@ const LibraryPluginsTab: React.FC<{
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
-    
+
     // Search and filter state
     const [searchQuery, setSearchQuery] = useState('');
     const [installedOnly, setInstalledOnly] = useState(false);
     const [sortBy, setSortBy] = useState<SortOption>('alphabetical');
 
     // Fetch plugin listings on mount
-    const fetchListings = useCallback(async (forceRefresh = false) => {
-        setLoading(!forceRefresh);
-        setRefreshing(forceRefresh);
-        setError(null);
+    const fetchListings = useCallback(
+        async (forceRefresh = false) => {
+            setLoading(!forceRefresh);
+            setRefreshing(forceRefresh);
+            setError(null);
 
-        try {
-            const plugins = await app.communityPluginManager.getPluginListings(forceRefresh);
-            setListings(plugins);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to load plugins');
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }, [app.communityPluginManager]);
+            try {
+                const plugins = await app.communityPluginManager.getPluginListings(forceRefresh);
+                setListings(plugins);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to load plugins');
+            } finally {
+                setLoading(false);
+                setRefreshing(false);
+            }
+        },
+        [app.communityPluginManager],
+    );
 
     useEffect(() => {
         fetchListings();
@@ -423,14 +441,14 @@ const LibraryPluginsTab: React.FC<{
                 (listing) =>
                     listing.name.toLowerCase().includes(query) ||
                     listing.author.toLowerCase().includes(query) ||
-                    (listing.description && listing.description.toLowerCase().includes(query))
+                    listing.description?.toLowerCase().includes(query),
             );
         }
 
         // Filter by installed status
         if (installedOnly) {
             result = result.filter((listing) =>
-                app.communityPluginManager.isPluginInstalled(listing.repo)
+                app.communityPluginManager.isPluginInstalled(listing.repo),
             );
         }
 
@@ -527,11 +545,7 @@ const LibraryPluginsTab: React.FC<{
                         <Check size={14} />
                         Installed
                     </button>
-                    <button
-                        type="button"
-                        className="plugins-filter-btn"
-                        onClick={toggleSort}
-                    >
+                    <button type="button" className="plugins-filter-btn" onClick={toggleSort}>
                         <ArrowUpDown size={14} />
                         {sortBy === 'alphabetical' ? 'A-Z' : 'Newest'}
                     </button>

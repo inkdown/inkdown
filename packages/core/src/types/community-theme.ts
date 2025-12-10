@@ -1,6 +1,6 @@
 /**
  * Community Theme Types
- * 
+ *
  * Types for the community theme system that allows users to browse,
  * install, and manage themes from the inkdown-community repository.
  */

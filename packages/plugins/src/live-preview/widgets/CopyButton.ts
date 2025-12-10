@@ -18,7 +18,7 @@ export class CopyButtonWidget extends WidgetType {
         button.className = 'cm-codeblock-copy-button';
         button.textContent = 'Copy';
         button.title = 'Copy code';
-        
+
         // Apply custom attributes
         if (this.attrs) {
             for (const [key, value] of Object.entries(this.attrs)) {
@@ -32,7 +32,7 @@ export class CopyButtonWidget extends WidgetType {
 
             try {
                 // Try to use Clipboard API
-                if (navigator.clipboard && navigator.clipboard.writeText) {
+                if (navigator.clipboard?.writeText) {
                     await navigator.clipboard.writeText(this.codeContent);
                     button.textContent = 'Copied!';
                     button.classList.add('copied');
@@ -70,8 +70,10 @@ export class CopyButtonWidget extends WidgetType {
     }
 
     eq(other: CopyButtonWidget): boolean {
-        return other.codeContent === this.codeContent &&
-               JSON.stringify(other.attrs) === JSON.stringify(this.attrs);
+        return (
+            other.codeContent === this.codeContent &&
+            JSON.stringify(other.attrs) === JSON.stringify(this.attrs)
+        );
     }
 
     ignoreEvent(): boolean {

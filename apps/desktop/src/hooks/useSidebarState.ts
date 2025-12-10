@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
 import type { App } from '@inkdown/core';
+import { useCallback, useEffect, useState } from 'react';
 
 interface AppConfig {
     expandedDirs?: string[];
@@ -37,7 +37,7 @@ export const useSidebarState = (app: App, loading: boolean) => {
                 if (config?.sortOrder) {
                     setSortOrder(config.sortOrder as 'a-z' | 'z-a');
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load sidebar settings:', error);
             }
         };
@@ -52,11 +52,11 @@ export const useSidebarState = (app: App, loading: boolean) => {
                 const config = await app.configManager.loadConfig<AppConfig>('app');
                 config.expandedDirs = dirs;
                 await app.configManager.saveConfig('app', config);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to save expanded dirs:', error);
             }
         },
-        [app]
+        [app],
     );
 
     const handleSidebarWidthChange = useCallback(
@@ -66,11 +66,11 @@ export const useSidebarState = (app: App, loading: boolean) => {
                 const config = await app.configManager.loadConfig<AppConfig>('app');
                 config.sidebarWidth = width;
                 await app.configManager.saveConfig('app', config);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to save sidebar width:', error);
             }
         },
-        [app]
+        [app],
     );
 
     const handleSidebarCollapsedChange = useCallback(
@@ -80,11 +80,11 @@ export const useSidebarState = (app: App, loading: boolean) => {
                 const config = await app.configManager.loadConfig<AppConfig>('app');
                 config.sidebarCollapsed = collapsed;
                 await app.configManager.saveConfig('app', config);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to save sidebar collapsed state:', error);
             }
         },
-        [app]
+        [app],
     );
 
     const handleSortOrderChange = useCallback(
@@ -94,11 +94,11 @@ export const useSidebarState = (app: App, loading: boolean) => {
                 const config = await app.configManager.loadConfig<AppConfig>('app');
                 config.sortOrder = order;
                 await app.configManager.saveConfig('app', config);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to save sort order:', error);
             }
         },
-        [app]
+        [app],
     );
 
     return {

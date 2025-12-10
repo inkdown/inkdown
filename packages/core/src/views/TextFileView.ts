@@ -1,4 +1,3 @@
-import type { App } from '../App';
 import type { TFile } from '../managers/Workspace';
 import { ItemView } from './ItemView';
 
@@ -7,10 +6,6 @@ import { ItemView } from './ItemView';
  */
 export abstract class TextFileView extends ItemView {
     file: TFile | null = null;
-
-    constructor(app: App) {
-        super(app);
-    }
 
     /**
      * Load a file into the view

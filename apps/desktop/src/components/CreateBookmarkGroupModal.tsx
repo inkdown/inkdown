@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './CreateBookmarkGroupModal.css';
 
 // Preset colors for quick selection
@@ -74,6 +75,7 @@ export const CreateBookmarkGroupModal: React.FC<CreateBookmarkGroupModalProps> =
                 <div className="create-bookmark-group-modal-header">
                     <h2>Create Bookmark Group</h2>
                     <button
+                        type="button"
                         className="create-bookmark-group-modal-close"
                         onClick={onClose}
                         aria-label="Close"
@@ -111,13 +113,14 @@ export const CreateBookmarkGroupModal: React.FC<CreateBookmarkGroupModalProps> =
                         </div>
 
                         <div className="create-bookmark-group-form-group">
+                            {/* biome-ignore lint/a11y/noLabelWithoutControl: Color picker is a custom control */}
                             <label>Group Color</label>
                             <div className="color-picker-container">
                                 <div className="color-presets">
                                     {PRESET_COLORS.map((presetColor) => (
                                         <button
-                                            key={presetColor}
                                             type="button"
+                                            key={presetColor}
                                             className={`color-preset ${color === presetColor ? 'selected' : ''}`}
                                             style={{ backgroundColor: presetColor }}
                                             onClick={() => setColor(presetColor)}
@@ -134,7 +137,7 @@ export const CreateBookmarkGroupModal: React.FC<CreateBookmarkGroupModalProps> =
                                     </button>
                                 </div>
                                 <div className="color-picker-row">
-                                    <div 
+                                    <div
                                         className="color-preview"
                                         style={{ backgroundColor: color }}
                                         onClick={handleColorPickerClick}

@@ -68,7 +68,7 @@ export class PluginManager {
         for (const listener of this.changeListeners) {
             try {
                 listener(pluginId, changeType);
-            } catch (error) {
+            } catch (error: any) {
                 this.logger.error('Plugin change listener error', error);
             }
         }
@@ -148,7 +148,7 @@ export class PluginManager {
             this.plugins.set(pluginId, plugin);
             this.logger.info(`Loaded plugin: ${pluginId}`);
             return true;
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to load plugin ${pluginId}`, error);
             return false;
         }
@@ -193,7 +193,7 @@ export class PluginManager {
             } else {
                 this.logger.info('No saved plugin configs found, will use defaults');
             }
-        } catch (error) {
+        } catch (error: any) {
             this.logger.warn('Failed to load plugin configs', error);
         }
     }
@@ -216,7 +216,7 @@ export class PluginManager {
             await this.app.configManager.saveConfig('app', appConfig);
 
             this.logger.info('✅ Plugin configs saved successfully');
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('❌ Failed to save plugin configs', error);
         }
     }
@@ -262,7 +262,7 @@ export class PluginManager {
                 } else {
                     this.logger.debug(`Plugin ${id} will remain disabled`);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 this.logger.error(`Failed to load plugin ${id}`, error);
             }
         }
@@ -309,7 +309,7 @@ export class PluginManager {
             this.notifyChange(pluginId, 'enabled');
 
             this.logger.info(`✅ Plugin ${pluginId} enabled`);
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to enable plugin ${pluginId}`, error);
             throw error;
         }
@@ -347,7 +347,7 @@ export class PluginManager {
             this.notifyChange(pluginId, 'disabled');
 
             this.logger.info(`✅ Plugin ${pluginId} disabled`);
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to disable plugin ${pluginId}`, error);
             throw error;
         }

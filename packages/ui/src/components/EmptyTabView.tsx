@@ -4,7 +4,8 @@ import '../styles/EmptyTabView.css';
 /**
  * Detect if running on macOS
  */
-const isMacOS = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+const isMacOS =
+    typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
 /**
  * Get the modifier key label based on platform
@@ -14,11 +15,15 @@ const modKey = isMacOS ? '⌘' : 'Ctrl';
 /**
  * Empty Tab View - Shown when a tab has no file
  */
-export const EmptyTabView: React.FC = () => {
+/**
+ * Props for EmptyTabView
+ */
+export type EmptyTabViewProps = {};
+
+export const EmptyTabView: React.FC<EmptyTabViewProps> = () => {
     return (
         <div className="empty-tab-view">
             <div className="empty-tab-content">
-
                 <h2>No file open</h2>
                 <p>Create a new note or select a file from the explorer</p>
 

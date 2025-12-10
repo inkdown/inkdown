@@ -13,24 +13,18 @@ export class WorkspaceHistory {
      * If workspace already exists, moves it to the top
      * Limits history to MAX_RECENT items
      */
-    static addWorkspace(
-        workspaces: RecentWorkspace[],
-        path: string,
-    ): RecentWorkspace[] {
-        const name = this.getWorkspaceName(path);
+    static addWorkspace(workspaces: RecentWorkspace[], path: string): RecentWorkspace[] {
+        const name = WorkspaceHistory.getWorkspaceName(path);
         const now = Date.now();
 
         // Remove existing entry if present
         const filtered = workspaces.filter((ws) => ws.path !== path);
 
         // Add to front
-        const updated: RecentWorkspace[] = [
-            { path, name, lastOpened: now },
-            ...filtered,
-        ];
+        const updated: RecentWorkspace[] = [{ path, name, lastOpened: now }, ...filtered];
 
         // Limit to MAX_RECENT
-        return updated.slice(0, this.MAX_RECENT);
+        return updated.slice(0, WorkspaceHistory.MAX_RECENT);
     }
 
     /**
@@ -43,10 +37,7 @@ export class WorkspaceHistory {
     /**
      * Remove a workspace from history
      */
-    static removeWorkspace(
-        workspaces: RecentWorkspace[],
-        path: string,
-    ): RecentWorkspace[] {
+    static removeWorkspace(workspaces: RecentWorkspace[], path: string): RecentWorkspace[] {
         return workspaces.filter((ws) => ws.path !== path);
     }
 

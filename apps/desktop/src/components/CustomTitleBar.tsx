@@ -66,7 +66,12 @@ const TrafficLightButton: React.FC<TrafficLightButtonProps> = ({ type, onClick, 
         ),
         maximize: (
             <svg width="8" height="8" viewBox="0 0 8 8">
-                <path stroke="rgba(0,0,0,0.5)" strokeWidth="1.2" d="M1 4l3-3 3 3M1 4l3 3 3-3" fill="none" />
+                <path
+                    stroke="rgba(0,0,0,0.5)"
+                    strokeWidth="1.2"
+                    d="M1 4l3-3 3 3M1 4l3 3 3-3"
+                    fill="none"
+                />
             </svg>
         ),
     };
@@ -147,15 +152,12 @@ export interface CustomTitleBarProps {
 
 /**
  * CustomTitleBar Component
- * 
+ *
  * Provides a cross-platform custom title bar with window controls.
  * - macOS: Traffic lights on the left, content in center
  * - Windows/Linux: Content on left, window controls on right
  */
-export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
-    children,
-    workspaceName,
-}) => {
+export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({ children, workspaceName }) => {
     const [isMaximized, setIsMaximized] = useState(false);
     const [isHoveringTrafficLights, setIsHoveringTrafficLights] = useState(false);
 
@@ -175,7 +177,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
         });
 
         return () => {
-            unlisten.then(fn => fn());
+            unlisten.then((fn) => fn());
         };
     }, []);
 
@@ -200,7 +202,7 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
         borderBottom: '1px solid var(--background-modifier-border)',
         position: 'relative' as const,
         userSelect: 'none' as const,
-        WebkitAppRegion: 'drag' as 'drag',
+        WebkitAppRegion: 'drag' as const,
     } as React.CSSProperties & { WebkitAppRegion: 'drag' | 'no-drag' };
 
     const contentStyle = {
@@ -209,30 +211,32 @@ export const CustomTitleBar: React.FC<CustomTitleBarProps> = ({
         alignItems: 'center',
         height: '100%',
         overflow: 'hidden' as const,
-        WebkitAppRegion: 'no-drag' as 'no-drag',
+        WebkitAppRegion: 'no-drag' as const,
     } as React.CSSProperties & { WebkitAppRegion: 'drag' | 'no-drag' };
 
     const controlsStyle = {
         display: 'flex',
         alignItems: 'center',
         height: '100%',
-        WebkitAppRegion: 'no-drag' as 'no-drag',
+        WebkitAppRegion: 'no-drag' as const,
     } as React.CSSProperties & { WebkitAppRegion: 'drag' | 'no-drag' };
 
     if (isMacOS) {
-        // macOS layout: [traffic lights] [workspace name] [content] 
+        // macOS layout: [traffic lights] [workspace name] [content]
         return (
             <div style={titleBarStyle} data-tauri-drag-region>
                 {/* Traffic Lights */}
                 <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        paddingLeft: '13px',
-                        paddingRight: '12px',
-                        height: '100%',
-                        WebkitAppRegion: 'no-drag',
-                    } as React.CSSProperties & { WebkitAppRegion: 'no-drag' }}
+                    style={
+                        {
+                            display: 'flex',
+                            alignItems: 'center',
+                            paddingLeft: '13px',
+                            paddingRight: '12px',
+                            height: '100%',
+                            WebkitAppRegion: 'no-drag',
+                        } as React.CSSProperties & { WebkitAppRegion: 'no-drag' }
+                    }
                     onMouseEnter={() => setIsHoveringTrafficLights(true)}
                     onMouseLeave={() => setIsHoveringTrafficLights(false)}
                 >

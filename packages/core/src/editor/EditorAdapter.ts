@@ -240,7 +240,6 @@ export class EditorAdapter implements Editor {
             case 'anchor':
                 offset = selection.anchor;
                 break;
-            case 'head':
             default:
                 offset = selection.head;
                 break;

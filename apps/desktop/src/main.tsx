@@ -1,8 +1,8 @@
+// Register native platform adapters BEFORE anything else
+import { registerTauriAdapters } from '@inkdown/native-tauri';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-// Register native platform adapters BEFORE anything else
-import { registerTauriAdapters } from '@inkdown/native-tauri';
 registerTauriAdapters();
 
 // Core styles (variables, base, icons, plugin-api, popover-suggest)

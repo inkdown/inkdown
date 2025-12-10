@@ -24,7 +24,8 @@ export function createCodeDecorations(
     const codeRegex = /(?<!`)`(?!`)(.+?)`(?!`)/g;
     let match;
 
-    while ((match = codeRegex.exec(text)) !== null) {
+    match = codeRegex.exec(text);
+    while (match !== null) {
         const matchFrom = from + match.index;
         const matchTo = matchFrom + match[0].length;
 
@@ -36,6 +37,7 @@ export function createCodeDecorations(
 
         // The code styling is already applied by CodeMirror's syntax highlighting
         // We just hide the backticks
+        match = codeRegex.exec(text);
     }
 
     return decorations;

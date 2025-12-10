@@ -13,8 +13,3 @@
 .cm-content:not(.cm-livePreview) {
     /* This selector targets the raw editor content */
 }
-
-/* Add visual hint for == syntax in raw editor */
-.cm-line:has-text("==") {
-    /* Browsers that support :has-text would show hints */
-}

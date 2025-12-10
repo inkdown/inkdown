@@ -338,7 +338,7 @@ export class TabManager {
 
         // Save the active tab ID only if it has a filePath
         const activeTab = this.getActiveTab();
-        config.activeTabId = activeTab && activeTab.filePath ? this.activeTabId : null;
+        config.activeTabId = activeTab?.filePath ? this.activeTabId : null;
 
         console.log('[TabManager] Saving tabs:', JSON.stringify(config.tabs, null, 2));
         console.log('[TabManager] Active tab:', config.activeTabId);
@@ -402,6 +402,8 @@ export class TabManager {
      * Notify all listeners of tab change
      */
     private notifyTabChange(tabId: string | null): void {
-        this.onTabChangeCallbacks.forEach((callback) => callback(tabId));
+        this.onTabChangeCallbacks.forEach((callback) => {
+            callback(tabId);
+        });
     }
 }

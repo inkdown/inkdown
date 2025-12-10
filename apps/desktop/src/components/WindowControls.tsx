@@ -108,7 +108,9 @@ export interface WindowControlsProps {
     workspaceName?: string;
 }
 
-export const WindowControls: React.FC<WindowControlsProps> = ({ workspaceName: _workspaceName }) => {
+export const WindowControls: React.FC<WindowControlsProps> = ({
+    workspaceName: _workspaceName,
+}) => {
     const [isMaximized, setIsMaximized] = useState(false);
 
     // Check if window is maximized on mount
@@ -145,14 +147,16 @@ export const WindowControls: React.FC<WindowControlsProps> = ({ workspaceName: _
             <div
                 className="window-controls-macos-drag-area"
                 data-tauri-drag-region
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    height: '100%',
-                    minWidth: '80px',
-                    paddingRight: '12px',
-                    WebkitAppRegion: 'drag',
-                } as React.CSSProperties & { WebkitAppRegion: 'drag' | 'no-drag' }}
+                style={
+                    {
+                        display: 'flex',
+                        alignItems: 'center',
+                        height: '100%',
+                        minWidth: '80px',
+                        paddingRight: '12px',
+                        WebkitAppRegion: 'drag',
+                    } as React.CSSProperties & { WebkitAppRegion: 'drag' | 'no-drag' }
+                }
             />
         );
     }
@@ -168,7 +172,11 @@ export const WindowControls: React.FC<WindowControlsProps> = ({ workspaceName: _
             }}
         >
             <WindowControlButton type="minimize" onClick={handleMinimize} />
-            <WindowControlButton type="maximize" onClick={handleMaximize} isMaximized={isMaximized} />
+            <WindowControlButton
+                type="maximize"
+                onClick={handleMaximize}
+                isMaximized={isMaximized}
+            />
             <WindowControlButton type="close" onClick={handleClose} />
         </div>
     );

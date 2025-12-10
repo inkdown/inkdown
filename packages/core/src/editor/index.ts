@@ -31,6 +31,7 @@ export type {
     EditorTransaction,
 } from './EditorAdapter';
 export { EditorAdapter } from './EditorAdapter';
+export type { EditorConfig } from './extensions';
 // Configurable extensions
 export {
     createCloseBracketsExtension,
@@ -45,7 +46,6 @@ export {
     editorCompartments,
     getReconfigurationEffects,
 } from './extensions';
-export type { EditorConfig } from './extensions';
 // Keymaps
 export {
     createCustomizableKeymap,

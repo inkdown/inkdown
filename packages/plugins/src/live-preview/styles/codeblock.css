@@ -56,13 +56,13 @@
 }
 
 /* Show copy button when cursor is in block */
-.cm-codeblock-copy-button[data-cursor-in-block="true"] {
+.cm-codeblock-copy-button[data-cursor-in-block='true'] {
     opacity: 0.9 !important;
     pointer-events: auto !important;
 }
 
 /* Hide language badge when cursor is in block */
-.cm-codeblock-language-badge[data-cursor-in-block="true"] {
+.cm-codeblock-language-badge[data-cursor-in-block='true'] {
     opacity: 0 !important;
 }
 
@@ -96,4 +96,3 @@
     border-bottom-left-radius: var(--code-border-radius, 6px);
     border-bottom-right-radius: var(--code-border-radius, 6px);
 }
-

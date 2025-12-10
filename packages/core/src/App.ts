@@ -1,17 +1,17 @@
 import type { ViewUpdate } from '@codemirror/view';
+import { CommunityPluginManager } from './CommunityPluginManager';
+import { CommunityThemeManager } from './CommunityThemeManager';
 import { ConfigManager } from './ConfigManager';
 import type { EditorSuggest } from './components/EditorSuggest';
 import { injectNoticeStyles } from './components/Notice';
-import { CommunityThemeManager } from './CommunityThemeManager';
-import { CommunityPluginManager } from './CommunityPluginManager';
 import { DialogManager } from './DialogManager';
 import { EditorRegistry } from './EditorRegistry';
 import { EditorStateManager } from './EditorStateManager';
 import { FileSystemManager } from './filesystem/FileSystemManager';
+import { BookmarkManager } from './managers/BookmarkManager';
 import { FileManager } from './managers/FileManager';
 import { FilesConfigManager } from './managers/FilesConfigManager';
 import { FontManager } from './managers/FontManager';
-import { BookmarkManager } from './managers/BookmarkManager';
 import { MetadataCache } from './managers/MetadataCache';
 import { SyncManager } from './managers/SyncManager';
 import { WindowConfigManager } from './managers/WindowConfigManager';
@@ -117,7 +117,7 @@ export class App {
             try {
                 await this.fontManager.loadSystemFonts();
                 this.logger.debug('FontManager initialized');
-            } catch (error) {
+            } catch (error: any) {
                 this.logger.warn('Failed to load system fonts, using fallback', error);
             }
 
@@ -154,7 +154,7 @@ export class App {
 
             this.initialized = true;
             this.logger.info('Inkdown initialized successfully');
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Failed to initialize Inkdown', error);
             throw error;
         }
@@ -263,7 +263,7 @@ export class App {
             const { openUrl } = await import('@tauri-apps/plugin-opener');
             await openUrl(url);
             this.logger.debug(`Opened external link: ${url}`);
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Failed to open external link', error);
             // Fallback for development/web
             if (typeof window !== 'undefined') {

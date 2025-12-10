@@ -1,6 +1,6 @@
+import { X } from 'lucide-react';
 import type React from 'react';
 import { useEffect } from 'react';
-import { X } from 'lucide-react';
 import '../styles/Modal.css';
 
 export interface ModalProps {
@@ -39,15 +39,12 @@ export function Modal({
 
     return (
         <div className="ink-modal-overlay" onClick={onClose}>
-            <div
-                className={`ink-modal ink-modal-${size}`}
-                onClick={(e) => e.stopPropagation()}
-            >
+            <div className={`ink-modal ink-modal-${size}`} onClick={(e) => e.stopPropagation()}>
                 {title && (
                     <div className="ink-modal-header">
                         <h2>{title}</h2>
                         {showCloseButton && (
-                            <button className="ink-modal-close" onClick={onClose}>
+                            <button type="button" className="ink-modal-close" onClick={onClose}>
                                 <X size={18} />
                             </button>
                         )}

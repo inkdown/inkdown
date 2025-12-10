@@ -1,6 +1,6 @@
 /**
  * Bookmark Types
- * 
+ *
  * Defines the structure for bookmarks and bookmark groups
  */
 
@@ -67,5 +67,5 @@ export interface BookmarkEvents {
     /** Fired when a group is renamed */
     'group-renamed': { groupId: string; newName: string };
     /** Fired when bookmarks are reloaded */
-    'bookmarks-reloaded': void;
+    'bookmarks-reloaded': undefined;
 }

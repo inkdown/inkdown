@@ -1,17 +1,17 @@
 import type { App } from '../App';
 import { Events } from '../Events';
+import type { TAbstractFile, TFile } from '../managers/Workspace';
 import type { SelectiveSyncManager } from './SelectiveSyncManager';
 import type { FileChangeEvent } from './types';
-import type { TFile, TAbstractFile } from '../managers/Workspace';
 
 /**
  * Configuration for FileWatcherService
  */
 export interface FileWatcherConfig {
-    debounceMs?: number;       // Debounce delay (default: 3000ms)
-    batchWindowMs?: number;    // Batch window for grouping changes (default: 500ms)
-    maxRetries?: number;       // Max retries for file reads (default: 3)
-    retryDelayMs?: number;     // Base delay for retry backoff (default: 100ms)
+    debounceMs?: number; // Debounce delay (default: 3000ms)
+    batchWindowMs?: number; // Batch window for grouping changes (default: 500ms)
+    maxRetries?: number; // Max retries for file reads (default: 3)
+    retryDelayMs?: number; // Base delay for retry backoff (default: 100ms)
 }
 
 /**
@@ -24,13 +24,13 @@ export interface FileChangeBatch {
 
 /**
  * FileWatcherService - Watches for file changes with intelligent batching
- * 
+ *
  * Features:
  * - Configurable debounce delay (default: 3s for user comfort)
  * - Batch processing of multiple changes
  * - Retry logic for transient read failures
  * - Pause/resume for programmatic file operations
- * 
+ *
  * Events:
  * - 'change': Single file change (for immediate needs)
  * - 'changes-batch': Batched changes (for efficient sync)
@@ -46,8 +46,8 @@ export class FileWatcherService extends Events {
 
     // Configuration
     private config: Required<FileWatcherConfig> = {
-        debounceMs: 3000,        // 3 seconds debounce
-        batchWindowMs: 500,      // 500ms batch window
+        debounceMs: 3000, // 3 seconds debounce
+        batchWindowMs: 500, // 500ms batch window
         maxRetries: 3,
         retryDelayMs: 100,
     };
@@ -127,7 +127,10 @@ export class FileWatcherService extends Events {
         }
 
         this.isActive = true;
-        console.log('[FileWatcherService] Starting file watcher (debounce: %dms)', this.config.debounceMs);
+        console.log(
+            '[FileWatcherService] Starting file watcher (debounce: %dms)',
+            this.config.debounceMs,
+        );
 
         // Register listeners for workspace file events
         this.app.workspace.on('file-create', this.boundHandleFileCreate);
@@ -145,7 +148,9 @@ export class FileWatcherService extends Events {
         this.isActive = false;
 
         // Clear all debounce timers
-        this.debounceTimers.forEach(timer => clearTimeout(timer));
+        this.debounceTimers.forEach((timer) => {
+            clearTimeout(timer);
+        });
         this.debounceTimers.clear();
 
         // Clear batch timer
@@ -206,7 +211,7 @@ export class FileWatcherService extends Events {
 
                 this.addToBatch(event);
                 this.trigger('change', event);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('[FileWatcherService] Error handling file create:', error);
             }
         });
@@ -236,7 +241,7 @@ export class FileWatcherService extends Events {
 
                 this.addToBatch(event);
                 this.trigger('change', event);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('[FileWatcherService] Error handling file modify:', error);
             }
         });
@@ -376,24 +381,26 @@ export class FileWatcherService extends Events {
                 const content = await this.app.fileSystemManager.readFile(path);
                 return content;
             } catch (error: any) {
-                lastError = error;
+                lastError = error as Error;
 
                 if (attempt < this.config.maxRetries - 1) {
                     // Exponential backoff
-                    const delay = this.config.retryDelayMs * Math.pow(2, attempt);
+                    const delay = this.config.retryDelayMs * 2 ** attempt;
                     await this.sleep(delay);
                 }
             }
         }
 
-        throw lastError || new Error(`Failed to read file after ${this.config.maxRetries} attempts`);
+        throw (
+            lastError || new Error(`Failed to read file after ${this.config.maxRetries} attempts`)
+        );
     }
 
     /**
      * Sleep helper for retry backoff
      */
     private sleep(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms));
+        return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
     /**
@@ -418,4 +425,3 @@ export class FileWatcherService extends Events {
         return btoa(binary);
     }
 }
-

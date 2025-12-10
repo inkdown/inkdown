@@ -31,7 +31,7 @@ export class FileSystemManager {
     async readDirectory(path: string, recursive = false): Promise<FileNode[]> {
         try {
             return await native.fs.readDirectory(path, recursive);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to read directory:', error);
             throw error;
         }
@@ -43,7 +43,7 @@ export class FileSystemManager {
     async readFile(path: string): Promise<string> {
         try {
             return await native.fs.readFile(path);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to read file:', error);
             throw error;
         }
@@ -56,7 +56,7 @@ export class FileSystemManager {
     async readFileBinary(path: string): Promise<Uint8Array> {
         try {
             return await native.fs.readFileBinary(path);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to read binary file:', error);
             throw error;
         }
@@ -73,7 +73,7 @@ export class FileSystemManager {
             if (this._app?.workspace) {
                 this._app.workspace.trigger('file:created', path);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to write file:', error);
             throw error;
         }
@@ -97,7 +97,7 @@ export class FileSystemManager {
             if (this._app?.workspace) {
                 this._app.workspace.trigger('file:created', path);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to write binary file:', error);
             throw error;
         }
@@ -109,7 +109,7 @@ export class FileSystemManager {
     async createFile(path: string): Promise<void> {
         try {
             await native.fs.writeFile(path, '');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to create file:', error);
             throw error;
         }
@@ -126,7 +126,7 @@ export class FileSystemManager {
             if (this._app?.workspace) {
                 this._app.workspace.trigger('directory:created', path);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to create directory:', error);
             throw error;
         }
@@ -138,7 +138,7 @@ export class FileSystemManager {
     async rename(oldPath: string, newPath: string): Promise<void> {
         try {
             await native.fs.rename(oldPath, newPath);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to rename:', error);
             throw error;
         }
@@ -150,7 +150,7 @@ export class FileSystemManager {
     async delete(path: string): Promise<void> {
         try {
             await native.fs.delete(path);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to delete:', error);
             throw error;
         }
@@ -162,7 +162,7 @@ export class FileSystemManager {
     async move(source: string, destination: string): Promise<void> {
         try {
             await native.fs.move(source, destination);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to move:', error);
             throw error;
         }
@@ -174,7 +174,7 @@ export class FileSystemManager {
     async exists(path: string): Promise<boolean> {
         try {
             return await native.fs.exists(path);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to check path existence:', error);
             return false;
         }
@@ -230,7 +230,7 @@ export class FileSystemManager {
     getParentPath(path: string): string {
         const parts = path.split('/').filter((p) => p);
         parts.pop();
-        return '/' + parts.join('/');
+        return `/${parts.join('/')}`;
     }
 
     /**

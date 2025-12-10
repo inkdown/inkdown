@@ -1,10 +1,14 @@
-import type {
-    Workspace,
-    CreateWorkspaceRequest,
-    UpdateWorkspaceRequest,
-} from './types';
-
 import { loggers } from '../utils/logger';
+import type { CreateWorkspaceRequest, UpdateWorkspaceRequest, Workspace } from './types';
+
+/**
+ * Type for API responses that may wrap data in different formats
+ */
+interface ApiResponse {
+    workspaces?: Workspace[];
+    workspace?: Workspace;
+    data?: Workspace | Workspace[];
+}
 
 /**
  * WorkspaceSyncService - Handles API calls for workspace management
@@ -14,10 +18,7 @@ export class WorkspaceSyncService {
     private getAccessToken: () => Promise<string | null>;
     private logger = loggers.sync || loggers.app;
 
-    constructor(
-        serverUrl: string,
-        getAccessToken: () => Promise<string | null>
-    ) {
+    constructor(serverUrl: string, getAccessToken: () => Promise<string | null>) {
         this.serverUrl = serverUrl;
         this.getAccessToken = getAccessToken;
     }
@@ -49,7 +50,7 @@ export class WorkspaceSyncService {
 
             const data = await response.json();
 
-            console.debug(`Workspaces do usuario encontrados: ${data}`)
+            console.debug(`Workspaces do usuario encontrados: ${data}`);
 
             // Handle different response formats
             if (Array.isArray(data)) {
@@ -58,17 +59,17 @@ export class WorkspaceSyncService {
 
             // Check for common wrapper properties
             if (data && typeof data === 'object') {
-                if (Array.isArray((data as any).workspaces)) {
-                    return (data as any).workspaces as Workspace[];
+                if (Array.isArray((data as ApiResponse).workspaces)) {
+                    return (data as ApiResponse).workspaces as Workspace[];
                 }
-                if (Array.isArray((data as any).data)) {
-                    return (data as any).data as Workspace[];
+                if (Array.isArray((data as ApiResponse).data)) {
+                    return (data as ApiResponse).data as Workspace[];
                 }
             }
 
             this.logger.warn('Unexpected response format for listWorkspaces:', data);
             return [];
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Failed to list workspaces:', error);
             throw error;
         }
@@ -92,15 +93,15 @@ export class WorkspaceSyncService {
             const data = await response.json();
 
             // Handle wrapped responses
-            if (data && (data as any).workspace) {
-                return (data as any).workspace as Workspace;
+            if (data && (data as ApiResponse).workspace) {
+                return (data as ApiResponse).workspace as Workspace;
             }
-            if (data && (data as any).data) {
-                return (data as any).data as Workspace;
+            if (data && (data as ApiResponse).data) {
+                return (data as ApiResponse).data as Workspace;
             }
 
             return data as Workspace;
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Failed to create workspace:', error);
             throw error;
         }
@@ -123,15 +124,15 @@ export class WorkspaceSyncService {
             const data = await response.json();
 
             // Handle wrapped responses
-            if (data && (data as any).workspace) {
-                return (data as any).workspace as Workspace;
+            if (data && (data as ApiResponse).workspace) {
+                return (data as ApiResponse).workspace as Workspace;
             }
-            if (data && (data as any).data) {
-                return (data as any).data as Workspace;
+            if (data && (data as ApiResponse).data) {
+                return (data as ApiResponse).data as Workspace;
             }
 
             return data as Workspace;
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Failed to get workspace:', error);
             throw error;
         }
@@ -140,7 +141,10 @@ export class WorkspaceSyncService {
     /**
      * Update a workspace
      */
-    async updateWorkspace(workspaceId: string, request: UpdateWorkspaceRequest): Promise<Workspace> {
+    async updateWorkspace(
+        workspaceId: string,
+        request: UpdateWorkspaceRequest,
+    ): Promise<Workspace> {
         try {
             const response = await fetch(`${this.serverUrl}/workspaces/${workspaceId}`, {
                 method: 'PUT',
@@ -155,15 +159,15 @@ export class WorkspaceSyncService {
             const data = await response.json();
 
             // Handle wrapped responses
-            if (data && (data as any).workspace) {
-                return (data as any).workspace as Workspace;
+            if (data && (data as ApiResponse).workspace) {
+                return (data as ApiResponse).workspace as Workspace;
             }
-            if (data && (data as any).data) {
-                return (data as any).data as Workspace;
+            if (data && (data as ApiResponse).data) {
+                return (data as ApiResponse).data as Workspace;
             }
 
             return data as Workspace;
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Failed to update workspace:', error);
             throw error;
         }
@@ -182,7 +186,7 @@ export class WorkspaceSyncService {
             if (!response.ok) {
                 throw new Error(`Failed to delete workspace: ${response.statusText}`);
             }
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Failed to delete workspace:', error);
             throw error;
         }

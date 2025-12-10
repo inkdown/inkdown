@@ -161,7 +161,7 @@ export abstract class EditorSuggest<T> extends PopoverSuggest<T, EditorSuggestCo
                 this.selectedItem = 0;
                 this.renderSuggestions();
                 this.open(cursor, editor);
-            } catch (error) {
+            } catch (error: any) {
                 if (error instanceof Error && error.name !== 'AbortError') {
                     console.error('Error getting suggestions:', error);
                 }

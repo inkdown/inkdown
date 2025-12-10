@@ -27,7 +27,7 @@ export function createQuoteDecorations(
     if (match) {
         const matchFrom = from;
         const matchTo = from + match[0].length;
-        
+
         // Count nesting level
         const nestingLevel = (match[0].match(/>/g) || []).length;
         const isNested = nestingLevel > 1;

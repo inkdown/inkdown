@@ -11,10 +11,6 @@ export class ConfigManager {
     private readonly CACHE_PREFIX = 'inkdown_config_';
     private logger = createLogger('ConfigManager');
 
-    constructor() {
-        // Config manager is ready
-    }
-
     /**
      * Initialize the config manager
      * Gets the config directory from native platform
@@ -23,7 +19,7 @@ export class ConfigManager {
         try {
             this.configDir = await native.config.getConfigDir();
             this.logger.info(`Config directory: ${this.configDir}`);
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Failed to get config directory', error);
             // Fallback to a default path
             this.configDir = '.inkdown';
@@ -53,7 +49,7 @@ export class ConfigManager {
             this.saveToCache(configName, fileData);
             /*             this.logger.info(`Loaded ${configName} from file, cached to localStorage`); */
             return fileData;
-        } catch (error) {
+        } catch (_error) {
             this.logger.info(`No existing ${configName}.json file, creating with defaults`);
         }
 
@@ -66,7 +62,7 @@ export class ConfigManager {
         try {
             await this.saveToFile(configName, defaultConfig);
             this.logger.info(`Created ${configName}.json with defaults`);
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to create ${configName}.json`, error);
             // Continue anyway with cached version
         }
@@ -93,7 +89,7 @@ export class ConfigManager {
         try {
             await this.saveToFile(configName, data);
             this.logger.info(`Saved ${configName} to file successfully`);
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to save ${configName} to file:`, error);
             throw error;
         }
@@ -109,7 +105,7 @@ export class ConfigManager {
             if (cached) {
                 return JSON.parse(cached) as T;
             }
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to load ${key} from cache`, error);
         }
         return null;
@@ -122,7 +118,7 @@ export class ConfigManager {
         try {
             const cacheKey = this.CACHE_PREFIX + key;
             localStorage.setItem(cacheKey, JSON.stringify(data));
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to save ${key} to cache`, error);
         }
     }
@@ -135,7 +131,7 @@ export class ConfigManager {
         try {
             const content = await native.config.readConfigFile(fileName);
             return JSON.parse(content) as T;
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to load ${fileName}`, error);
             throw error;
         }
@@ -151,7 +147,7 @@ export class ConfigManager {
             this.logger.debug(`Writing ${fileName} (${content.length} bytes)...`);
             await native.config.writeConfigFile(fileName, content);
             this.logger.debug(`Successfully wrote ${fileName} to disk`);
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to write ${fileName}:`, error);
             throw error;
         }

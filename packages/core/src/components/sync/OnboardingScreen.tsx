@@ -88,18 +88,24 @@ export function OnboardingScreen({ app, onComplete }: OnboardingScreenProps) {
 
                     <div className="onboarding-actions">
                         <button
+                            type="button"
                             className="onboarding-button primary"
                             onClick={() => setMode('login')}
                         >
                             Login
                         </button>
                         <button
+                            type="button"
                             className="onboarding-button secondary"
                             onClick={() => setMode('register')}
                         >
                             Create Account
                         </button>
-                        <button className="onboarding-button ghost" onClick={handleSkip}>
+                        <button
+                            type="button"
+                            className="onboarding-button ghost"
+                            onClick={handleSkip}
+                        >
                             Skip (Use Offline)
                         </button>
                     </div>
@@ -155,6 +161,7 @@ export function OnboardingScreen({ app, onComplete }: OnboardingScreenProps) {
                     </form>
 
                     <button
+                        type="button"
                         className="onboarding-back-button"
                         onClick={() => setMode('welcome')}
                         disabled={loading}
@@ -240,6 +247,7 @@ export function OnboardingScreen({ app, onComplete }: OnboardingScreenProps) {
                 </form>
 
                 <button
+                    type="button"
                     className="onboarding-back-button"
                     onClick={() => setMode('welcome')}
                     disabled={loading}

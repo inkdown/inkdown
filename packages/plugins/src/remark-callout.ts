@@ -1,5 +1,5 @@
+import type { Blockquote, Paragraph, Root, Text } from 'mdast';
 import { visit } from 'unist-util-visit';
-import type { Root, Blockquote, Paragraph, Text } from 'mdast';
 
 /**
  * Remark plugin to support GitHub-style callouts/alerts
@@ -23,7 +23,7 @@ export function remarkCallout() {
 
             const text = (firstText as Text).value;
             const match = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(.*)$/i.exec(text);
-            
+
             if (!match) return;
 
             const type = match[1].toUpperCase() as CalloutType;
@@ -31,7 +31,7 @@ export function remarkCallout() {
 
             // Remove the [!TYPE] text from the first paragraph
             (firstText as Text).value = title;
-            
+
             // If title is empty and that was the only content, remove the paragraph
             if (!title && paragraph.children.length === 1) {
                 node.children.shift();
@@ -41,7 +41,7 @@ export function remarkCallout() {
             if (!node.data) {
                 node.data = {};
             }
-            
+
             (node.data as any).hProperties = {
                 className: `callout callout-${type.toLowerCase()}`,
                 'data-callout-type': type.toLowerCase(),

@@ -123,7 +123,11 @@ export function createInkdownTheme(): Extension {
         // Text formatting
         { tag: t.emphasis, fontStyle: 'italic', color: 'var(--syntax-emphasis)' },
         { tag: t.strong, fontWeight: 'bold', color: 'var(--syntax-strong)' },
-        { tag: t.strikethrough, textDecoration: 'line-through', color: 'var(--syntax-strikethrough)' },
+        {
+            tag: t.strikethrough,
+            textDecoration: 'line-through',
+            color: 'var(--syntax-strikethrough)',
+        },
         { tag: t.link, color: 'var(--syntax-link)', textDecoration: 'underline' },
         { tag: t.url, color: 'var(--syntax-url)' },
 

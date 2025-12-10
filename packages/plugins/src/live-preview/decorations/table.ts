@@ -18,7 +18,7 @@ export interface TableData {
  * Cell position in table
  */
 export interface CellPosition {
-    row: number;  // 0 = header, 1+ = data rows
+    row: number; // 0 = header, 1+ = data rows
     col: number;
     start: number;
     end: number;
@@ -43,8 +43,8 @@ export function parseTable(text: string, from: number, doc: any): TableData | nu
     // Parse headers
     const headers = headerLine
         .split('|')
-        .map(h => h.trim())
-        .filter(h => h.length > 0);
+        .map((h) => h.trim())
+        .filter((h) => h.length > 0);
 
     if (headers.length === 0) return null;
 
@@ -56,7 +56,7 @@ export function parseTable(text: string, from: number, doc: any): TableData | nu
 
         const cells = line
             .split('|')
-            .map(c => c.trim())
+            .map((c) => c.trim())
             .filter((c, idx, arr) => {
                 // Filter out empty cells at start/end
                 if (idx === 0 || idx === arr.length - 1) return c.length > 0;
@@ -86,7 +86,10 @@ export function parseTable(text: string, from: number, doc: any): TableData | nu
  * Get cell positions for navigation
  * Row 0 = header, Row 1+ = data rows
  */
-export function getTableCellPositions(view: EditorView, tableData: { startLine: number; endLine: number }): CellPosition[] {
+export function getTableCellPositions(
+    view: EditorView,
+    tableData: { startLine: number; endLine: number },
+): CellPosition[] {
     const positions: CellPosition[] = [];
     const doc = view.state.doc;
 
@@ -131,8 +134,11 @@ export function getTableCellPositions(view: EditorView, tableData: { startLine: 
 /**
  * Find cell at cursor position
  */
-export function findCellAtCursor(positions: CellPosition[], cursorPos: number): CellPosition | null {
-    return positions.find(p => cursorPos >= p.start && cursorPos <= p.end) || null;
+export function findCellAtCursor(
+    positions: CellPosition[],
+    cursorPos: number,
+): CellPosition | null {
+    return positions.find((p) => cursorPos >= p.start && cursorPos <= p.end) || null;
 }
 
 /**
@@ -141,7 +147,7 @@ export function findCellAtCursor(positions: CellPosition[], cursorPos: number): 
 export function navigateToCell(
     positions: CellPosition[],
     current: CellPosition,
-    direction: 'left' | 'right' | 'up' | 'down'
+    direction: 'left' | 'right' | 'up' | 'down',
 ): CellPosition | null {
     const { row, col } = current;
 
@@ -165,14 +171,17 @@ export function navigateToCell(
 
     if (targetRow < 0) return null;
 
-    return positions.find(p => p.row === targetRow && p.col === targetCol) || null;
+    return positions.find((p) => p.row === targetRow && p.col === targetCol) || null;
 }
 
 /**
  * Widget for pipe character - renders as vertical border
  */
 class PipeWidget extends WidgetType {
-    constructor(private isFirst: boolean, private isLast: boolean) {
+    constructor(
+        private isFirst: boolean,
+        private isLast: boolean,
+    ) {
         super();
     }
 
@@ -196,8 +205,6 @@ class PipeWidget extends WidgetType {
 // Line decoration for table rows
 const tableRowDecoration = Decoration.line({ class: 'cm-table-row' });
 const tableHeaderRowDecoration = Decoration.line({ class: 'cm-table-row cm-table-header-row' });
-
-
 
 /**
  * Create in-place decorations for markdown tables
@@ -261,16 +268,16 @@ export function createTableDecorations(
             decorations.push(
                 Decoration.mark({
                     class: 'cm-table-separator-text',
-                }).range(line.from, line.to)
+                }).range(line.from, line.to),
             );
 
             decorations.push(
-                Decoration.line({ class: 'cm-table-row cm-table-separator-row' }).range(line.from)
+                Decoration.line({ class: 'cm-table-row cm-table-separator-row' }).range(line.from),
             );
         } else {
             // Add line decoration
             decorations.push(
-                (isHeader ? tableHeaderRowDecoration : tableRowDecoration).range(line.from)
+                (isHeader ? tableHeaderRowDecoration : tableRowDecoration).range(line.from),
             );
 
             // Find and replace pipe characters
@@ -290,7 +297,7 @@ export function createTableDecorations(
                 decorations.push(
                     Decoration.replace({
                         widget: new PipeWidget(isFirst, isLast),
-                    }).range(pos, pos + 1)
+                    }).range(pos, pos + 1),
                 );
             }
         }

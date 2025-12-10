@@ -144,7 +144,9 @@ export class Setting {
      */
     setDisabled(disabled: boolean): this {
         this.settingEl.classList.toggle('setting-item-disabled', disabled);
-        this.components.forEach((c) => c.setDisabled?.(disabled));
+        this.components.forEach((c) => {
+            c.setDisabled?.(disabled);
+        });
         return this;
     }
 

@@ -50,7 +50,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 await app.init();
 
                 setIsInitialized(true);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to initialize app:', error);
             }
         };

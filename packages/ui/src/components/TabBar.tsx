@@ -28,7 +28,12 @@ export const Tab: React.FC<TabProps> = React.memo(
                     {isDirty && <span className="tab-dirty-indicator">●</span>}
                     {title}
                 </span>
-                <button className="tab-close" onClick={handleClose} aria-label="Close tab">
+                <button
+                    type="button"
+                    className="tab-close"
+                    onClick={handleClose}
+                    aria-label="Close tab"
+                >
                     <X size={14} />
                 </button>
             </div>
@@ -76,8 +81,11 @@ export const TabBar: React.FC<TabBarProps> = ({
         <div className="tab-bar" data-tauri-drag-region>
             {onToggleSidebar && (
                 <button
+                    type="button"
                     className={`tab-bar-toggle ${
-                        isMacOS && useCustomTitleBar && sidebarCollapsed ? 'with-traffic-lights' : ''
+                        isMacOS && useCustomTitleBar && sidebarCollapsed
+                            ? 'with-traffic-lights'
+                            : ''
                     }`}
                     onClick={onToggleSidebar}
                     title={sidebarCollapsed ? 'Show sidebar (Ctrl+\\)' : 'Hide sidebar (Ctrl+\\)'}

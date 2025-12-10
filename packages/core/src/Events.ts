@@ -12,7 +12,7 @@ export class Events {
             this.handlers.set(name, new Set());
         }
 
-        this.handlers.get(name)!.add(callback);
+        this.handlers.get(name)?.add(callback);
 
         // Return event ref for unregistering
         return {
@@ -55,7 +55,7 @@ export class Events {
             for (const handler of handlers) {
                 try {
                     handler(...args);
-                } catch (error) {
+                } catch (error: any) {
                     console.error(`Error in event handler for "${name}":`, error);
                 }
             }

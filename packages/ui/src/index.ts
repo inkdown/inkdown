@@ -9,8 +9,6 @@ export type { ButtonProps } from './components/Button';
 export { Button } from './components/Button';
 export type { EmptyTabViewProps } from './components/EmptyTabView';
 export { EmptyTabView } from './components/EmptyTabView';
-export type { FileExplorerProps, SelectedItem } from './components/FileExplorer';
-export { FileExplorer } from './components/FileExplorer';
 export type { FormProps } from './components/Form';
 export { Form } from './components/Form';
 export type { LinkProps } from './components/Link';
@@ -31,6 +29,8 @@ export type { SliderProps } from './components/Slider';
 export { Slider } from './components/Slider';
 export type { StatusBarItem, StatusBarProps } from './components/StatusBar';
 export { StatusBar } from './components/StatusBar';
+export type { SyncStatus, SyncStatusIndicatorProps } from './components/SyncStatusIndicator';
+export { SyncStatusIndicator } from './components/SyncStatusIndicator';
 export type { TabBarProps, TabBarTab, TabProps } from './components/TabBar';
 // Layout Components
 export { Tab, TabBar } from './components/TabBar';
@@ -40,11 +40,12 @@ export type { TextInputProps } from './components/TextInput';
 export { TextInput } from './components/TextInput';
 export type { ToggleProps } from './components/Toggle';
 export { Toggle } from './components/Toggle';
+export type {
+    Workspace as WorkspaceLinkWorkspace,
+    WorkspaceLinkDialogProps,
+} from './components/WorkspaceLinkDialog';
+export { WorkspaceLinkDialog } from './components/WorkspaceLinkDialog';
 export type { WorkspaceSelectorProps } from './components/WorkspaceSelector';
 export { WorkspaceSelector } from './components/WorkspaceSelector';
-export type { WorkspaceLinkDialogProps, Workspace as WorkspaceLinkWorkspace } from './components/WorkspaceLinkDialog';
-export { WorkspaceLinkDialog } from './components/WorkspaceLinkDialog';
 export type { WorkspaceSwitcherProps } from './components/WorkspaceSwitcher';
 export { WorkspaceSwitcher } from './components/WorkspaceSwitcher';
-export type { SyncStatusIndicatorProps, SyncStatus } from './components/SyncStatusIndicator';
-export { SyncStatusIndicator } from './components/SyncStatusIndicator';

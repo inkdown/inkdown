@@ -434,7 +434,7 @@
 
 /* Subtle scale effect on folder items */
 .file-node-item.directory {
-    transition: 
+    transition:
         background var(--transition-fast),
         transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }

@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useApp } from '../contexts/AppContext';
+import type { SyncVerificationResult } from '@inkdown/core';
 import { SyncStatusIndicator, type SyncStatus as UISyncStatus } from '@inkdown/ui';
-import type { SyncVerificationResult } from '@inkdown/core/sync/types';
+import type React from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useApp } from '../contexts/AppContext';
 import { SyncModal } from './SyncModal';
 import './SyncStatus.css';
 
@@ -15,7 +16,9 @@ export const SyncStatus: React.FC<{ onLinkWorkspace?: () => void }> = ({ onLinkW
     const [lastError, setLastError] = useState<string | null>(null);
     const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
     const [isEnabled, setIsEnabled] = useState(false);
-    const [verificationResult, setVerificationResult] = useState<SyncVerificationResult | null>(null);
+    const [verificationResult, setVerificationResult] = useState<SyncVerificationResult | null>(
+        null,
+    );
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [workspaceName, setWorkspaceName] = useState<string | undefined>(undefined);
 
@@ -24,11 +27,11 @@ export const SyncStatus: React.FC<{ onLinkWorkspace?: () => void }> = ({ onLinkW
         if (currentId) {
             try {
                 const workspaces = await app.syncManager.listWorkspaces();
-                const current = workspaces.find(w => w.id === currentId);
+                const current = workspaces.find((w) => w.id === currentId);
                 if (current) {
                     setWorkspaceName(current.name);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to load workspace name:', error);
             }
         } else {
@@ -56,7 +59,7 @@ export const SyncStatus: React.FC<{ onLinkWorkspace?: () => void }> = ({ onLinkW
                 setStatus('idle');
                 setPendingCount(0);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to verify sync status:', error);
         }
     }, [app]);
@@ -148,10 +151,12 @@ export const SyncStatus: React.FC<{ onLinkWorkspace?: () => void }> = ({ onLinkW
         const verifyInterval = setInterval(verifySyncStatus, 120000);
 
         return () => {
-            refs.forEach(ref => ref.unload());
+            refs.forEach((ref) => {
+                ref.unload();
+            });
             clearInterval(verifyInterval);
         };
-    }, [app, app.syncManager.syncEngine, app.syncManager.isEnabled(), verifySyncStatus, loadWorkspaceName]);
+    }, [app, app.syncManager.syncEngine, verifySyncStatus, loadWorkspaceName, status]);
 
     // Handle click to open sync modal
     const handleClick = () => {
@@ -197,10 +202,7 @@ export const SyncStatus: React.FC<{ onLinkWorkspace?: () => void }> = ({ onLinkW
                 tooltip={tooltip}
                 onClick={handleClick}
             />
-            <SyncModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-            />
+            <SyncModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </>
     );
 };

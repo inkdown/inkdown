@@ -1,5 +1,5 @@
-import type { FileNode, RecentWorkspace } from '@inkdown/core';
-import { native, type MenuItem } from '@inkdown/core/native';
+import type { BookmarkGroup, FileNode, RecentWorkspace } from '@inkdown/core';
+import { type MenuItem, native } from '@inkdown/core/native';
 import { WorkspaceSwitcher } from '@inkdown/ui';
 import {
     ArrowDownAZ,
@@ -26,10 +26,9 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useApp } from '../contexts/AppContext';
 import { BookmarkGroupModal } from './BookmarkGroupModal';
 import { CreateBookmarkGroupModal } from './CreateBookmarkGroupModal';
-import { useApp } from '../contexts/AppContext';
-import type { BookmarkGroup } from '@inkdown/core';
 import '../styles/FileExplorer.css';
 
 /**
@@ -200,7 +199,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     width,
     minWidth = DEFAULT_MIN_WIDTH,
     maxWidth = DEFAULT_MAX_WIDTH,
-    onCollapsedChange,
+    onCollapsedChange: _onCollapsedChange,
     onWidthChange,
     onOpenSettings,
     initialSortOrder = 'a-z',
@@ -387,13 +386,13 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         if (activeFilePath && selectedPaths.size <= 1) {
             setSelectedPaths(new Set([activeFilePath]));
         }
-    }, [activeFilePath]);
+    }, [activeFilePath, selectedPaths.size]);
 
     const toggleDirectory = useCallback(
         (path: string) => {
             setExpandedDirs((prev) => {
                 const newExpanded = new Set(prev);
-                
+
                 if (newExpanded.has(path)) {
                     newExpanded.delete(path);
                 } else {
@@ -404,7 +403,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                         newExpanding.add(path);
                         return newExpanding;
                     });
-                    
+
                     // Remove expanding state after animation completes
                     setTimeout(() => {
                         setExpandingDirs((prevExpanding) => {
@@ -414,7 +413,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                         });
                     }, 250); // Match animation duration
                 }
-                
+
                 onExpandedDirsChange?.(Array.from(newExpanded));
                 return newExpanded;
             });
@@ -451,17 +450,15 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                     // Regular click: select only this
                     setSelectedPaths(new Set([node.path]));
                 }
-            } else {
+            } else if (isCtrlClick || isDoubleClick) {
                 // For files: handle selection and open
-                if (isCtrlClick || isDoubleClick) {
-                    // Ctrl+click OR double-click: open in new tab
-                    setSelectedPaths(new Set([node.path]));
-                    onFileSelect(node.path, true); // openInNewTab = true
-                } else {
-                    // Regular single click: open in current tab
-                    setSelectedPaths(new Set([node.path]));
-                    onFileSelect(node.path, false); // openInNewTab = false
-                }
+                // Ctrl+click OR double-click: open in new tab
+                setSelectedPaths(new Set([node.path]));
+                onFileSelect(node.path, true); // openInNewTab = true
+            } else {
+                // Regular single click: open in current tab
+                setSelectedPaths(new Set([node.path]));
+                onFileSelect(node.path, false); // openInNewTab = false
             }
         },
         [lastClickPath, lastClickTime, toggleDirectory, onFileSelect],
@@ -501,7 +498,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                 // Clear selection after delete
                 setSelectedPaths(new Set());
                 onRefresh();
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to delete:', error);
             }
         },
@@ -619,13 +616,13 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
 
             try {
                 if (creatingItem.type === 'file') {
-                    await onCreateFile(creatingItem.parentPath + '/' + finalName);
+                    await onCreateFile(`${creatingItem.parentPath}/${finalName}`);
                 } else {
-                    await onCreateDirectory(creatingItem.parentPath + '/' + finalName);
+                    await onCreateDirectory(`${creatingItem.parentPath}/${finalName}`);
                 }
                 onRefresh();
                 setCreatingItem(null);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to create item:', error);
                 setCreatingItem(null);
             }
@@ -655,7 +652,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                 await onRename(oldPath, trimmedName);
                 onRefresh();
                 setRenamingPath(null);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to rename:', error);
                 setRenamingPath(null);
             }
@@ -700,7 +697,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             if (native.supportsModule('menu')) {
                 const fileName = path.split('/').pop() || '';
                 const currentSelectionCount = selectedPaths.has(path) ? selectedPaths.size : 1;
-                
+
                 const items: MenuItem[] = [
                     {
                         id: 'new-file',
@@ -722,7 +719,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                         action: () => startRename(path),
                     },
                 ];
-                
+
                 // Add bookmark option for files only
                 if (!isDirectory) {
                     items.push({
@@ -736,7 +733,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                         },
                     });
                 }
-                
+
                 // Move To...
                 if (onMoveTo) {
                     items.push({
@@ -746,7 +743,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                         action: () => onMoveTo(path),
                     });
                 }
-                
+
                 // Make a Copy
                 if (onCopyFile) {
                     items.push({
@@ -756,19 +753,20 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                         action: () => onCopyFile(path),
                     });
                 }
-                
+
                 // Delete
                 items.push({
                     id: 'delete',
                     type: 'normal',
-                    text: currentSelectionCount > 1 && selectedPaths.has(path) 
-                        ? `Delete (${currentSelectionCount})`
-                        : 'Delete',
+                    text:
+                        currentSelectionCount > 1 && selectedPaths.has(path)
+                            ? `Delete (${currentSelectionCount})`
+                            : 'Delete',
                     action: () => deleteFromContextMenu(path, isDirectory),
                 });
-                
+
                 items.push({ type: 'separator' });
-                
+
                 // Copy Path
                 if (onCopyPath) {
                     items.push({
@@ -778,7 +776,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                         action: () => onCopyPath(path),
                     });
                 }
-                
+
                 // Copy Relative Path
                 if (onCopyRelativePath) {
                     items.push({
@@ -788,7 +786,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                         action: () => onCopyRelativePath(path),
                     });
                 }
-                
+
                 // Show in Explorer
                 if (onShowInExplorer) {
                     items.push({
@@ -798,7 +796,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                         action: () => onShowInExplorer(path),
                     });
                 }
-                
+
                 // Sync options
                 if (onToggleSyncIgnore && isSyncIgnored) {
                     items.push({ type: 'separator' });
@@ -828,7 +826,20 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                 setContextMenu({ x: e.clientX, y: e.clientY, path, isDirectory });
             }
         },
-        [selectedPaths, onMoveTo, onCopyFile, onCopyPath, onCopyRelativePath, onShowInExplorer, onToggleSyncIgnore, isSyncIgnored, startCreateFile, startCreateDirectory, startRename, deleteFromContextMenu],
+        [
+            selectedPaths,
+            onMoveTo,
+            onCopyFile,
+            onCopyPath,
+            onCopyRelativePath,
+            onShowInExplorer,
+            onToggleSyncIgnore,
+            isSyncIgnored,
+            startCreateFile,
+            startCreateDirectory,
+            startRename,
+            deleteFromContextMenu,
+        ],
     );
 
     // Drag handlers with multi-select support
@@ -910,7 +921,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             // Filter out invalid moves
             const validPaths = sourcePaths.filter((sourcePath) => {
                 if (sourcePath === targetPath) return false;
-                if (targetPath.startsWith(sourcePath + '/')) return false;
+                if (targetPath.startsWith(`${sourcePath}/`)) return false;
                 return true;
             });
 
@@ -928,7 +939,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                     }
                 }
                 onRefresh();
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to move:', error);
             }
         },
@@ -936,37 +947,46 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     );
 
     // Handle right-click on root area (files view)
-    const handleRootContextMenu = useCallback(async (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setSelectedPaths(new Set()); // Clear selection when clicking root
+    const handleRootContextMenu = useCallback(
+        async (e: React.MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setSelectedPaths(new Set()); // Clear selection when clicking root
 
-        // Try native menu first
-        if (native.supportsModule('menu')) {
-            const items: MenuItem[] = [
-                {
-                    id: 'new-file',
-                    type: 'normal',
-                    text: 'New File',
-                    action: () => startCreateFile(rootPath),
-                },
-                {
-                    id: 'new-folder',
-                    type: 'normal',
-                    text: 'New Folder',
-                    action: () => startCreateDirectory(rootPath),
-                },
-            ];
+            // Try native menu first
+            if (native.supportsModule('menu')) {
+                const items: MenuItem[] = [
+                    {
+                        id: 'new-file',
+                        type: 'normal',
+                        text: 'New File',
+                        action: () => startCreateFile(rootPath),
+                    },
+                    {
+                        id: 'new-folder',
+                        type: 'normal',
+                        text: 'New Folder',
+                        action: () => startCreateDirectory(rootPath),
+                    },
+                ];
 
-            await native.menu?.showContextMenu({
-                items,
-                position: { x: e.clientX, y: e.clientY },
-            });
-        } else {
-            // Fall back to React menu
-            setContextMenu({ x: e.clientX, y: e.clientY, path: null, isDirectory: true, isRoot: true });
-        }
-    }, [rootPath, startCreateFile, startCreateDirectory]);
+                await native.menu?.showContextMenu({
+                    items,
+                    position: { x: e.clientX, y: e.clientY },
+                });
+            } else {
+                // Fall back to React menu
+                setContextMenu({
+                    x: e.clientX,
+                    y: e.clientY,
+                    path: null,
+                    isDirectory: true,
+                    isRoot: true,
+                });
+            }
+        },
+        [rootPath, startCreateFile, startCreateDirectory],
+    );
 
     // Handle right-click on bookmarks area
     const handleBookmarksContextMenu = useCallback(async (e: React.MouseEvent) => {
@@ -1058,7 +1078,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                     }
                 }
                 onRefresh();
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to move to root:', error);
             }
         },
@@ -1112,11 +1132,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         onWidthChange(DEFAULT_WIDTH);
     }, [onWidthChange]);
 
-    // Toggle collapse on clicking the collapse button
-    const handleToggle = useCallback(() => {
-        onCollapsedChange(!isCollapsed);
-    }, [isCollapsed, onCollapsedChange]);
-
     const renderFileNode = useCallback(
         (node: FileNode, depth = 0): React.ReactNode => {
             const isExpanded = expandedDirs.has(node.path);
@@ -1133,7 +1148,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                         style={{ paddingLeft: `${depth * 16 + 8}px` }}
                         onClick={(e) => handleItemClick(node, e)}
                         onContextMenu={(e) => handleContextMenu(e, node.path, node.isDirectory)}
-                        tabIndex={0}
                         draggable={!isRenaming}
                         onDragStart={(e) => handleDragStart(e, node.path)}
                         onDragEnd={handleDragEnd}
@@ -1141,9 +1155,9 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                             node.isDirectory
                                 ? (e) => handleDragOver(e, node.path)
                                 : (e) => {
-                                    e.preventDefault();
-                                    e.dataTransfer.dropEffect = 'none';
-                                }
+                                      e.preventDefault();
+                                      e.dataTransfer.dropEffect = 'none';
+                                  }
                         }
                         onDragLeave={node.isDirectory ? handleDragLeave : undefined}
                         onDrop={node.isDirectory ? (e) => handleDrop(e, node.path) : undefined}
@@ -1164,7 +1178,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                 onBlur={(e) => {
                                     const val = e.target.value.trim();
                                     const oldExt = node.name.includes('.')
-                                        ? '.' + node.name.split('.').pop()
+                                        ? `.${node.name.split('.').pop()}`
                                         : '';
                                     const newName =
                                         val + (oldExt === '.md' || !oldExt ? '.md' : oldExt);
@@ -1174,7 +1188,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                     if (e.key === 'Enter') {
                                         const val = e.currentTarget.value.trim();
                                         const oldExt = node.name.includes('.')
-                                            ? '.' + node.name.split('.').pop()
+                                            ? `.${node.name.split('.').pop()}`
                                             : '';
                                         const newName =
                                             val + (oldExt === '.md' || !oldExt ? '.md' : oldExt);
@@ -1232,10 +1246,9 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                     />
                                 </div>
                             )}
-                            {node.children &&
-                                node.children.map((child: FileNode) =>
-                                    renderFileNode(child, depth + 1),
-                                )}
+                            {node.children?.map((child: FileNode) =>
+                                renderFileNode(child, depth + 1),
+                            )}
                         </div>
                     )}
                 </div>
@@ -1262,60 +1275,63 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     );
 
     // Render bookmark group as folder
-    const renderBookmarkGroup = useCallback((group: BookmarkGroup) => {
-        const isExpanded = expandedBookmarkGroups.has(group.id);
+    const renderBookmarkGroup = useCallback(
+        (group: BookmarkGroup) => {
+            const isExpanded = expandedBookmarkGroups.has(group.id);
 
-        return (
-            <div key={group.id} className="file-node">
-                <div
-                    className="file-node-item directory bookmark-group"
-                    style={{ paddingLeft: '8px' }}
-                    onClick={() => {
-                        setExpandedBookmarkGroups((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(group.id)) {
-                                next.delete(group.id);
-                            } else {
-                                next.add(group.id);
-                            }
-                            return next;
-                        });
-                    }}
-                >
-                    {group.color && (
-                        <span 
-                            className="bookmark-group-color-indicator"
-                            style={{ backgroundColor: group.color }}
-                        />
-                    )}
-                    <span className="file-node-icon">
-                        {isExpanded ? <FolderOpen size={16} /> : <Folder size={16} />}
-                    </span>
-                    <span className="file-node-name">{group.name}</span>
-                    <span className="file-node-count">({group.bookmarks.length})</span>
-                </div>
-                {isExpanded && (
-                    <div className="file-node-children">
-                        {group.bookmarks.map((bookmark) => (
-                            <div key={bookmark.id} className="file-node">
-                                <div
-                                    className={`file-node-item ${activeFilePath === bookmark.filePath ? 'active' : ''}`}
-                                    style={{ paddingLeft: '32px' }}
-                                    onClick={() => onFileSelect(bookmark.filePath)}
-                                    title={bookmark.filePath}
-                                >
-                                    <span className="file-node-icon">
-                                        <File size={16} />
-                                    </span>
-                                    <span className="file-node-name">{bookmark.title}</span>
-                                </div>
-                            </div>
-                        ))}
+            return (
+                <div key={group.id} className="file-node">
+                    <div
+                        className="file-node-item directory bookmark-group"
+                        style={{ paddingLeft: '8px' }}
+                        onClick={() => {
+                            setExpandedBookmarkGroups((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(group.id)) {
+                                    next.delete(group.id);
+                                } else {
+                                    next.add(group.id);
+                                }
+                                return next;
+                            });
+                        }}
+                    >
+                        {group.color && (
+                            <span
+                                className="bookmark-group-color-indicator"
+                                style={{ backgroundColor: group.color }}
+                            />
+                        )}
+                        <span className="file-node-icon">
+                            {isExpanded ? <FolderOpen size={16} /> : <Folder size={16} />}
+                        </span>
+                        <span className="file-node-name">{group.name}</span>
+                        <span className="file-node-count">({group.bookmarks.length})</span>
                     </div>
-                )}
-            </div>
-        );
-    }, [expandedBookmarkGroups, activeFilePath, onFileSelect]);
+                    {isExpanded && (
+                        <div className="file-node-children">
+                            {group.bookmarks.map((bookmark) => (
+                                <div key={bookmark.id} className="file-node">
+                                    <div
+                                        className={`file-node-item ${activeFilePath === bookmark.filePath ? 'active' : ''}`}
+                                        style={{ paddingLeft: '32px' }}
+                                        onClick={() => onFileSelect(bookmark.filePath)}
+                                        title={bookmark.filePath}
+                                    >
+                                        <span className="file-node-icon">
+                                            <File size={16} />
+                                        </span>
+                                        <span className="file-node-name">{bookmark.title}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        },
+        [expandedBookmarkGroups, activeFilePath, onFileSelect],
+    );
 
     // Selection count for status/context
     const selectionCount = selectedPaths.size;
@@ -1333,27 +1349,37 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             {!isCollapsed && (
                 <>
                     <div className="file-explorer">
-                        <div className={`file-explorer-header ${useCustomTitleBar && isMacOS ? 'with-traffic-lights' : ''}`}>
+                        <div
+                            className={`file-explorer-header ${useCustomTitleBar && isMacOS ? 'with-traffic-lights' : ''}`}
+                        >
                             {/* Main header row - workspace + settings */}
                             <div className="file-explorer-header-main" data-tauri-drag-region>
                                 <div className="file-explorer-header-workspace">
                                     <WorkspaceSwitcher
                                         currentWorkspace={rootPath}
                                         recentWorkspaces={recentWorkspaces}
-                                        onSelect={onWorkspaceSwitch || (() => { })}
-                                        onBrowse={onBrowseWorkspace || (() => { })}
+                                        onSelect={onWorkspaceSwitch || (() => {})}
+                                        onBrowse={onBrowseWorkspace || (() => {})}
                                     />
                                 </div>
                                 <div className="file-explorer-header-actions">
                                     <button
+                                        type="button"
                                         className={`file-explorer-action ${viewMode === 'bookmarks' ? 'active' : ''}`}
-                                        onClick={() => setViewMode(viewMode === 'files' ? 'bookmarks' : 'files')}
-                                        title={viewMode === 'files' ? 'Show Bookmarks' : 'Show Files'}
+                                        onClick={() =>
+                                            setViewMode(
+                                                viewMode === 'files' ? 'bookmarks' : 'files',
+                                            )
+                                        }
+                                        title={
+                                            viewMode === 'files' ? 'Show Bookmarks' : 'Show Files'
+                                        }
                                     >
                                         <Bookmark size={16} />
                                     </button>
                                     {onOpenSettings && (
                                         <button
+                                            type="button"
                                             className="file-explorer-action"
                                             onClick={onOpenSettings}
                                             title="Settings"
@@ -1363,13 +1389,14 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                     )}
                                 </div>
                             </div>
-                            
+
                             {/* Toolbar row - file/bookmark actions */}
                             <div className="file-explorer-toolbar">
                                 {viewMode === 'files' ? (
                                     <>
                                         <div className="file-explorer-toolbar-group">
                                             <button
+                                                type="button"
                                                 className="file-explorer-action"
                                                 onClick={() => startCreateFile()}
                                                 title="New File"
@@ -1377,6 +1404,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                                 <Plus size={16} />
                                             </button>
                                             <button
+                                                type="button"
                                                 className="file-explorer-action"
                                                 onClick={() => startCreateDirectory()}
                                                 title="New Folder"
@@ -1386,8 +1414,12 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                         </div>
                                         <div className="file-explorer-toolbar-separator" />
                                         <div className="file-explorer-toolbar-group">
-                                            <div className="file-explorer-sort-container" onClick={(e) => e.stopPropagation()}>
+                                            <div
+                                                className="file-explorer-sort-container"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
                                                 <button
+                                                    type="button"
                                                     className={`file-explorer-action ${sortOrder !== 'a-z' ? 'active' : ''}`}
                                                     onClick={handleSortButtonClick}
                                                     title="Sort Options"
@@ -1405,22 +1437,29 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                                             onClick={() => handleSortChange('a-z')}
                                                         >
                                                             <span>Name (A to Z)</span>
-                                                            {sortOrder === 'a-z' && <Check size={16} />}
+                                                            {sortOrder === 'a-z' && (
+                                                                <Check size={16} />
+                                                            )}
                                                         </div>
                                                         <div
                                                             className="file-explorer-sort-item"
                                                             onClick={() => handleSortChange('z-a')}
                                                         >
                                                             <span>Name (Z to A)</span>
-                                                            {sortOrder === 'z-a' && <Check size={16} />}
+                                                            {sortOrder === 'z-a' && (
+                                                                <Check size={16} />
+                                                            )}
                                                         </div>
                                                     </div>
                                                 )}
                                             </div>
                                             <button
+                                                type="button"
                                                 className="file-explorer-action"
                                                 onClick={handleExpandCollapseAll}
-                                                title={allDirsExpanded ? 'Collapse All' : 'Expand All'}
+                                                title={
+                                                    allDirsExpanded ? 'Collapse All' : 'Expand All'
+                                                }
                                             >
                                                 {allDirsExpanded ? (
                                                     <ChevronsUp size={16} />
@@ -1433,6 +1472,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                 ) : (
                                     <div className="file-explorer-toolbar-group">
                                         <button
+                                            type="button"
                                             className="file-explorer-action"
                                             onClick={() => setCreateGroupModalOpen(true)}
                                             title="New Bookmark Group"
@@ -1440,9 +1480,14 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                             <FolderPlus size={16} />
                                         </button>
                                         <button
+                                            type="button"
                                             className="file-explorer-action"
                                             onClick={handleExpandCollapseAllBookmarks}
-                                            title={allBookmarkGroupsExpanded ? 'Collapse All' : 'Expand All'}
+                                            title={
+                                                allBookmarkGroupsExpanded
+                                                    ? 'Collapse All'
+                                                    : 'Expand All'
+                                            }
                                         >
                                             {allBookmarkGroupsExpanded ? (
                                                 <ChevronsUp size={16} />
@@ -1458,60 +1503,66 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                         <div
                             className={`file-explorer-content ${dragOverPath === '__root__' ? 'drag-over' : ''}`}
                             onClick={handleContentClick}
-                            onContextMenu={viewMode === 'files' ? handleRootContextMenu : handleBookmarksContextMenu}
+                            onContextMenu={
+                                viewMode === 'files'
+                                    ? handleRootContextMenu
+                                    : handleBookmarksContextMenu
+                            }
                             onDragOver={viewMode === 'files' ? handleRootDragOver : undefined}
                             onDragLeave={viewMode === 'files' ? handleRootDragLeave : undefined}
                             onDrop={viewMode === 'files' ? handleRootDrop : undefined}
                         >
-                            {viewMode === 'files' && creatingItem && creatingItem.parentPath === rootPath && (
-                                <div className="file-node">
-                                    <div
-                                        className="file-node-item creating"
-                                        style={{ paddingLeft: '8px' }}
-                                    >
-                                        <span className="file-node-icon">
-                                            {creatingItem.type === 'directory' ? (
-                                                <Folder size={16} />
-                                            ) : (
-                                                <File size={16} />
-                                            )}
-                                        </span>
-                                        <input
-                                            type="text"
-                                            className="file-node-rename-input"
-                                            placeholder={
-                                                creatingItem.type === 'file'
-                                                    ? 'New note.md'
-                                                    : 'New directory'
-                                            }
-                                            autoFocus
-                                            onBlur={(e) => handleCreateItem(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    handleCreateItem(e.currentTarget.value);
-                                                } else if (e.key === 'Escape') {
-                                                    setCreatingItem(null);
+                            {viewMode === 'files' &&
+                                creatingItem &&
+                                creatingItem.parentPath === rootPath && (
+                                    <div className="file-node">
+                                        <div
+                                            className="file-node-item creating"
+                                            style={{ paddingLeft: '8px' }}
+                                        >
+                                            <span className="file-node-icon">
+                                                {creatingItem.type === 'directory' ? (
+                                                    <Folder size={16} />
+                                                ) : (
+                                                    <File size={16} />
+                                                )}
+                                            </span>
+                                            <input
+                                                type="text"
+                                                className="file-node-rename-input"
+                                                placeholder={
+                                                    creatingItem.type === 'file'
+                                                        ? 'New note.md'
+                                                        : 'New directory'
                                                 }
-                                                e.stopPropagation();
-                                            }}
-                                            onClick={(e) => e.stopPropagation()}
-                                        />
+                                                autoFocus
+                                                onBlur={(e) => handleCreateItem(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        handleCreateItem(e.currentTarget.value);
+                                                    } else if (e.key === 'Escape') {
+                                                        setCreatingItem(null);
+                                                    }
+                                                    e.stopPropagation();
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                        </div>
                                     </div>
+                                )}
+                            {viewMode === 'files' ? (
+                                sortedFiles.map((node) => renderFileNode(node, 0))
+                            ) : bookmarkGroups.length > 0 ? (
+                                bookmarkGroups.map((group) => renderBookmarkGroup(group))
+                            ) : (
+                                <div className="file-explorer-empty">
+                                    <Bookmark size={48} />
+                                    <p>No bookmarks yet</p>
+                                    <p className="text-muted">
+                                        Add bookmarks from the context menu or editor options
+                                    </p>
                                 </div>
                             )}
-                            {viewMode === 'files'
-                                ? sortedFiles.map((node) => renderFileNode(node, 0))
-                                : bookmarkGroups.length > 0
-                                    ? bookmarkGroups.map((group) => renderBookmarkGroup(group))
-                                    : (
-                                        <div className="file-explorer-empty">
-                                            <Bookmark size={48} />
-                                            <p>No bookmarks yet</p>
-                                            <p className="text-muted">
-                                                Add bookmarks from the context menu or editor options
-                                            </p>
-                                        </div>
-                                    )}
                         </div>
 
                         {/* Fallback React context menu when native menus not supported */}
@@ -1522,14 +1573,15 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <button
+                                    type="button"
                                     className="context-menu-item"
                                     onClick={() =>
                                         startCreateFile(
                                             contextMenu.isRoot
                                                 ? rootPath
                                                 : contextMenu.isDirectory
-                                                    ? contextMenu.path!
-                                                    : undefined,
+                                                  ? contextMenu.path!
+                                                  : undefined,
                                         )
                                     }
                                 >
@@ -1537,14 +1589,15 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                     New File
                                 </button>
                                 <button
+                                    type="button"
                                     className="context-menu-item"
                                     onClick={() =>
                                         startCreateDirectory(
                                             contextMenu.isRoot
                                                 ? rootPath
                                                 : contextMenu.isDirectory
-                                                    ? contextMenu.path!
-                                                    : undefined,
+                                                  ? contextMenu.path!
+                                                  : undefined,
                                         )
                                     }
                                 >
@@ -1555,6 +1608,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                     <>
                                         <div className="context-menu-separator" />
                                         <button
+                                            type="button"
                                             className="context-menu-item"
                                             onClick={() => {
                                                 startRename(contextMenu.path!);
@@ -1566,9 +1620,11 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                         </button>
                                         {!contextMenu.isDirectory && (
                                             <button
+                                                type="button"
                                                 className="context-menu-item"
                                                 onClick={() => {
-                                                    const fileName = contextMenu.path!.split('/').pop() || '';
+                                                    const fileName =
+                                                        contextMenu.path?.split('/').pop() || '';
                                                     setBookmarkFilePath(contextMenu.path!);
                                                     setBookmarkFileName(fileName);
                                                     setBookmarkModalOpen(true);
@@ -1581,6 +1637,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                         )}
                                         {onMoveTo && (
                                             <button
+                                                type="button"
                                                 className="context-menu-item"
                                                 onClick={() => {
                                                     onMoveTo(contextMenu.path!);
@@ -1593,6 +1650,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                         )}
                                         {onCopyFile && (
                                             <button
+                                                type="button"
                                                 className="context-menu-item"
                                                 onClick={() => {
                                                     onCopyFile(contextMenu.path!);
@@ -1604,6 +1662,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                             </button>
                                         )}
                                         <button
+                                            type="button"
                                             className="context-menu-item danger"
                                             onClick={() =>
                                                 deleteFromContextMenu(
@@ -1615,13 +1674,14 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                             <Trash2 size={14} />
                                             Delete
                                             {selectionCount > 1 &&
-                                                selectedPaths.has(contextMenu.path!)
+                                            selectedPaths.has(contextMenu.path!)
                                                 ? ` (${selectionCount})`
                                                 : ''}
                                         </button>
                                         <div className="context-menu-separator" />
                                         {onCopyPath && (
                                             <button
+                                                type="button"
                                                 className="context-menu-item"
                                                 onClick={() => {
                                                     onCopyPath(contextMenu.path!);
@@ -1634,6 +1694,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                         )}
                                         {onCopyRelativePath && (
                                             <button
+                                                type="button"
                                                 className="context-menu-item"
                                                 onClick={() => {
                                                     onCopyRelativePath(contextMenu.path!);
@@ -1646,6 +1707,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                         )}
                                         {onShowInExplorer && (
                                             <button
+                                                type="button"
                                                 className="context-menu-item"
                                                 onClick={() => {
                                                     onShowInExplorer(contextMenu.path!);
@@ -1661,9 +1723,13 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                                 <div className="context-menu-separator" />
                                                 {isSyncIgnored(contextMenu.path!) ? (
                                                     <button
+                                                        type="button"
                                                         className="context-menu-item"
                                                         onClick={() => {
-                                                            onToggleSyncIgnore(contextMenu.path!, false);
+                                                            onToggleSyncIgnore(
+                                                                contextMenu.path!,
+                                                                false,
+                                                            );
                                                             closeContextMenu();
                                                         }}
                                                     >
@@ -1672,9 +1738,13 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                                                     </button>
                                                 ) : (
                                                     <button
+                                                        type="button"
                                                         className="context-menu-item"
                                                         onClick={() => {
-                                                            onToggleSyncIgnore(contextMenu.path!, true);
+                                                            onToggleSyncIgnore(
+                                                                contextMenu.path!,
+                                                                true,
+                                                            );
                                                             closeContextMenu();
                                                         }}
                                                     >

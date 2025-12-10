@@ -24,7 +24,8 @@ export function createBoldDecorations(
     const boldRegex = /(\*\*|__)(.+?)\1/g;
     let match;
 
-    while ((match = boldRegex.exec(text)) !== null) {
+    match = boldRegex.exec(text);
+    while (match !== null) {
         const matchFrom = from + match.index;
         const matchTo = matchFrom + match[0].length;
         const markerLen = match[1].length; // 2 for ** or __
@@ -42,6 +43,7 @@ export function createBoldDecorations(
                 attributes: { style: 'font-weight: bold;' },
             }).range(matchFrom + markerLen, matchTo - markerLen),
         );
+        match = boldRegex.exec(text);
     }
 
     return decorations;

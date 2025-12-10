@@ -1,5 +1,5 @@
-import { useCallback, useMemo } from 'react';
 import type { FileNode } from '@inkdown/core';
+import { useCallback, useMemo } from 'react';
 import type { SortOrder } from './types';
 
 // Helper to get file/directory info from path
@@ -62,7 +62,7 @@ export const getAllDirectoryPaths = (nodes: FileNode[]): string[] => {
 export const useExpandedDirs = (
     files: FileNode[],
     expandedDirs: Set<string>,
-    onExpandedDirsChange?: (expandedDirs: string[]) => void
+    onExpandedDirsChange?: (expandedDirs: string[]) => void,
 ) => {
     const allDirsExpanded = useMemo(() => {
         const allPaths = getAllDirectoryPaths(files);
@@ -83,10 +83,7 @@ export const useExpandedDirs = (
 };
 
 // Hook for bookmark groups management
-export const useBookmarkGroups = (
-    bookmarkGroups: any[],
-    expandedBookmarkGroups: Set<string>
-) => {
+export const useBookmarkGroups = (bookmarkGroups: any[], expandedBookmarkGroups: Set<string>) => {
     const allBookmarkGroupsExpanded = useMemo(() => {
         if (bookmarkGroups.length === 0) return true;
         return bookmarkGroups.every((group) => expandedBookmarkGroups.has(group.id));
@@ -101,7 +98,7 @@ export const useBookmarkGroups = (
                 setExpandedBookmarkGroups(new Set(allGroupIds));
             }
         },
-        [bookmarkGroups, allBookmarkGroupsExpanded]
+        [bookmarkGroups, allBookmarkGroupsExpanded],
     );
 
     return { allBookmarkGroupsExpanded, handleExpandCollapseAllBookmarks };

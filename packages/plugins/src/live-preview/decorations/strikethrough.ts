@@ -24,7 +24,8 @@ export function createStrikethroughDecorations(
     const strikeRegex = /(~~)(.+?)\1/g;
     let match;
 
-    while ((match = strikeRegex.exec(text)) !== null) {
+    match = strikeRegex.exec(text);
+    while (match !== null) {
         const matchFrom = from + match.index;
         const matchTo = matchFrom + match[0].length;
         const markerLen = 2; // ~~
@@ -42,6 +43,7 @@ export function createStrikethroughDecorations(
                 attributes: { style: 'text-decoration: line-through;' },
             }).range(matchFrom + markerLen, matchTo - markerLen),
         );
+        match = strikeRegex.exec(text);
     }
 
     return decorations;

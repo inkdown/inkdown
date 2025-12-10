@@ -5,6 +5,17 @@
  */
 
 export type {
+    CommunityPlugin,
+    CommunityPluginCache,
+    CommunityPluginListing,
+    CommunityPluginManifest,
+    InstalledCommunityPlugin,
+    InstalledPluginsConfig,
+    PluginInstallResult,
+    PluginLoadResult,
+    PluginUpdateInfo,
+} from './community-plugin';
+export type {
     AppConfig,
     FontConfig,
     TabConfig,
@@ -17,17 +28,6 @@ export type {
     SettingTabProps,
     ViewCreator,
 } from './plugin';
-export type {
-    CommunityPlugin,
-    CommunityPluginCache,
-    CommunityPluginListing,
-    CommunityPluginManifest,
-    InstalledCommunityPlugin,
-    InstalledPluginsConfig,
-    PluginInstallResult,
-    PluginLoadResult,
-    PluginUpdateInfo,
-} from './community-plugin';
 
 export type {
     DefaultShortcuts,

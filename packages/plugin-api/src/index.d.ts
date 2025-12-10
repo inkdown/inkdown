@@ -1,15 +1,15 @@
 /**
  * @inkdown/plugin-api
- * 
+ *
  * TypeScript definitions for Inkdown plugin development.
- * 
+ *
  * This package provides type definitions for building plugins for Inkdown,
  * a powerful markdown editor application.
- * 
+ *
  * @example
  * ```typescript
  * import { Plugin, Notice, Setting, PluginSettingTab } from '@inkdown/plugin-api';
- * 
+ *
  * export default class MyPlugin extends Plugin {
  *   async onload() {
  *     this.addCommand({
@@ -21,7 +21,7 @@
  *   async onunload() {}
  * }
  * ```
- * 
+ *
  * @packageDocumentation
  */
 
@@ -346,7 +346,7 @@ export interface FolderDialogOptions {
 
 /**
  * Dialog manager for native file/folder selection dialogs
- * 
+ *
  * @example
  * ```ts
  * // Save file dialog
@@ -358,13 +358,13 @@ export interface FolderDialogOptions {
  * if (path) {
  *   await writeBinaryFile(path, pdfData);
  * }
- * 
+ *
  * // Open file dialog
  * const file = await this.app.dialog.showOpenFileDialog({
  *   title: 'Select Image',
  *   filters: [{ name: 'Images', extensions: ['png', 'jpg', 'gif'] }]
  * });
- * 
+ *
  * // Select folder
  * const folder = await this.app.dialog.showOpenFolderDialog({
  *   title: 'Select Output Folder'
@@ -378,21 +378,21 @@ export interface IDialogManager {
      * @returns The selected file path, or null if cancelled
      */
     showSaveDialog(options?: FileDialogOptions): Promise<string | null>;
-    
+
     /**
      * Show an open file dialog (single file selection)
      * @param options - Dialog options
      * @returns The selected file path, or null if cancelled
      */
     showOpenFileDialog(options?: FileDialogOptions): Promise<string | null>;
-    
+
     /**
      * Show an open file dialog (multiple file selection)
      * @param options - Dialog options
      * @returns Array of selected file paths (empty if cancelled)
      */
     showOpenFilesDialog(options?: FileDialogOptions): Promise<string[]>;
-    
+
     /**
      * Show a folder selection dialog
      * @param options - Dialog options
@@ -484,7 +484,7 @@ export interface IItemView extends IComponent {
     app: App;
     containerEl: HTMLElement;
     contentEl: HTMLElement;
-    
+
     /** Get the view type identifier */
     getViewType(): string;
     /** Get the display text for the view */
@@ -629,7 +629,7 @@ export interface IKeyboardScope {
     register(
         modifiers: ('Mod' | 'Ctrl' | 'Meta' | 'Alt' | 'Shift')[],
         key: string,
-        callback: (evt: KeyboardEvent) => boolean | void,
+        callback: (evt: KeyboardEvent) => boolean | undefined,
     ): void;
     /** Unregister all handlers */
     unregister(): void;
@@ -841,7 +841,7 @@ export interface FuzzyMatch<T> {
  */
 export interface IPopoverSuggest<T, TContext = string> {
     containerEl: HTMLElement;
-    
+
     /** Get suggestions for the context */
     getSuggestions(context: TContext): T[] | Promise<T[]>;
     /** Render a suggestion item */
@@ -1088,7 +1088,7 @@ export declare abstract class Component implements IComponent {
 
 /**
  * Plugin - Base class for all Inkdown plugins
- * 
+ *
  * @example
  * ```typescript
  * export default class MyPlugin extends Plugin {
@@ -1160,7 +1160,7 @@ export declare abstract class ItemView extends Component implements IItemView {
 
 /**
  * Modal - Base class for modal dialogs
- * 
+ *
  * @example
  * ```typescript
  * class MyModal extends Modal {
@@ -1217,14 +1217,14 @@ export declare class KeyboardScope implements IKeyboardScope {
     register(
         modifiers: ('Mod' | 'Ctrl' | 'Meta' | 'Alt' | 'Shift')[],
         key: string,
-        callback: (evt: KeyboardEvent) => boolean | void,
+        callback: (evt: KeyboardEvent) => boolean | undefined,
     ): void;
     unregister(): void;
 }
 
 /**
  * Notice - Toast notification
- * 
+ *
  * @example
  * ```typescript
  * new Notice('File saved!');
@@ -1242,7 +1242,7 @@ export declare class Notice implements INotice {
 
 /**
  * Setting - Build settings UI
- * 
+ *
  * @example
  * ```typescript
  * new Setting(containerEl)
@@ -1276,7 +1276,7 @@ export declare class Setting implements ISetting {
 
 /**
  * PluginSettingTab - Base class for plugin settings
- * 
+ *
  * @example
  * ```typescript
  * class MySettingTab extends PluginSettingTab {
@@ -1302,7 +1302,9 @@ export declare abstract class PluginSettingTab implements IPluginSettingTab {
 /**
  * PopoverSuggest - Base class for suggestion popovers
  */
-export declare abstract class PopoverSuggest<T, TContext = string> implements IPopoverSuggest<T, TContext> {
+export declare abstract class PopoverSuggest<T, TContext = string>
+    implements IPopoverSuggest<T, TContext>
+{
     containerEl: HTMLElement;
 
     constructor(app: App, containerEl: HTMLElement);
@@ -1315,7 +1317,7 @@ export declare abstract class PopoverSuggest<T, TContext = string> implements IP
 
 /**
  * FuzzySuggestModal - Modal with fuzzy search
- * 
+ *
  * @example
  * ```typescript
  * class FileSuggest extends FuzzySuggestModal<TFile> {
@@ -1344,7 +1346,7 @@ export declare abstract class FuzzySuggestModal<T> extends Modal implements IFuz
 
 /**
  * EditorSuggest - Autocomplete in the editor
- * 
+ *
  * @example
  * ```typescript
  * class MentionSuggest extends EditorSuggest<User> {
@@ -1353,13 +1355,16 @@ export declare abstract class FuzzySuggestModal<T> extends Modal implements IFuz
  *   }
  *   getSuggestions(ctx) { return []; }
  *   renderSuggestion(user, el) { el.setText(user.name); }
- *   selectSuggestion(user, evt) { 
+ *   selectSuggestion(user, evt) {
  *     // Insert the selected suggestion
  *   }
  * }
  * ```
  */
-export declare abstract class EditorSuggest<T> extends PopoverSuggest<T, EditorSuggestContext> implements IEditorSuggest<T> {
+export declare abstract class EditorSuggest<T>
+    extends PopoverSuggest<T, EditorSuggestContext>
+    implements IEditorSuggest<T>
+{
     context: EditorSuggestContext | null;
 
     constructor(app: App);

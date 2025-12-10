@@ -113,9 +113,9 @@ export interface Position {
 export class MetadataCache extends Events {
     public app: App;
     private cache: Map<string, CachedMetadata> = new Map();
-    private updateQueue: Set<string> = new Set();
-    private debounceTimer: number | null = null;
-    private readonly DEBOUNCE_DELAY = 300; // ms
+    // private updateQueue: Set<string> = new Set();
+    // private debounceTimer: number | null = null;
+    // private readonly DEBOUNCE_DELAY = 300; // ms
     private readonly MAX_CACHE_SIZE = 1000; // Maximum number of files to cache
     private accessOrder: string[] = []; // For LRU tracking
 
@@ -139,6 +139,26 @@ export class MetadataCache extends Events {
     }
 
     /**
+     * Mark a path as recently accessed for LRU tracking
+     */
+    private markAccessed(path: string): void {
+        const index = this.accessOrder.indexOf(path);
+        if (index > -1) {
+            this.accessOrder.splice(index, 1);
+        }
+        this.accessOrder.push(path);
+
+        // Enforce cache size limit (LRU eviction)
+        while (this.cache.size > this.MAX_CACHE_SIZE && this.accessOrder.length > 0) {
+            const oldest = this.accessOrder.shift();
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            if (oldest) {
+                this.cache.delete(oldest);
+            }
+        }
+    }
+
+    /**
      * Get frontmatter for a file
      */
     getFileCache(path: string): CachedMetadata | null {
@@ -157,7 +177,7 @@ export class MetadataCache extends Events {
 
             // Trigger event
             this.trigger('changed', file, content, metadata);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to update cache for', file.path, error);
         }
     }
@@ -179,7 +199,8 @@ export class MetadataCache extends Events {
         const links: LinkCache[] = [];
         let match;
 
-        while ((match = linkRegex.exec(content)) !== null) {
+        match = linkRegex.exec(content);
+        while (match !== null) {
             const linkText = match[1];
             const [link, displayText] = linkText.split('|');
 
@@ -189,6 +210,7 @@ export class MetadataCache extends Events {
                 displayText: displayText?.trim(),
                 position: this.getPosition(content, match.index, match[0].length),
             });
+            match = linkRegex.exec(content);
         }
 
         if (links.length > 0) {
@@ -199,7 +221,8 @@ export class MetadataCache extends Events {
         const embedRegex = /!\[\[([^\]]+)\]\]/g;
         const embeds: EmbedCache[] = [];
 
-        while ((match = embedRegex.exec(content)) !== null) {
+        match = embedRegex.exec(content);
+        while (match !== null) {
             const linkText = match[1];
             const [link, displayText] = linkText.split('|');
 
@@ -209,6 +232,7 @@ export class MetadataCache extends Events {
                 displayText: displayText?.trim(),
                 position: this.getPosition(content, match.index, match[0].length),
             });
+            match = embedRegex.exec(content);
         }
 
         if (embeds.length > 0) {
@@ -219,11 +243,13 @@ export class MetadataCache extends Events {
         const tagRegex = /#([a-zA-Z0-9_/-]+)/g;
         const tags: TagCache[] = [];
 
-        while ((match = tagRegex.exec(content)) !== null) {
+        match = tagRegex.exec(content);
+        while (match !== null) {
             tags.push({
                 tag: match[0],
                 position: this.getPosition(content, match.index, match[0].length),
             });
+            match = tagRegex.exec(content);
         }
 
         if (tags.length > 0) {
@@ -234,12 +260,14 @@ export class MetadataCache extends Events {
         const headingRegex = /^(#{1,6})\s+(.+)$/gm;
         const headings: HeadingCache[] = [];
 
-        while ((match = headingRegex.exec(content)) !== null) {
+        match = headingRegex.exec(content);
+        while (match !== null) {
             headings.push({
                 heading: match[2],
                 level: match[1].length,
                 position: this.getPosition(content, match.index, match[0].length),
             });
+            match = headingRegex.exec(content);
         }
 
         if (headings.length > 0) {

@@ -30,12 +30,12 @@ export class FontManager {
 
         try {
             this.logger.info('Loading system fonts...');
-            const fonts = await native.font!.listSystemFonts();
+            const fonts = (await native.font?.listSystemFonts()) || [];
             this.availableFonts = fonts;
             this.fontsLoaded = true;
             this.logger.info(`Loaded ${fonts.length} system fonts`);
             return fonts;
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error('Failed to load system fonts, using fallback', error);
             // Fallback to common fonts if native command fails
             this.availableFonts = this.getFallbackFonts();

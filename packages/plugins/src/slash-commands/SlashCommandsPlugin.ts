@@ -3,7 +3,6 @@ import type {
     EditorPosition,
     EditorSuggestContext,
     EditorSuggestTriggerInfo,
-    PluginManifest,
     TFile,
 } from '@inkdown/core';
 import { EditorSuggest, Plugin, setIcon } from '@inkdown/core';
@@ -214,10 +213,6 @@ export default class SlashCommandsPlugin extends Plugin {
     settings: SlashCommandsSettings = DEFAULT_SETTINGS;
     private slashSuggest: SlashCommandSuggest | null = null;
 
-    constructor(app: App, manifest: PluginManifest) {
-        super(app, manifest);
-    }
-
     async onload(): Promise<void> {
         console.log('SlashCommandsPlugin loaded');
 
@@ -235,12 +230,14 @@ export default class SlashCommandsPlugin extends Plugin {
             name: 'teste',
             hotkey: ['Mod', 'ç'],
             callback: async () => {
-                const resultado = await this.app.fileManager.createFile('/home/furqas/Documentos/inkdown/test.md', '# Meu teste');
+                const resultado = await this.app.fileManager.createFile(
+                    '/home/furqas/Documentos/inkdown/test.md',
+                    '# Meu teste',
+                );
 
                 console.log(resultado);
             },
         });
-
     }
 
     async onunload(): Promise<void> {

@@ -1,6 +1,17 @@
 import type { CommunityTheme, CommunityThemeListing } from '@inkdown/core';
 import { Button } from '@inkdown/ui';
-import { ArrowLeft, ArrowUpDown, Check, Download, ExternalLink, Moon, RefreshCw, Search, Sun, Trash2 } from 'lucide-react';
+import {
+    ArrowLeft,
+    ArrowUpDown,
+    Check,
+    Download,
+    ExternalLink,
+    Moon,
+    RefreshCw,
+    Search,
+    Sun,
+    Trash2,
+} from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApp } from '../contexts/AppContext';
@@ -32,20 +43,18 @@ const ThemeCard: React.FC<{
     return (
         <button type="button" className="theme-card" onClick={onClick}>
             <div className="theme-card-screenshot">
-                {!imageError ? (
+                {imageError ? (
+                    <div className="theme-card-screenshot-placeholder">
+                        <span>{listing.name[0]}</span>
+                    </div>
+                ) : (
                     <img
                         src={screenshotUrl}
                         alt={`${listing.name} theme preview`}
                         onError={() => setImageError(true)}
                     />
-                ) : (
-                    <div className="theme-card-screenshot-placeholder">
-                        <span>{listing.name[0]}</span>
-                    </div>
                 )}
-                {isInstalled && (
-                    <div className="theme-card-installed-badge">Installed</div>
-                )}
+                {isInstalled && <div className="theme-card-installed-badge">Installed</div>}
             </div>
             <div className="theme-card-info">
                 <h4 className="theme-card-name">{listing.name}</h4>
@@ -190,23 +199,23 @@ const ThemeDetail: React.FC<{
                 {/* Theme Info Section */}
                 <div className="theme-detail-info">
                     <div className="theme-detail-screenshot">
-                        {!imageError ? (
+                        {imageError ? (
+                            <div className="theme-card-screenshot-placeholder large">
+                                <span>{theme.manifest.name[0]}</span>
+                            </div>
+                        ) : (
                             <img
                                 src={theme.screenshotUrl}
                                 alt={`${theme.manifest.name} theme preview`}
                                 onError={() => setImageError(true)}
                             />
-                        ) : (
-                            <div className="theme-card-screenshot-placeholder large">
-                                <span>{theme.manifest.name[0]}</span>
-                            </div>
                         )}
                     </div>
 
                     <div className="theme-detail-meta">
                         <h2 className="theme-detail-name">{theme.manifest.name}</h2>
                         <p className="theme-detail-author">by {theme.manifest.author}</p>
-                        
+
                         {theme.manifest.description && (
                             <p className="theme-detail-description">{theme.manifest.description}</p>
                         )}
@@ -220,7 +229,9 @@ const ThemeDetail: React.FC<{
                                 <span className="label">Status</span>
                                 <span className="value">
                                     {theme.installed ? (
-                                        <span className="status-installed">Installed (v{theme.installedVersion})</span>
+                                        <span className="status-installed">
+                                            Installed (v{theme.installedVersion})
+                                        </span>
                                     ) : (
                                         <span className="status-not-installed">Not installed</span>
                                     )}
@@ -290,7 +301,7 @@ const ThemeDetail: React.FC<{
                 {theme.readme && (
                     <div className="theme-detail-readme">
                         <div className="theme-detail-readme-content">
-                            <Preview content={theme.readme} mode="preview-only" />
+                            <Preview content={theme.readme} mode="preview-only" app={app} />
                         </div>
                     </div>
                 )}
@@ -310,28 +321,31 @@ export const ThemesSettings: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
-    
+
     // Search and filter state
     const [searchQuery, setSearchQuery] = useState('');
     const [installedOnly, setInstalledOnly] = useState(false);
     const [sortBy, setSortBy] = useState<SortOption>('alphabetical');
 
     // Fetch theme listings on mount
-    const fetchListings = useCallback(async (forceRefresh = false) => {
-        setLoading(!forceRefresh);
-        setRefreshing(forceRefresh);
-        setError(null);
+    const fetchListings = useCallback(
+        async (forceRefresh = false) => {
+            setLoading(!forceRefresh);
+            setRefreshing(forceRefresh);
+            setError(null);
 
-        try {
-            const themes = await app.communityThemeManager.getThemeListings(forceRefresh);
-            setListings(themes);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to load themes');
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }, [app.communityThemeManager]);
+            try {
+                const themes = await app.communityThemeManager.getThemeListings(forceRefresh);
+                setListings(themes);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to load themes');
+            } finally {
+                setLoading(false);
+                setRefreshing(false);
+            }
+        },
+        [app.communityThemeManager],
+    );
 
     useEffect(() => {
         fetchListings();
@@ -347,14 +361,14 @@ export const ThemesSettings: React.FC = () => {
             result = result.filter(
                 (listing) =>
                     listing.name.toLowerCase().includes(query) ||
-                    listing.author.toLowerCase().includes(query)
+                    listing.author.toLowerCase().includes(query),
             );
         }
 
         // Filter by installed status
         if (installedOnly) {
             result = result.filter((listing) =>
-                app.communityThemeManager.isThemeInstalled(listing.repo)
+                app.communityThemeManager.isThemeInstalled(listing.repo),
             );
         }
 
@@ -474,11 +488,7 @@ export const ThemesSettings: React.FC = () => {
                         <Check size={14} />
                         Installed
                     </button>
-                    <button
-                        type="button"
-                        className="themes-filter-btn"
-                        onClick={toggleSort}
-                    >
+                    <button type="button" className="themes-filter-btn" onClick={toggleSort}>
                         <ArrowUpDown size={14} />
                         {sortBy === 'alphabetical' ? 'A-Z' : 'Newest'}
                     </button>

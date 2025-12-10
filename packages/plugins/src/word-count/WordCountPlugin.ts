@@ -1,4 +1,3 @@
-import type { App, PluginManifest } from '@inkdown/core';
 import { EditorAdapter, Plugin, setIcon } from '@inkdown/core';
 import { WordCountSettingTab } from './WordCountSettingTab';
 
@@ -26,10 +25,6 @@ export default class WordCountPlugin extends Plugin {
     settings: WordCountSettings = DEFAULT_SETTINGS;
     private statusBarItem: HTMLElement | null = null;
     private updateInterval: number | null = null;
-
-    constructor(app: App, manifest: PluginManifest) {
-        super(app, manifest);
-    }
 
     async onload(): Promise<void> {
         console.log('WordCountPlugin loaded');

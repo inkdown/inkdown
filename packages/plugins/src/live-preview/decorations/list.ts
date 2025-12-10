@@ -41,20 +41,24 @@ export function createListDecorations(
             const checkboxEnd = checkboxStart + checkbox.length;
 
             // Only hide checkbox if cursor is not on it
-            const cursorOnCheckbox = selection.from >= checkboxStart && selection.from <= checkboxEnd;
-            
+            const cursorOnCheckbox =
+                selection.from >= checkboxStart && selection.from <= checkboxEnd;
+
             if (!cursorOnCheckbox) {
                 // Hide the markdown checkbox
                 decorations.push(
                     Decoration.replace({
-                        widget: new CheckboxWidget(checkbox.includes('x') || checkbox.includes('X')),
+                        widget: new CheckboxWidget(
+                            checkbox.includes('x') || checkbox.includes('X'),
+                        ),
                         block: false,
                     }).range(checkboxStart, checkboxEnd),
                 );
             }
 
             // Always hide the bullet (-, *, +) for task lists
-            const cursorOnBullet = selection.from >= markerStart && selection.from <= markerStart + bullet.length;
+            const cursorOnBullet =
+                selection.from >= markerStart && selection.from <= markerStart + bullet.length;
             if (!cursorOnBullet) {
                 decorations.push(
                     Decoration.replace({}).range(markerStart, markerStart + bullet.length),
@@ -69,8 +73,9 @@ export function createListDecorations(
 
             if (isUnordered) {
                 // Only replace bullet if cursor is not directly on it
-                const cursorOnBullet = selection.from >= markerStart && selection.from <= markerStart + bullet.length;
-                
+                const cursorOnBullet =
+                    selection.from >= markerStart && selection.from <= markerStart + bullet.length;
+
                 if (!cursorOnBullet) {
                     // Replace the bullet with a styled dot widget
                     decorations.push(
@@ -106,7 +111,7 @@ class BulletWidget extends WidgetType {
         return bullet;
     }
 
-    eq(other: BulletWidget): boolean {
+    eq(_other: BulletWidget): boolean {
         return true;
     }
 
