@@ -1,10 +1,11 @@
 {
     "extends": "../tsconfig.json",
     "compilerOptions": {
-        "types": ["vitest/globals", "node"],
+        "types": ["vitest/globals", "node", "@testing-library/jest-dom"],
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
         "jsx": "react-jsx",
+        "skipLibCheck": true,
         "paths": {
             "@inkdown/core/*": ["../packages/core/src/*"],
             "@inkdown/core": ["../packages/core/src"],

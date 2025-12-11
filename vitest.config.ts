@@ -6,6 +6,9 @@ import { dirname, resolve } from 'node:path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Check if we're running smoke tests
+const isSmoke = process.env.TEST_TYPE === 'smoke';
+
 export default defineConfig({
     plugins: [react()],
     test: {
@@ -20,16 +23,20 @@ export default defineConfig({
             },
         },
         
-        // Global setup file
-        setupFiles: ['./test/unit/setup.ts'],
+        // Global setup file - use different setup for smoke tests
+        setupFiles: isSmoke 
+            ? ['./test/smoke/setup.ts'] 
+            : ['./test/unit/setup.ts'],
         
-        // Include test files
-        include: [
-            'test/unit/**/*.test.ts',
-            'test/unit/**/*.test.tsx',
-            'packages/*/test/**/*.test.ts',
-            'packages/*/test/**/*.test.tsx',
-        ],
+        // Include test files based on test type
+        include: isSmoke
+            ? ['test/smoke/**/*.smoke.test.ts', 'test/smoke/**/*.smoke.test.tsx']
+            : [
+                'test/unit/**/*.test.ts',
+                'test/unit/**/*.test.tsx',
+                'packages/*/test/**/*.test.ts',
+                'packages/*/test/**/*.test.tsx',
+            ],
         
         // Exclude node_modules and build artifacts
         exclude: [
