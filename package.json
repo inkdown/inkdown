@@ -62,12 +62,27 @@
         "lint:fix": "biome lint --write .",
         "format": "biome format --write .",
         "check": "biome check .",
-        "check:fix": "biome check --write ."
+        "check:fix": "biome check --write .",
+        "test": "vitest",
+        "test:unit": "vitest run",
+        "test:watch": "vitest watch",
+        "test:coverage": "vitest run --coverage",
+        "test:ui": "vitest --ui"
     },
     "devDependencies": {
         "@biomejs/biome": "^2.3.8",
+        "@testing-library/jest-dom": "^6.6.3",
+        "@testing-library/react": "^16.1.0",
         "@types/node": "catalog:",
-        "typescript": "catalog:"
+        "@vitejs/plugin-react": "catalog:build",
+        "@vitest/coverage-v8": "^3.1.4",
+        "@vitest/ui": "^3.1.4",
+        "fake-indexeddb": "^6.2.5",
+        "jsdom": "^26.1.0",
+        "react": "catalog:",
+        "react-dom": "catalog:",
+        "typescript": "catalog:",
+        "vitest": "^3.1.4"
     },
     "dependencies": {
         "@types/diff-match-patch": "^1.0.36",

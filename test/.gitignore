@@ -1,0 +1,7 @@
+# Test results and coverage
+test/results/
+test/coverage/
+coverage/
+
+# Vitest cache
+.vitest/
