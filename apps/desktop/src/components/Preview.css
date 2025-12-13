@@ -1,0 +1,374 @@
+.preview-container {
+    height: 100%;
+    overflow-y: auto;
+    background: var(--bg-primary);
+}
+
+.preview-content {
+    padding: 24px;
+    color: var(--text-primary);
+    line-height: var(--line-height-base);
+}
+
+/* In side-by-side mode, limit width */
+.preview-side-by-side .preview-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Headers */
+.preview-h1 {
+    color: var(--syntax-header);
+    font-size: 2em;
+    font-weight: bold;
+    margin: 24px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.preview-h2 {
+    color: var(--syntax-header);
+    font-size: 1.5em;
+    font-weight: bold;
+    margin: 20px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.preview-h3 {
+    color: var(--syntax-header);
+    font-size: 1.25em;
+    font-weight: bold;
+    margin: 16px 0 8px;
+}
+
+.preview-h4,
+.preview-h5,
+.preview-h6 {
+    color: var(--syntax-header);
+    font-weight: bold;
+    margin: 12px 0 8px;
+}
+
+/* Paragraphs */
+.preview-content p {
+    margin: 12px 0;
+}
+
+/* Links */
+.preview-link {
+    color: var(--syntax-link);
+    text-decoration: underline;
+    transition: opacity var(--transition-fast);
+}
+
+.preview-link:hover {
+    opacity: 0.8;
+}
+
+/* Highlight (mark) */
+.preview-content mark {
+    background-color: var(--text-highlight-bg);
+    color: inherit;
+    padding: 2px 0;
+    border-radius: 2px;
+}
+
+.preview-content mark:hover {
+    background-color: var(--text-highlight-bg-active);
+}
+
+/* Code */
+.preview-inline-code {
+    color: var(--syntax-code);
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-family-mono);
+    font-size: 0.9em;
+}
+
+.preview-code-block {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 16px;
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    margin: 16px 0;
+}
+
+.preview-code-block code {
+    font-family: var(--font-family-mono);
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+/* Blockquotes */
+.preview-quote {
+    color: var(--syntax-quote);
+    border-left: 4px solid var(--syntax-quote);
+    padding-left: 16px;
+    margin: 16px 0;
+    font-style: italic;
+}
+
+/* Callouts/Alerts */
+.preview-content .callout {
+    border-left: 4px solid;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-style: normal;
+    position: relative;
+}
+
+.preview-content .callout::before {
+    content: attr(data-callout-type) ' ' attr(data-callout-title);
+    display: block;
+    font-weight: 600;
+    font-size: 0.95em;
+    margin-bottom: 8px;
+    text-transform: capitalize;
+}
+
+.preview-content .callout p {
+    margin: 8px 0;
+}
+
+.preview-content .callout p:first-of-type {
+    margin-top: 0;
+}
+
+.preview-content .callout p:last-child {
+    margin-bottom: 0;
+}
+
+/* Callout types */
+.preview-content .callout-note {
+    background-color: var(--callout-note-bg);
+    border-left-color: var(--callout-note-border);
+    color: var(--text-primary);
+}
+
+.preview-content .callout-note::before {
+    color: var(--callout-note-title);
+    content: '📝 ' attr(data-callout-title);
+}
+
+.preview-content .callout-tip {
+    background-color: var(--callout-tip-bg);
+    border-left-color: var(--callout-tip-border);
+    color: var(--text-primary);
+}
+
+.preview-content .callout-tip::before {
+    color: var(--callout-tip-title);
+    content: '💡 ' attr(data-callout-title);
+}
+
+.preview-content .callout-important {
+    background-color: var(--callout-important-bg);
+    border-left-color: var(--callout-important-border);
+    color: var(--text-primary);
+}
+
+.preview-content .callout-important::before {
+    color: var(--callout-important-title);
+    content: '❗ ' attr(data-callout-title);
+}
+
+.preview-content .callout-warning {
+    background-color: var(--callout-warning-bg);
+    border-left-color: var(--callout-warning-border);
+    color: var(--text-primary);
+}
+
+.preview-content .callout-warning::before {
+    color: var(--callout-warning-title);
+    content: '⚠️ ' attr(data-callout-title);
+}
+
+.preview-content .callout-caution {
+    background-color: var(--callout-caution-bg);
+    border-left-color: var(--callout-caution-border);
+    color: var(--text-primary);
+}
+
+.preview-content .callout-caution::before {
+    color: var(--callout-caution-title);
+    content: '🚨 ' attr(data-callout-title);
+}
+
+/* Lists */
+.preview-content ul,
+.preview-content ol {
+    margin: 12px 0;
+    padding-left: 24px;
+}
+
+.preview-content li {
+    margin: 4px 0;
+}
+
+/* Tables */
+.preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    border: 1px solid var(--table-border, var(--border-color));
+    border-radius: var(--radius-md, 6px);
+    overflow: hidden;
+    background-color: var(--table-bg, var(--bg-primary));
+}
+
+.preview-table thead {
+    background-color: var(--table-header-bg, var(--bg-secondary));
+}
+
+.preview-table th {
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--table-header-text, var(--text-primary));
+    border-bottom: 2px solid var(--table-border, var(--border-color));
+    border-right: 1px solid var(--table-border, var(--border-color));
+}
+
+.preview-table th:last-child {
+    border-right: none;
+}
+
+.preview-table td {
+    padding: 8px 12px;
+    color: var(--table-cell-text, var(--text-primary));
+    border-bottom: 1px solid var(--table-border, var(--border-color));
+    border-right: 1px solid var(--table-border, var(--border-color));
+}
+
+.preview-table td:last-child {
+    border-right: none;
+}
+
+.preview-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.preview-table tbody tr:hover {
+    background-color: var(--table-row-hover, var(--bg-hover));
+    transition: background-color 0.15s ease;
+}
+
+/* Images */
+.preview-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+    margin: 16px 0;
+}
+
+/* Horizontal Rule */
+.preview-content hr {
+    border: none;
+    border-top: 2px solid var(--border-color);
+    margin: 24px 0;
+}
+
+/* Task Lists */
+.preview-content input[type='checkbox'] {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+/* Math (KaTeX) */
+.preview-content .katex {
+    font-size: 1.1em;
+}
+
+/* ==========================================
+   Code Highlighting (highlight.js)
+   Using CSS variables for consistent theming
+   ========================================== */
+.preview-content .hljs {
+    background: var(--code-bg) !important;
+    color: var(--code-text) !important;
+    padding: 16px !important;
+    border-radius: var(--radius-md) !important;
+}
+
+/* Keywords */
+.preview-content .hljs-keyword,
+.preview-content .hljs-selector-tag,
+.preview-content .hljs-built_in,
+.preview-content .hljs-name {
+    color: var(--code-keyword) !important;
+}
+
+/* Strings */
+.preview-content .hljs-string,
+.preview-content .hljs-attr,
+.preview-content .hljs-symbol,
+.preview-content .hljs-bullet {
+    color: var(--code-string) !important;
+}
+
+/* Comments */
+.preview-content .hljs-comment,
+.preview-content .hljs-quote {
+    color: var(--code-comment) !important;
+    font-style: italic;
+}
+
+/* Functions */
+.preview-content .hljs-title,
+.preview-content .hljs-section,
+.preview-content .hljs-title.function_ {
+    color: var(--code-function) !important;
+}
+
+/* Numbers */
+.preview-content .hljs-number,
+.preview-content .hljs-literal {
+    color: var(--code-number) !important;
+}
+
+/* Types/Classes */
+.preview-content .hljs-type,
+.preview-content .hljs-class .hljs-title,
+.preview-content .hljs-title.class_ {
+    color: var(--syntax-italic) !important;
+}
+
+/* Meta/Preprocessor */
+.preview-content .hljs-meta,
+.preview-content .hljs-meta-keyword {
+    color: var(--code-keyword) !important;
+}
+
+/* Variables */
+.preview-content .hljs-variable,
+.preview-content .hljs-template-variable {
+    color: var(--code-text) !important;
+}
+
+/* Attributes */
+.preview-content .hljs-attribute {
+    color: var(--code-function) !important;
+}
+
+/* Scrollbar for code blocks */
+.preview-code-block::-webkit-scrollbar {
+    height: 8px;
+}
+
+.preview-code-block::-webkit-scrollbar-track {
+    background: var(--code-bg);
+}
+
+.preview-code-block::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.preview-code-block::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}

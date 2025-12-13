@@ -1,0 +1,101 @@
+/**
+ * Callout/Alert Styling for Live Preview
+ * GitHub-compatible callout blocks
+ */
+
+/* Callout line styling */
+.cm-callout-line {
+    position: relative;
+    padding-left: 16px;
+    margin: 4px 0;
+}
+
+/* Callout header widget */
+.cm-callout-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px 6px 0 0;
+    font-weight: 600;
+    font-size: 0.95em;
+    margin: 8px 0 0 0;
+    border-left: 4px solid;
+}
+
+.cm-callout-icon {
+    font-size: 1.2em;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.cm-callout-title {
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+/* Note - Blue */
+.cm-callout-header-note {
+    background-color: var(--callout-note-bg);
+    border-left-color: var(--callout-note-border);
+    color: var(--callout-note-title);
+}
+
+.cm-callout-line.cm-callout-note {
+    border-left: 4px solid var(--callout-note-border);
+    background-color: var(--callout-note-bg);
+}
+
+/* Tip - Green */
+.cm-callout-header-tip {
+    background-color: var(--callout-tip-bg);
+    border-left-color: var(--callout-tip-border);
+    color: var(--callout-tip-title);
+}
+
+.cm-callout-line.cm-callout-tip {
+    border-left: 4px solid var(--callout-tip-border);
+    background-color: var(--callout-tip-bg);
+}
+
+/* Important - Purple */
+.cm-callout-header-important {
+    background-color: var(--callout-important-bg);
+    border-left-color: var(--callout-important-border);
+    color: var(--callout-important-title);
+}
+
+.cm-callout-line.cm-callout-important {
+    border-left: 4px solid var(--callout-important-border);
+    background-color: var(--callout-important-bg);
+}
+
+/* Warning - Orange */
+.cm-callout-header-warning {
+    background-color: var(--callout-warning-bg);
+    border-left-color: var(--callout-warning-border);
+    color: var(--callout-warning-title);
+}
+
+.cm-callout-line.cm-callout-warning {
+    border-left: 4px solid var(--callout-warning-border);
+    background-color: var(--callout-warning-bg);
+}
+
+/* Caution - Red */
+.cm-callout-header-caution {
+    background-color: var(--callout-caution-bg);
+    border-left-color: var(--callout-caution-border);
+    color: var(--callout-caution-title);
+}
+
+.cm-callout-line.cm-callout-caution {
+    border-left: 4px solid var(--callout-caution-border);
+    background-color: var(--callout-caution-bg);
+}
+
+/* Smooth transitions */
+.cm-callout-header,
+.cm-callout-line {
+    transition: all 0.2s ease;
+}

@@ -1,0 +1,10 @@
+.cm-highlight {
+    background-color: var(--text-highlight-bg);
+    border-radius: 2px;
+    padding: 1px 0;
+}
+
+.cm-highlight:hover,
+.cm-highlight:focus {
+    background-color: var(--text-highlight-bg-active);
+}

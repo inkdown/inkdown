@@ -1,0 +1,71 @@
+/* Live Preview List Styles */
+
+/* Bullet widget - replaces markdown bullet with styled HTML bullet */
+.cm-list-bullet {
+    display: inline-block;
+    color: var(--cm-list-marker);
+    font-weight: bold;
+    margin-right: 0.5em;
+    vertical-align: middle;
+    line-height: 1;
+    font-size: 1.2em;
+}
+
+/* Alternative: use a circular dot instead of bullet character */
+.cm-list-bullet:empty::before {
+    content: '';
+    display: inline-block;
+    width: 0.4em;
+    height: 0.4em;
+    border-radius: 50%;
+    background-color: var(--cm-list-marker);
+    vertical-align: middle;
+}
+
+/* List marker styling for ordered lists */
+.cm-list-marker {
+    color: var(--cm-list-marker);
+    font-weight: 500;
+}
+
+/* Checklist checkbox styling */
+.cm-checklist-checkbox {
+    margin-right: 0.5em;
+    cursor: pointer;
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+    position: relative;
+    top: -0.05em;
+    accent-color: var(--interactive-accent);
+}
+
+/* List item indentation support */
+.cm-line:has(.cm-list-bullet),
+.cm-line:has(.cm-list-marker),
+.cm-line:has(.cm-checklist-checkbox) {
+    padding-left: 0;
+}
+
+/* Nested list support - add more indentation */
+.cm-line[data-indent='1'] {
+    padding-left: 2em;
+}
+
+.cm-line[data-indent='2'] {
+    padding-left: 4em;
+}
+
+.cm-line[data-indent='3'] {
+    padding-left: 6em;
+}
+
+.cm-line[data-indent='4'] {
+    padding-left: 8em;
+}
+
+/* Make list items look more like rendered HTML */
+.cm-line:has(.cm-list-bullet) .cm-list-bullet,
+.cm-line:has(.cm-checklist-checkbox) .cm-checklist-checkbox {
+    flex-shrink: 0;
+}

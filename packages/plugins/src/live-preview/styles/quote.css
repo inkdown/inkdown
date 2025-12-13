@@ -1,0 +1,27 @@
+.cm-quote-line {
+    position: relative;
+    font-style: italic;
+    color: var(--syntax-quote);
+    padding-left: 20px;
+}
+
+.cm-quote-line::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: var(--syntax-quote);
+    border-radius: 2px;
+    opacity: 0.8;
+}
+
+/* Nested quotes */
+.cm-quote-nested {
+    padding-left: 40px;
+}
+
+.cm-quote-nested::before {
+    left: 20px;
+}

@@ -1,0 +1,42 @@
+.status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 16px;
+    /*background: var(--bg-secondary);*/
+    /*border-top: 1px solid var(--border-color);*/
+    height: 28px;
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.status-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.status-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.status-bar-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.status-bar-item:hover {
+    color: var(--text-primary);
+    cursor: default;
+}
+
+/* Word count specific styles */
+.word-count-status {
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+}

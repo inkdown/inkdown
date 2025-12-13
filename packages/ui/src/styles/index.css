@@ -1,0 +1,15 @@
+/**
+ * @inkdown/ui Styles Index
+ *
+ * Import this file to get all UI component styles
+ */
+
+/* Base styles and variables should be imported from the desktop app */
+
+/* Component styles */
+@import './UI.css';
+@import './TabBar.css';
+@import './StatusBar.css';
+@import '../components/Preview.css';
+@import './WorkspaceSelector.css';
+@import './EmptyTabView.css';

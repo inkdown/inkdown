@@ -1,0 +1,93 @@
+/* Sidebar wrapper with resize and collapse functionality */
+.sidebar {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    transition:
+        width 0.2s ease,
+        min-width 0.2s ease;
+    overflow: hidden;
+}
+
+.sidebar.collapsed {
+    border-right: none;
+}
+
+.sidebar.resizing {
+    transition: none;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Resize handle */
+.sidebar-resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    cursor: col-resize;
+    background: transparent;
+    z-index: 10;
+    transition: background 0.15s ease;
+}
+
+.sidebar-resize-handle:hover,
+.sidebar.resizing .sidebar-resize-handle {
+    background: var(--color-primary);
+}
+
+/* Toggle button */
+.sidebar-toggle {
+    position: absolute;
+    top: 50%;
+    right: -12px;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 48px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    z-index: 100;
+    opacity: 0;
+}
+
+.sidebar:hover .sidebar-toggle,
+.sidebar-toggle:focus,
+.sidebar-toggle.collapsed {
+    opacity: 1;
+}
+
+.sidebar-toggle.collapsed {
+    right: -24px;
+    border-left: 1px solid var(--border-color);
+}
+
+.sidebar-toggle:hover {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-color: var(--color-primary);
+}
+
+.sidebar-toggle:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-primary-alpha, rgba(124, 58, 237, 0.3));
+}
+
+.sidebar-toggle svg {
+    transition: transform 0.2s ease;
+}

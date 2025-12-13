@@ -1,0 +1,99 @@
+/**
+ * Editor/Preview Display Modes
+ * Handles: side-by-side, editor-only, preview-only
+ */
+
+.editor-preview-container {
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-primary);
+}
+
+/* Side by side mode */
+.editor-preview-container.mode-side-by-side > * {
+    flex: 1;
+    min-width: 0;
+}
+
+.editor-preview-container.mode-side-by-side > .editor-container {
+    border-right: 1px solid var(--border-color);
+}
+
+/* ========================================== */
+/* Editor only mode - scrollbar at edge */
+/* ========================================== */
+.editor-preview-container.mode-editor {
+    overflow-y: auto;
+    /* Scroll on parent */
+    padding: 0 200px;
+    /* Horizontal spacing */
+}
+
+.editor-preview-container.mode-editor > .preview-container {
+    display: none;
+}
+
+.editor-preview-container.mode-editor > .editor-container {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    /* Container doesn't scroll - parent does */
+}
+
+.editor-preview-container.mode-editor > .editor-container .editor-wrapper {
+    /* Disable scroll on child - parent handles it */
+    overflow: visible !important;
+}
+
+.editor-preview-container.mode-editor > .editor-container .cm-scroller {
+    /* Disable scroll on CodeMirror - parent handles it */
+    overflow: visible !important;
+    height: auto !important;
+}
+
+/* Responsive max-width for editor-only mode */
+@media (min-width: 1600px) {
+    .editor-preview-container.mode-editor {
+        padding: 0 80px;
+        /* More spacing on larger screens */
+    }
+
+    .editor-preview-container.mode-editor > .editor-container {
+        max-width: 1000px;
+    }
+}
+
+/* ========================================== */
+/* Preview only mode - scrollbar at edge */
+/* ========================================== */
+.editor-preview-container.mode-preview {
+    overflow-y: auto;
+    /* Scroll on parent */
+    padding: 0 200px;
+    /* Horizontal spacing */
+}
+
+.editor-preview-container.mode-preview > .editor-container {
+    display: none;
+}
+
+.editor-preview-container.mode-preview > .preview-container {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    /* Disable scroll on child - parent handles it */
+    overflow: visible;
+}
+
+/* Responsive max-width for preview-only mode */
+@media (min-width: 1600px) {
+    .editor-preview-container.mode-preview {
+        padding: 0 80px;
+        /* More spacing on larger screens */
+    }
+
+    .editor-preview-container.mode-preview > .preview-container {
+        max-width: 1000px;
+    }
+}

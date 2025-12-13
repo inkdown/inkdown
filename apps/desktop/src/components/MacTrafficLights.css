@@ -1,0 +1,42 @@
+/* MacOS Traffic Lights */
+.mac-traffic-lights {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 8px 12px;
+    -webkit-app-region: no-drag;
+    /* Prevent clicks from passing through */
+    pointer-events: auto;
+}
+
+.mac-traffic-light {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    padding: 0;
+    transition:
+        filter 0.15s ease,
+        transform 0.1s ease;
+    /* Ensure clicks work properly */
+    pointer-events: auto;
+    /* Remove any default button styles */
+    background: none;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.mac-traffic-light:hover {
+    filter: brightness(0.9);
+}
+
+.mac-traffic-light:active {
+    filter: brightness(0.8);
+    transform: scale(0.95);
+}

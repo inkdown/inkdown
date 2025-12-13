@@ -1,0 +1,124 @@
+.workspace-link-dialog {
+    min-width: 480px;
+}
+
+.workspace-link-dialog .workspace-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.workspace-link-dialog .workspace-item {
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.workspace-link-dialog .workspace-item:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--accent-color);
+}
+
+.workspace-link-dialog .workspace-item.selected {
+    background: var(--accent-bg);
+    border-color: var(--accent-color);
+}
+
+.workspace-link-dialog .workspace-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.workspace-link-dialog .workspace-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.workspace-link-dialog .workspace-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 12px;
+}
+
+.workspace-link-dialog .workspace-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: var(--accent-color);
+    color: white;
+    border-radius: 4px;
+}
+
+.workspace-link-dialog .create-new-section {
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 8px;
+}
+
+.workspace-link-dialog .create-new-form {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.workspace-link-dialog .create-new-form input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.workspace-link-dialog .create-new-form input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.workspace-link-dialog .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.workspace-link-dialog .loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+    color: var(--text-muted);
+}
+
+.workspace-link-dialog .error-state {
+    padding: 20px;
+    background: var(--error-bg, rgba(255, 0, 0, 0.1));
+    border: 1px solid var(--error-border, rgba(255, 0, 0, 0.2));
+    border-radius: 6px;
+    color: var(--error-text, #ff4444);
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.workspace-link-dialog .empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.workspace-link-dialog .empty-state p {
+    margin-bottom: 16px;
+}

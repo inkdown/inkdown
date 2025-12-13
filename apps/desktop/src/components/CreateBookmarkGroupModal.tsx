@@ -1,0 +1,184 @@
+import { X } from 'lucide-react';
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
+import './CreateBookmarkGroupModal.css';
+
+// Preset colors for quick selection
+const PRESET_COLORS = [
+    '#ef4444', // Red
+    '#f97316', // Orange
+    '#eab308', // Yellow
+    '#22c55e', // Green
+    '#14b8a6', // Teal
+    '#3b82f6', // Blue
+    '#8b5cf6', // Purple
+    '#ec4899', // Pink
+];
+
+interface CreateBookmarkGroupModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onCreate: (name: string, description?: string, color?: string) => void;
+}
+
+export const CreateBookmarkGroupModal: React.FC<CreateBookmarkGroupModalProps> = ({
+    isOpen,
+    onClose,
+    onCreate,
+}) => {
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [color, setColor] = useState('#3b82f6'); // Default blue
+    const inputRef = useRef<HTMLInputElement>(null);
+    const colorInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            setName('');
+            setDescription('');
+            setColor('#3b82f6');
+            // Focus input after modal opens
+            setTimeout(() => {
+                inputRef.current?.focus();
+            }, 50);
+        }
+    }, [isOpen]);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const trimmedName = name.trim();
+        if (trimmedName) {
+            onCreate(trimmedName, description.trim() || undefined, color || undefined);
+            onClose();
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Escape') {
+            onClose();
+        }
+    };
+
+    const handleColorPickerClick = () => {
+        colorInputRef.current?.click();
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="create-bookmark-group-modal-backdrop" onClick={onClose}>
+            <div
+                className="create-bookmark-group-modal"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={handleKeyDown}
+            >
+                <div className="create-bookmark-group-modal-header">
+                    <h2>Create Bookmark Group</h2>
+                    <button
+                        type="button"
+                        className="create-bookmark-group-modal-close"
+                        onClick={onClose}
+                        aria-label="Close"
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit}>
+                    <div className="create-bookmark-group-modal-body">
+                        <div className="create-bookmark-group-form-group">
+                            <label htmlFor="group-name">
+                                Group Name <span className="required">*</span>
+                            </label>
+                            <input
+                                ref={inputRef}
+                                id="group-name"
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="e.g., Work, Personal, Reading List"
+                                required
+                            />
+                        </div>
+
+                        <div className="create-bookmark-group-form-group">
+                            <label htmlFor="group-description">Description (optional)</label>
+                            <textarea
+                                id="group-description"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="What is this group for?"
+                                rows={3}
+                            />
+                        </div>
+
+                        <div className="create-bookmark-group-form-group">
+                            {/* biome-ignore lint/a11y/noLabelWithoutControl: Color picker is a custom control */}
+                            <label>Group Color</label>
+                            <div className="color-picker-container">
+                                <div className="color-presets">
+                                    {PRESET_COLORS.map((presetColor) => (
+                                        <button
+                                            type="button"
+                                            key={presetColor}
+                                            className={`color-preset ${color === presetColor ? 'selected' : ''}`}
+                                            style={{ backgroundColor: presetColor }}
+                                            onClick={() => setColor(presetColor)}
+                                            title={presetColor}
+                                        />
+                                    ))}
+                                    <button
+                                        type="button"
+                                        className="color-preset custom"
+                                        onClick={handleColorPickerClick}
+                                        title="Choose custom color"
+                                    >
+                                        <span>+</span>
+                                    </button>
+                                </div>
+                                <div className="color-picker-row">
+                                    <div
+                                        className="color-preview"
+                                        style={{ backgroundColor: color }}
+                                        onClick={handleColorPickerClick}
+                                    />
+                                    <input
+                                        ref={colorInputRef}
+                                        type="color"
+                                        value={color}
+                                        onChange={(e) => setColor(e.target.value)}
+                                        className="color-input-native"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={color}
+                                        onChange={(e) => setColor(e.target.value)}
+                                        className="color-input-text"
+                                        placeholder="#3b82f6"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="create-bookmark-group-modal-footer">
+                        <button
+                            type="button"
+                            className="create-bookmark-group-button secondary"
+                            onClick={onClose}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="create-bookmark-group-button primary"
+                            disabled={!name.trim()}
+                        >
+                            Create Group
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};

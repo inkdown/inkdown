@@ -1,0 +1,23 @@
+# Important
+
+### Workflow
+
+1. After any changes in the code, aways run the lint, typecheck and check scripts for mantaining a clean codebase.
+2. After any changes in the code, aways update all the relevant tests.
+
+### Styling
+
+1. **Performance**: Use CSS files for complex layouts with many styles
+2. **Theming**: Always use CSS variables for colors, never hardcode hex values
+3. **Maintainability**: Keep styles close to their components using feature-based organization
+4. **Customization**: Make components themeable by using semantic CSS variable names
+
+
+### Documentation
+
+- Update relevant documentation files when adding new features or making significant changes
+- Documentation should be clear and concise, focusing on usage and examples
+- Documentation is for users, not developers - avoid internal implementation details unless necessary for understanding usage, except for `docs/contributing/`
+- Use markdown format for documentation files with proper headings, lists, and code blocks
+- Documentation is stored in the same repository as the codebase for easy access and versioning (e.g. `docs/` folder or README files in relevant directories)
+- Directories should not contain README files, all documentation should be centralized in a `docs/` folders- Documents that concern developers should be stored in `docs/contributing/`

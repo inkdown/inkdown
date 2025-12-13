@@ -1,0 +1,42 @@
+/* Icon styling */
+.has-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.lucide-icon {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.lucide-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+}
+
+.lucide-icon.fallback-icon {
+    font-size: 12px;
+    opacity: 0.6;
+}
+
+.lucide-icon.custom-icon svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+/* Status bar icon styling */
+.status-bar-item.has-icon {
+    gap: 6px;
+}
+
+.status-bar-item .lucide-icon {
+    color: var(--text-secondary);
+}
+
+.status-bar-item:hover .lucide-icon {
+    color: var(--text-primary);
+}

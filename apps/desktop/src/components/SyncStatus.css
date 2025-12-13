@@ -1,0 +1,90 @@
+.sync-status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    height: 100%;
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease;
+    border-radius: 4px;
+}
+
+.sync-status-item:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-hover);
+}
+
+.sync-status-item:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.sync-status-item.synced {
+    color: var(--color-success, #22c55e);
+}
+
+.sync-status-item.syncing {
+    color: var(--color-primary);
+}
+
+.sync-status-item.pending {
+    color: var(--color-warning, #f59e0b);
+}
+
+.sync-status-item.conflict {
+    color: var(--color-warning, #f59e0b);
+}
+
+.sync-status-item.error {
+    color: var(--color-danger);
+}
+
+.sync-status-item .spin {
+    animation: spin 2s linear infinite;
+}
+
+.sync-status-item .synced {
+    color: var(--color-success, #22c55e);
+}
+
+.sync-status-item .warning {
+    color: var(--color-warning, #f59e0b);
+}
+
+.sync-status-item .error {
+    color: var(--color-danger);
+}
+
+.sync-status-item .sync-count {
+    font-size: 10px;
+    background-color: var(--bg-active);
+    color: var(--text-primary);
+    padding: 0 4px;
+    border-radius: 4px;
+    min-width: 16px;
+    text-align: center;
+}
+
+.sync-status-item.pending .sync-count,
+.sync-status-item.conflict .sync-count {
+    background-color: var(--color-warning, #f59e0b);
+    color: white;
+}
+
+.sync-status-item.error .sync-count {
+    background-color: var(--color-danger);
+    color: white;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}

@@ -1,0 +1,453 @@
+/* ==============================================
+   CODEMIRROR EDITOR STYLES
+   ============================================== */
+
+/* === Editor Container === */
+.editor-container {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    background: var(--editor-bg) !important;
+}
+
+.editor-header {
+    padding: 8px 16px !important;
+    background: var(--bg-secondary) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    font-size: var(--font-size-xs) !important;
+    color: var(--text-secondary) !important;
+}
+
+.editor-file-path {
+    font-family: var(--font-family-mono) !important;
+}
+
+.editor-wrapper {
+    flex: 1 !important;
+    overflow: hidden !important;
+}
+
+/* === CodeMirror Base === */
+.cm-editor,
+.cm-editor.cm-focused,
+.cm-content,
+.cm-scroller,
+.cm-wrap,
+.cm-gutters {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.cm-editor {
+    height: 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    outline: none !important;
+    border: none !important;
+    background-color: var(--editor-bg) !important;
+    color: var(--editor-fg) !important;
+}
+
+.cm-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-wrap: break-word !important;
+    word-wrap: break-word !important;
+    white-space: pre-wrap !important;
+    caret-color: var(--editor-cursor) !important;
+    color: var(--editor-fg) !important;
+}
+
+.cm-line {
+    max-width: 100% !important;
+    overflow-wrap: break-word !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    white-space: pre-wrap !important;
+    padding: 0 !important;
+}
+
+/* Add vertical spacing for first and last lines */
+.cm-content > .cm-line:first-child {
+    padding-top: 24px !important;
+}
+
+.cm-content > .cm-line:last-child {
+    padding-bottom: 24px !important;
+}
+
+.cm-scroller {
+    width: 100% !important;
+    max-width: 100% !important;
+    font-family: var(--font-family) !important;
+    line-height: var(--line-height-base) !important;
+    overflow: auto !important;
+}
+
+/* Remove any possible borders/outlines from all CodeMirror elements */
+.cm-editor *,
+.cm-editor *:focus,
+.cm-editor *:active {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* === Selection === */
+.cm-focused .cm-selectionBackground,
+.cm-selectionBackground,
+.cm-editor ::selection {
+    background-color: var(--editor-selection) !important;
+}
+
+/* === Cursor === */
+.cm-cursor,
+.cm-dropCursor {
+    border-left-color: var(--editor-cursor) !important;
+    border-left-width: 2px !important;
+}
+
+/* === Active Line === */
+.cm-activeLine {
+    background-color: var(--editor-active-line) !important;
+}
+
+.cm-activeLineGutter {
+    background-color: var(--editor-active-line) !important;
+}
+
+/* === Line Numbers === */
+.cm-lineNumbers {
+    color: var(--editor-line-number) !important;
+    background-color: var(--editor-bg) !important;
+    border: none !important;
+}
+
+.cm-lineNumbers .cm-gutterElement {
+    color: var(--editor-line-number) !important;
+    padding: 0 8px !important;
+}
+
+.cm-gutters {
+    background-color: var(--editor-bg) !important;
+    color: var(--editor-line-number) !important;
+    border: none !important;
+    border-right: none !important;
+}
+
+/* === CodeMirror Scrollbar === */
+.cm-scroller::-webkit-scrollbar {
+    width: var(--scrollbar-width) !important;
+    height: var(--scrollbar-width) !important;
+}
+
+.cm-scroller::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+
+.cm-scroller::-webkit-scrollbar-thumb {
+    background: var(--editor-scrollbar) !important;
+    border-radius: var(--scrollbar-border-radius) !important;
+}
+
+.cm-scroller::-webkit-scrollbar-thumb:hover {
+    opacity: 0.8 !important;
+}
+
+/* ==============================================
+   SYNTAX HIGHLIGHTING - MARKDOWN
+   ============================================== */
+
+/* === Headers === */
+.cm-header {
+    font-weight: var(--heading-font-weight) !important;
+    line-height: var(--heading-line-height) !important;
+}
+
+.cm-header-1,
+.cm-heading-1 {
+    color: var(--heading-h1) !important;
+    font-size: var(--heading-h1-size) !important;
+}
+
+.cm-header-2,
+.cm-heading-2 {
+    color: var(--heading-h2) !important;
+    font-size: var(--heading-h2-size) !important;
+}
+
+.cm-header-3,
+.cm-heading-3 {
+    color: var(--heading-h3) !important;
+    font-size: var(--heading-h3-size) !important;
+}
+
+.cm-header-4,
+.cm-heading-4 {
+    color: var(--heading-h4) !important;
+    font-size: var(--heading-h4-size) !important;
+}
+
+.cm-header-5,
+.cm-heading-5 {
+    color: var(--heading-h5) !important;
+    font-size: var(--heading-h5-size) !important;
+}
+
+.cm-header-6,
+.cm-heading-6 {
+    color: var(--heading-h6) !important;
+    font-size: var(--heading-h6-size) !important;
+}
+
+/* === Text Formatting === */
+.cm-strong {
+    color: var(--syntax-strong) !important;
+    font-weight: bold !important;
+}
+
+.cm-em {
+    color: var(--syntax-emphasis) !important;
+    font-style: italic !important;
+}
+
+.cm-strikethrough {
+    color: var(--syntax-strikethrough) !important;
+    text-decoration: line-through !important;
+}
+
+.cm-link {
+    color: var(--syntax-link) !important;
+    text-decoration: underline !important;
+}
+
+.cm-url {
+    color: var(--syntax-url) !important;
+}
+
+/* === Inline Code === */
+.cm-inline-code,
+.cm-monospace {
+    color: var(--syntax-monospace) !important;
+    background-color: var(--code-bg) !important;
+    font-family: var(--font-family-mono) !important;
+    font-size: var(--code-font-size) !important;
+    padding: var(--code-padding) !important;
+    border-radius: var(--code-border-radius) !important;
+}
+
+/* === Markdown Formatting Marks === */
+/* Symbols like #, **, __, etc. should not have backgrounds */
+/* These rules must come AFTER inline code to override them */
+.cm-formatting,
+.cm-formatting.cm-monospace,
+.cm-meta,
+.cm-meta.cm-monospace {
+    background-color: transparent !important;
+    background: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    color: var(--text-muted) !important;
+    font-family: var(--font-family) !important;
+}
+
+/* Heading marks should match the size of their heading */
+.cm-heading-1 .cm-formatting,
+.cm-heading-1 .cm-meta {
+    font-size: var(--heading-h1-size) !important;
+    font-weight: var(--heading-font-weight) !important;
+}
+
+.cm-heading-2 .cm-formatting,
+.cm-heading-2 .cm-meta {
+    font-size: var(--heading-h2-size) !important;
+    font-weight: var(--heading-font-weight) !important;
+}
+
+.cm-heading-3 .cm-formatting,
+.cm-heading-3 .cm-meta {
+    font-size: var(--heading-h3-size) !important;
+    font-weight: var(--heading-font-weight) !important;
+}
+
+.cm-heading-4 .cm-formatting,
+.cm-heading-4 .cm-meta {
+    font-size: var(--heading-h4-size) !important;
+    font-weight: var(--heading-font-weight) !important;
+}
+
+.cm-heading-5 .cm-formatting,
+.cm-heading-5 .cm-meta {
+    font-size: var(--heading-h5-size) !important;
+    font-weight: var(--heading-font-weight) !important;
+}
+
+.cm-heading-6 .cm-formatting,
+.cm-heading-6 .cm-meta {
+    font-size: var(--heading-h6-size) !important;
+    font-weight: var(--heading-font-weight) !important;
+}
+
+/* === Quote === */
+.cm-quote {
+    color: var(--syntax-quote) !important;
+    font-style: italic !important;
+    border-left: var(--quote-border-width) solid var(--syntax-quote) !important;
+    padding-left: var(--quote-padding-left) !important;
+    margin-left: var(--quote-margin-left) !important;
+}
+
+/* === List === */
+.cm-list {
+    color: var(--syntax-list) !important;
+}
+
+/* === Horizontal Rule === */
+.cm-hr {
+    color: var(--syntax-separator) !important;
+}
+
+/* ==============================================
+   SYNTAX HIGHLIGHTING - CODE BLOCKS
+   ============================================== */
+
+.cm-keyword {
+    color: var(--code-keyword) !important;
+    font-weight: 500 !important;
+}
+
+.cm-string {
+    color: var(--code-string) !important;
+}
+
+.cm-number {
+    color: var(--code-number) !important;
+}
+
+.cm-comment {
+    color: var(--code-comment) !important;
+    font-style: italic !important;
+}
+
+.cm-atom {
+    color: var(--code-atom) !important;
+}
+
+.cm-bool {
+    color: var(--code-bool) !important;
+}
+
+.cm-regexp {
+    color: var(--code-regexp) !important;
+}
+
+.cm-meta {
+    color: var(--code-meta) !important;
+}
+
+.cm-punctuation,
+.cm-bracket {
+    color: var(--code-punctuation) !important;
+}
+
+.cm-operator {
+    color: var(--code-operator) !important;
+}
+
+.cm-variableName,
+.cm-function {
+    color: var(--code-function) !important;
+}
+
+.cm-propertyName {
+    color: var(--code-function) !important;
+}
+
+.cm-typeName,
+.cm-className {
+    color: var(--syntax-emphasis) !important;
+}
+
+.cm-definition {
+    color: var(--code-function) !important;
+}
+
+.cm-tagName {
+    color: var(--code-keyword) !important;
+}
+
+.cm-attributeName {
+    color: var(--code-function) !important;
+}
+
+.cm-attributeValue {
+    color: var(--code-string) !important;
+}
+
+/* ==============================================
+   CODEMIRROR THEME OVERRIDES
+   Force our theme over any built-in themes
+   ============================================== */
+
+/* Override oneDark and any other built-in themes */
+.cm-editor.ͼo,
+.cm-editor.ͼ1,
+.cm-editor.ͼ3,
+.cm-editor.ͼ20 {
+    background-color: var(--editor-bg) !important;
+    color: var(--editor-fg) !important;
+}
+
+.cm-editor.ͼo .cm-scroller,
+.cm-editor.ͼo .cm-content,
+.cm-editor.ͼo .cm-gutters {
+    background-color: var(--editor-bg) !important;
+    color: var(--editor-fg) !important;
+}
+
+.cm-editor.ͼo .cm-activeLine,
+.cm-editor.ͼo .cm-activeLineGutter {
+    background-color: var(--editor-active-line) !important;
+}
+
+.cm-editor.ͼo .cm-selectionBackground {
+    background-color: var(--editor-selection) !important;
+}
+
+/* Override Lezer highlighting classes */
+.ͼ11 {
+    color: var(--syntax-header) !important;
+    font-weight: var(--heading-font-weight) !important;
+}
+
+.ͼ13 {
+    color: var(--syntax-header) !important;
+    opacity: 0.6 !important;
+}
+
+.ͼr {
+    color: var(--code-function) !important;
+    font-family: var(--font-family-mono) !important;
+}
+
+.ͼs {
+    color: var(--code-keyword) !important;
+}
+
+.ͼt {
+    color: var(--code-string) !important;
+}
+
+.ͼu {
+    color: var(--code-comment) !important;
+    font-style: italic !important;
+}
+
+.ͼv {
+    color: var(--code-function) !important;
+}
+
+.ͼw {
+    color: var(--code-number) !important;
+}

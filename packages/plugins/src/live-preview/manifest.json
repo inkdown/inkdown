@@ -1,0 +1,11 @@
+{
+    "id": "live-preview",
+    "name": "Live Preview",
+    "version": "1.0.0",
+    "minAppVersion": "0.1.0",
+    "description": "Renders markdown elements in real-time while editing",
+    "author": "Inkdown Team",
+    "authorUrl": "https://github.com/inkdown",
+    "repo": "inkdown/live-preview",
+    "license": "MIT"
+}

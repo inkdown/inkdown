@@ -1,0 +1,97 @@
+/**
+ * Table styling for Live Preview - Obsidian-like style
+ * Uses widget replacements to hide markdown syntax and create clean borders
+ * v8 - Reverted to Non-Flexbox Stable Version
+ */
+
+/* 
+ * CRITICAL: Constrain table rows to content width 
+ * width: fit-content ensures borders only span the actual text width
+ */
+.cm-line:has(.cm-table-pipe-widget),
+.cm-line:has(.cm-table-separator-text) {
+    width: fit-content !important;
+    min-width: min-content;
+    padding-right: 0 !important;
+    padding-left: 2px !important;
+    /* Minimal left padding */
+    border-bottom: 1px solid var(--table-border, rgba(128, 128, 128, 0.2));
+    /* Enforce strict height for alignment */
+    line-height: 24px !important;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+    box-sizing: content-box;
+    display: block !important;
+    /* Force block layout to prevent horizontal stacking */
+}
+
+/* 
+ * Pipe Widget
+ * Must match the total height of the line plus overlap to connect borders
+ */
+.cm-table-pipe-widget {
+    display: inline-block;
+    width: 1px;
+    height: 30px;
+    /* Taller to ensure overlap with top and bottom borders */
+    background-color: var(--table-border, rgba(128, 128, 128, 0.25));
+    margin: 0 8px;
+    vertical-align: top;
+    /* Pull up to cross the border boundary */
+    position: relative;
+    top: -3px;
+}
+
+/* FIX: Remove margin from first/last pipe to prevent overextension */
+.cm-table-pipe-last {
+    margin-right: 0 !important;
+}
+
+.cm-table-pipe-first {
+    margin-left: 0 !important;
+}
+
+/* 
+ * Separator Line Logic
+ */
+.cm-table-separator-text {
+    color: transparent !important;
+    font-size: 0;
+    display: inline-block;
+}
+
+/* The separator row itself */
+.cm-line:has(.cm-table-separator-text) {
+    height: 1px !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    line-height: 0 !important;
+    border-bottom: 1px solid var(--table-border, rgba(128, 128, 128, 0.4)) !important;
+    opacity: 1 !important;
+    overflow: hidden;
+}
+
+/* Remove bottom border from HEADER row so it doesn't double up with separator */
+.cm-line.cm-table-header-row {
+    border-bottom: none !important;
+}
+
+/* Header styling */
+.cm-table-header-row {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Hover effect */
+.cm-line:has(.cm-table-pipe-widget):hover {
+    background-color: var(--table-row-hover, rgba(128, 128, 128, 0.05));
+    border-radius: 0;
+}
+
+/* Fallbacks */
+@supports not (selector(:has(*))) {
+    .cm-table-pipe-widget {
+        background-color: rgba(128, 128, 128, 0.3);
+    }
+}

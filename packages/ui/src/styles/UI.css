@@ -1,0 +1,334 @@
+/**
+ * UI Components CSS
+ *
+ * Styled components for plugin settings interfaces
+ * All components use theme CSS variables for consistent styling
+ */
+
+/* ============================================
+   Setting Component
+   ============================================ */
+.ink-setting {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
+    gap: 16px;
+}
+
+.ink-setting:last-child {
+    border-bottom: none;
+}
+
+.ink-setting-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.ink-setting-name {
+    font-size: var(--font-size-md);
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.ink-setting-desc {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.ink-setting-control {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ============================================
+   Setting Section Component
+   ============================================ */
+.ink-setting-section {
+    margin-bottom: 24px;
+}
+
+.ink-setting-section:last-child {
+    margin-bottom: 0;
+}
+
+.ink-setting-section-title {
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 4px;
+}
+
+.ink-setting-section-desc {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin: 0 0 12px;
+    line-height: 1.5;
+}
+
+.ink-setting-section-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 4px 16px;
+}
+
+/* ============================================
+   Input Component
+   ============================================ */
+.ink-input {
+    min-width: 160px;
+    padding: 6px 10px;
+    background: var(--input-bg, var(--bg-secondary));
+    border: 1px solid var(--input-border, var(--border-color));
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    transition: border-color var(--transition-fast);
+}
+
+.ink-input:focus {
+    outline: none;
+    border-color: var(--input-focus-border, var(--color-primary));
+}
+
+.ink-input::placeholder {
+    color: var(--text-muted);
+}
+
+.ink-input-small {
+    min-width: auto;
+    width: 60px;
+    text-align: center;
+}
+
+/* ============================================
+   Select Component
+   ============================================ */
+.ink-select {
+    min-width: 160px;
+    padding: 6px 10px;
+    background: var(--input-bg, var(--bg-secondary));
+    border: 1px solid var(--input-border, var(--border-color));
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color var(--transition-fast);
+}
+
+.ink-select:focus {
+    outline: none;
+    border-color: var(--input-focus-border, var(--color-primary));
+}
+
+.ink-select option {
+    background: var(--input-bg, var(--bg-secondary));
+    color: var(--text-primary);
+    padding: 8px;
+}
+
+/* ============================================
+   Toggle Component
+   ============================================ */
+.ink-toggle {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    padding: 0;
+}
+
+.ink-toggle:hover {
+    border-color: var(--text-muted);
+}
+
+.ink-toggle-checked {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.ink-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: var(--text-secondary);
+    border-radius: 50%;
+    transition: all var(--transition-fast);
+}
+
+.ink-toggle-checked .ink-toggle-thumb {
+    left: calc(100% - 16px);
+    background: white;
+}
+
+.ink-toggle-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ============================================
+   Button Component
+   ============================================ */
+.ink-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.ink-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Button Sizes */
+.ink-button-small {
+    padding: 4px 10px;
+    font-size: var(--font-size-xs);
+}
+
+.ink-button-medium {
+    padding: 6px 14px;
+    font-size: var(--font-size-sm);
+}
+
+.ink-button-large {
+    padding: 8px 18px;
+    font-size: var(--font-size-md);
+}
+
+/* Button Variants */
+.ink-button-primary {
+    background: var(--color-primary);
+    color: white;
+}
+
+.ink-button-primary:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+}
+
+.ink-button-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.ink-button-secondary:hover:not(:disabled) {
+    background: var(--border-color);
+}
+
+.ink-button-success {
+    background: var(--color-success, #3d9140);
+    color: white;
+}
+
+.ink-button-success:hover:not(:disabled) {
+    filter: brightness(0.9);
+}
+
+.ink-button-danger {
+    background: var(--color-danger, #cf222e);
+    color: white;
+}
+
+.ink-button-danger:hover:not(:disabled) {
+    filter: brightness(0.9);
+}
+
+/* ============================================
+   Slider Component
+   ============================================ */
+.ink-slider-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 160px;
+}
+
+.ink-slider {
+    flex: 1;
+    height: 4px;
+    background: var(--bg-secondary);
+    border-radius: 2px;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+.ink-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--color-primary);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+}
+
+.ink-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+}
+
+.ink-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: var(--color-primary);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.ink-slider-value {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    min-width: 40px;
+    text-align: right;
+}
+
+/* ============================================
+   TextArea Component
+   ============================================ */
+.ink-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 8px 10px;
+    background: var(--input-bg, var(--bg-secondary));
+    border: 1px solid var(--input-border, var(--border-color));
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    line-height: 1.5;
+    resize: vertical;
+    transition: border-color var(--transition-fast);
+}
+
+.ink-textarea:focus {
+    outline: none;
+    border-color: var(--input-focus-border, var(--color-primary));
+}
+
+.ink-textarea::placeholder {
+    color: var(--text-muted);
+}

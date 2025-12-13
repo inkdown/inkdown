@@ -1,0 +1,221 @@
+/* Shortcuts Settings */
+.shortcuts-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Search */
+.shortcuts-search {
+    padding-bottom: 8px;
+}
+
+.shortcuts-search-input {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    outline: none;
+    transition: all var(--transition-fast);
+}
+
+.shortcuts-search-input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-alpha, rgba(124, 58, 237, 0.1));
+}
+
+.shortcuts-search-input::placeholder {
+    color: var(--text-muted);
+}
+
+.shortcuts-empty {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 32px;
+}
+
+/* Category */
+.shortcut-category {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.shortcut-category-title {
+    margin: 0 0 8px 0;
+    padding-bottom: 6px;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Shortcut Item */
+.shortcut-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast);
+}
+
+.shortcut-item:hover {
+    background: var(--bg-secondary);
+}
+
+.shortcut-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.shortcut-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.shortcut-item-name {
+    font-size: var(--font-size-md);
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.shortcut-item-id {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    font-family: var(--font-family-mono);
+}
+
+/* Badge */
+.shortcut-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-radius: var(--radius-sm);
+}
+
+.shortcut-badge.core {
+    background: var(--color-primary);
+    color: white;
+}
+
+.shortcut-badge.plugin {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+/* Shortcut Keys Display */
+.shortcut-keys-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.shortcut-keys {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    min-width: 80px;
+    justify-content: center;
+}
+
+.shortcut-keys:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--color-primary);
+}
+
+.shortcut-keys.recording {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.shortcut-keys.modified {
+    border-color: var(--color-warning);
+}
+
+/* Reset Button */
+.shortcut-reset-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    opacity: 0;
+    transition: all var(--transition-fast);
+}
+
+.shortcut-item:hover .shortcut-reset-btn {
+    opacity: 1;
+}
+
+.shortcut-reset-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.shortcut-reset-btn:disabled {
+    opacity: 0;
+    cursor: default;
+}
+
+/* Conflict Warning */
+.shortcut-conflict {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    color: var(--color-error);
+}
+
+/* Customized indicator */
+.shortcut-customized {
+    width: 6px;
+    height: 6px;
+    background: var(--color-warning);
+    border-radius: 50%;
+    flex-shrink: 0;
+}
