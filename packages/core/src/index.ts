@@ -6,6 +6,17 @@
 
 import './extensions'; // Load DOM extensions
 
+// Error handling
+export {
+    AppError,
+    FileSystemError,
+    ConfigError,
+    ValidationError,
+    NetworkError,
+    isAppError,
+    toAppError,
+} from './errors/AppError';
+
 // Core classes
 export { App } from './App';
 export { CommunityPluginManager } from './CommunityPluginManager';
