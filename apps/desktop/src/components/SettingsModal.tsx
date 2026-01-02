@@ -440,38 +440,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         async (enabled: boolean) => {
             if (!enabled) {
                 await app.syncManager.disable();
-                setIsSyncEnabled(false); // Update local state immediately
+                setIsSyncEnabled(false);
                 forceUpdate((v) => v + 1);
                 return;
             }
 
-            // If enabling, check if we need encryption setup
-            if (isLoggedIn) {
-                try {
-                    // Check if keys exist on server to decide setup vs unlock
-                    const hasKeys = await app.syncManager.hasKeysOnServer();
+            // VALIDATION 1: Must be logged in
+            if (!isLoggedIn) {
+                await app.dialog.alert({
+                    title: 'Login Required',
+                    message: 'Please log in first to enable sync. Go to the Sync section and click "Login".',
+                });
+                return;
+            }
 
-                    if (hasKeys) {
-                        setEncryptionMode('unlock');
-                    } else {
-                        setEncryptionMode('setup');
-                    }
+            // VALIDATION 2: Must have workspace linked
+            const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
+            if (!currentWorkspaceId) {
+                await app.dialog.alert({
+                    title: 'Workspace Required',
+                    message: 'Please link a workspace first before enabling sync. Click "Link Workspace" below.',
+                });
+                return;
+            }
 
-                    setShowEncryptionModal(true);
-                } catch (error: any) {
-                    console.error('Failed to prepare sync enablement:', error);
-                    // Fallback to unlock if check fails
+            // If enabling and logged in with workspace, check if we need encryption setup
+            try {
+                const hasKeys = await app.syncManager.hasKeysOnServer();
+                if (hasKeys) {
                     setEncryptionMode('unlock');
-                    setShowEncryptionModal(true);
+                } else {
+                    setEncryptionMode('setup');
                 }
-            } else {
-                // Not logged in, just enable (will prompt login later or show login link)
-                await app.syncManager.enable();
-                setIsSyncEnabled(true); // Update local state immediately
-                forceUpdate((v) => v + 1);
+                setShowEncryptionModal(true);
+            } catch (error: any) {
+                console.error('Failed to prepare sync enablement:', error);
+                setEncryptionMode('unlock');
+                setShowEncryptionModal(true);
             }
         },
-        [app.syncManager, isLoggedIn],
+        [app.syncManager, app.dialog, isLoggedIn],
     );
 
     const handleEncryptionConfirm = useCallback(
