@@ -580,6 +580,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 setIsSyncEnabled(true); // Update local state immediately
             }
             
+            // Refresh file tree to show newly synced files
+            await app.workspace.refreshFileTree();
+            
             // Force re-render of sync status
             forceUpdate((v) => v + 1);
         } catch (error: any) {
@@ -601,6 +604,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 await app.syncManager.enable();
                 setIsSyncEnabled(true); // Update local state immediately
             }
+            
+            // Refresh file tree to show newly synced files
+            await app.workspace.refreshFileTree();
             
             // Force re-render of sync status
             forceUpdate((v) => v + 1);
