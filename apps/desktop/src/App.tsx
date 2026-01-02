@@ -553,6 +553,23 @@ const AppContent: React.FC = () => {
         };
     }, [app, loadFiles]);
 
+    // Listen for file-delete events to close tabs of deleted files
+    useEffect(() => {
+        const handleFileDelete = (file: any) => {
+            // Find and close any tabs with this file path
+            const tabsToClose = tabs.filter((tab) => tab.filePath === file.path);
+            for (const tab of tabsToClose) {
+                closeTab(tab.id);
+            }
+        };
+
+        app.workspace.on('file-delete', handleFileDelete);
+
+        return () => {
+            app.workspace.off('file-delete', handleFileDelete);
+        };
+    }, [app, tabs, closeTab]);
+
     const handleOpenDialog = useCallback(async (): Promise<string | null> => {
         const selected = await openDialog({
             directory: true,
