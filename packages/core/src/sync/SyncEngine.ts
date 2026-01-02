@@ -118,19 +118,26 @@ export class SyncEngine extends Events {
 
             // Try to restore encryption key from storage
             if (!this.encryptionManager.isInitialized()) {
-                const token = await this.app.syncManager.tokenRefresh.ensureValidToken();
-                const restored = await this.encryptionManager.restoreFromStorage(token);
+                // Try to restore from last-used password in memory first
+                const lastPassword = this.app.syncManager.getLastPassword();
 
-                if (!restored) {
-                    this.logger.warn(
-                        'Encryption key not found in storage. User needs to enter password.',
-                    );
-                    // We can't proceed without encryption key
-                    // The UI should prompt the user
+                if (lastPassword) {
+                    const restored = await this.encryptionManager.restoreFromPassword(lastPassword);
+
+                    if (restored) {
+                        this.logger.info('Encryption key restored from password');
+                    } else {
+                        this.logger.warn('Failed to restore - password may have changed');
+                        this.isRunning = false;
+                        this.trigger('encryption-required');
+                        return;
+                    }
+                } else {
+                    this.logger.warn('No password available - user needs to enter password');
                     this.isRunning = false;
+                    this.trigger('encryption-required');
                     return;
                 }
-                this.logger.info('Encryption key restored successfully.');
             }
 
             // 1. Initialize selective sync

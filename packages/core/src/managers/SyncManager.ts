@@ -34,6 +34,9 @@ export class SyncManager {
     private workspaceSyncService: WorkspaceSyncService | null = null;
     private currentWorkspaceId: string | undefined;
     private workspaceLinks: WorkspaceLink[] = [];
+    
+    // Password caching for auto-restore (in memory only, not persisted)
+    private lastPassword: string | null = null;
 
     constructor(app: App) {
         this.app = app;
@@ -148,6 +151,10 @@ export class SyncManager {
         this.stopSync();
 
         this.enabled = false;
+        
+        // Clear cached password
+        this.lastPassword = null;
+        
         await this.saveConfig({ enabled: false });
     }
 
@@ -290,16 +297,27 @@ export class SyncManager {
     }
 
     /**
+     * Get cached password (for auto-restore)
+     */
+    getLastPassword(): string | null {
+        return this.lastPassword;
+    }
+
+    /**
+     * Set cached password (internal use)
+     */
+    private setLastPassword(password: string): void {
+        this.lastPassword = password;
+    }
+
+    /**
      * Setup encryption with a dedicated password (new user/first device)
      */
     async setupEncryption(password: string): Promise<void> {
         await this.encryptionManager.setupEncryption(password);
 
-        // Save to storage for auto-restore
-        const token = this.tokenManager.getToken();
-        if (token) {
-            await this.encryptionManager.saveToStorage(token);
-        }
+        // Cache password in memory for auto-restore
+        this.setLastPassword(password);
 
         await this.enable();
     }
@@ -310,11 +328,8 @@ export class SyncManager {
     async unlockEncryption(password: string): Promise<void> {
         await this.encryptionManager.syncKeys(password);
 
-        // Save to storage for auto-restore
-        const token = this.tokenManager.getToken();
-        if (token) {
-            await this.encryptionManager.saveToStorage(token);
-        }
+        // Cache password in memory for auto-restore
+        this.setLastPassword(password);
 
         await this.enable();
     }
@@ -338,6 +353,9 @@ export class SyncManager {
         this.encryptionManager.clearKeys(); // Clear keys from memory
         this.encryptionManager.clearStorage(); // Clear keys from storage
         this.stopSync();
+        
+        // Clear cached password
+        this.lastPassword = null;
 
         // Clear local sync data to prevent orphaned mappings on next login
         try {
