@@ -223,6 +223,34 @@ const AppContent: React.FC = () => {
         }
     }, [app, loading]);
 
+    // Check workspace setup on app startup (only after workspace is loaded)
+    useEffect(() => {
+        const checkWorkspaceSetup = async () => {
+            // Only check if workspace is loaded and we're not loading
+            if (!rootPath || loading) return;
+            
+            try {
+                const syncConfig = await app.configManager.loadConfig<SyncConfig>('sync');
+                const isLoggedIn = app.syncManager.isLoggedIn();
+                const hasEncryption = app.syncManager.encryptionManager.isInitialized();
+                const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
+                
+                // If sync enabled, logged in, has encryption, but no workspace
+                if (syncConfig?.enabled && isLoggedIn && hasEncryption && !currentWorkspaceId) {
+                    console.log('[App] Sync enabled but no workspace linked - prompting user');
+                    // Show workspace selection dialog
+                    setShowWorkspaceLinkDialog(true);
+                }
+            } catch (error: any) {
+                console.error('Failed to check workspace setup:', error);
+            }
+        };
+        
+        // Delay check slightly to let app fully initialize
+        const timer = setTimeout(checkWorkspaceSetup, 1000);
+        return () => clearTimeout(timer);
+    }, [app, rootPath, loading]);
+
     // Handler to change view mode and save to config
     const handleViewModeChange = useCallback(
         async (mode: ViewMode) => {
