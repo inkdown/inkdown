@@ -470,9 +470,6 @@ export class SyncManager {
      * Link a local directory path to a remote workspace
      */
     async linkWorkspace(localPath: string, workspaceId: string): Promise<void> {
-        // Check if we're switching workspaces (not first-time link)
-        const isWorkspaceChange = this.currentWorkspaceId && this.currentWorkspaceId !== workspaceId;
-        
         // Remove any existing link for this path
         this.workspaceLinks = this.workspaceLinks.filter((l) => l.localPath !== localPath);
 
@@ -493,11 +490,10 @@ export class SyncManager {
             currentWorkspaceId: workspaceId,
         });
 
-        // If switching workspaces, clear old mappings to avoid conflicts
-        if (isWorkspaceChange) {
-            this.logger.info('Workspace changed, clearing local database mappings...');
-            await this.localDatabase.clearAllMappings();
-        }
+        // Always clear mappings when linking - ensures fresh sync
+        // Old mappings may point to wrong paths from previous folder
+        this.logger.info('Clearing local database mappings for fresh sync...');
+        await this.localDatabase.clearAllMappings();
 
         // Update sync engine if running and trigger sync to pull notes
         if (this.syncEngine) {
