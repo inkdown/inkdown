@@ -476,6 +476,13 @@ export class SyncManager {
      * Link a local directory path to a remote workspace
      */
     async linkWorkspace(localPath: string, workspaceId: string): Promise<void> {
+        // Ensure database is initialized before any operations
+        if (!this.localDatabase['db']) {
+            this.logger.info('Initializing local database before linking...');
+            const config = await this.app.configManager.loadConfig<SyncConfig>('sync');
+            await this.localDatabase.init(config?.localDbName);
+        }
+
         // Remove any existing link for this path
         this.workspaceLinks = this.workspaceLinks.filter((l) => l.localPath !== localPath);
 
