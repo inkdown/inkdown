@@ -13,8 +13,8 @@
         "./styles/themes/light": "./src/styles/themes/default-light.css"
     },
     "scripts": {
-        "typecheck": "tsc --noEmit",
-        "build": "tsc",
+        "typecheck": "bunx tsc --noEmit",
+        "build": "bunx tsc",
         "clean": "rm -rf dist"
     },
     "dependencies": {

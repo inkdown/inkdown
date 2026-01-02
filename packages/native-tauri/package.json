@@ -12,7 +12,7 @@
         }
     },
     "scripts": {
-        "typecheck": "tsc --noEmit"
+        "typecheck": "bunx tsc --noEmit"
     },
     "dependencies": {
         "@inkdown/core": "workspace:*",

@@ -7,6 +7,7 @@
 import { vi, beforeEach, afterEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import 'fake-indexeddb/auto'; // Polyfill IndexedDB for tests
+import { IDBFactory } from 'fake-indexeddb';
 
 // =============================================================================
 // Global Mocks
@@ -59,8 +60,10 @@ vi.mock('@inkdown/core/native', () => ({
 /**
  * Mock window/document APIs not available in Node
  */
-const mockElement = {
+const createMockElement = (): any => ({
     style: {},
+    id: '',
+    className: '',
     classList: {
         add: vi.fn(),
         remove: vi.fn(),
@@ -78,52 +81,94 @@ const mockElement = {
     removeEventListener: vi.fn(),
     textContent: '',
     innerHTML: '',
-    createEl: vi.fn().mockReturnThis(),
-    createDiv: vi.fn().mockReturnThis(),
-    addClass: vi.fn().mockReturnThis(),
-    setText: vi.fn().mockReturnThis(),
+    createEl: vi.fn(function() { return createMockElement(); }),
+    createDiv: vi.fn(function() { return createMockElement(); }),
+    addClass: vi.fn(function() { return this; }),
+    setText: vi.fn(function() { return this; }),
     empty: vi.fn(),
-};
-
-vi.stubGlobal('document', {
-    createElement: vi.fn().mockReturnValue({ ...mockElement }),
-    createDiv: vi.fn().mockReturnValue({ ...mockElement }),
-    getElementById: vi.fn().mockReturnValue(null),
-    querySelector: vi.fn().mockReturnValue(null),
-    querySelectorAll: vi.fn().mockReturnValue([]),
-    documentElement: {
-        ...mockElement,
-        className: '',
-    },
-    head: {
-        appendChild: vi.fn(),
-        removeChild: vi.fn(),
-    },
-    body: {
-        ...mockElement,
-    },
 });
 
+// Note: jsdom already provides document, but we need to ensure createElement works
+// We should NOT stubGlobal document in jsdom environment
+// Instead, let jsdom handle it naturally
+
+// Extend HTMLElement prototype with helper methods
+if (typeof HTMLElement !== 'undefined') {
+    HTMLElement.prototype.createEl = function(tag: string, options?: any) {
+        const el = document.createElement(tag);
+        if (options?.cls) {
+            el.className = options.cls;
+        }
+        if (options?.text) {
+            el.textContent = options.text;
+        }
+        if (options?.attr) {
+            for (const [key, value] of Object.entries(options.attr)) {
+                el.setAttribute(key, value as string);
+            }
+        }
+        this.appendChild(el);
+        return el;
+    };
+    
+    HTMLElement.prototype.createDiv = function(options?: any) {
+        return this.createEl('div', options);
+    };
+    
+    HTMLElement.prototype.addClass = function(className: string) {
+        this.classList.add(className);
+        return this;
+    };
+    
+    HTMLElement.prototype.setText = function(text: string) {
+        this.textContent = text;
+        return this;
+    };
+    
+    HTMLElement.prototype.empty = function() {
+        this.innerHTML = '';
+    };
+}
+
+// Also add to Document.prototype
+if (typeof Document !== 'undefined') {
+    Document.prototype.createEl = function(tag: string, options?: any) {
+        const el = document.createElement(tag);
+        if (options?.cls) {
+            el.className = options.cls;
+        }
+        if (options?.text) {
+            el.textContent = options.text;
+        }
+        if (options?.attr) {
+            for (const [key, value] of Object.entries(options.attr)) {
+                el.setAttribute(key, value as string);
+            }
+        }
+        return el;
+    };
+    
+    Document.prototype.createDiv = function(options?: any) {
+        return this.createEl('div', options);
+    };
+}
+
 vi.stubGlobal('window', {
+    ...global.window,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-    setInterval: vi.fn().mockReturnValue(1),
-    clearInterval: vi.fn(),
-    setTimeout: vi.fn().mockReturnValue(1),
-    clearTimeout: vi.fn(),
-    requestAnimationFrame: vi.fn(),
+    setInterval: vi.fn((...args: any[]) => global.setInterval(...args)),
+    clearInterval: vi.fn((...args: any[]) => global.clearInterval(...args)),
+    setTimeout: vi.fn((...args: any[]) => global.setTimeout(...args)),
+    clearTimeout: vi.fn((...args: any[]) => global.clearTimeout(...args)),
+    requestAnimationFrame: vi.fn((cb) => global.setTimeout(cb, 16)),
     cancelAnimationFrame: vi.fn(),
     matchMedia: vi.fn().mockReturnValue({
         matches: false,
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
     }),
-    localStorage: {
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-        clear: vi.fn(),
-    },
+    localStorage: global.localStorage,
 });
 
 // =============================================================================
@@ -231,9 +276,24 @@ export function createDeferred<T>() {
 beforeEach(() => {
     // Clear all mocks before each test
     vi.clearAllMocks();
+    
+    // Reset IndexedDB for each test
+    global.indexedDB = new IDBFactory();
 });
 
-afterEach(() => {
-    // Reset modules between tests if needed
-    // vi.resetModules();
+afterEach(async () => {
+    // Close and delete all IndexedDB databases
+    try {
+        const dbs = await indexedDB.databases();
+        for (const dbInfo of dbs) {
+            if (dbInfo.name) {
+                indexedDB.deleteDatabase(dbInfo.name);
+            }
+        }
+    } catch (error) {
+        // Ignore errors during cleanup
+    }
+    
+    // Reset IndexedDB for next test
+    global.indexedDB = new IDBFactory();
 });

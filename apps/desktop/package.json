@@ -5,9 +5,9 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "tsc -b && vite build",
+        "build": "bunx tsc -b && vite build",
         "preview": "vite preview",
-        "typecheck": "tsc --noEmit",
+        "typecheck": "bunx tsc --noEmit",
         "tauri": "tauri"
     },
     "dependencies": {
