@@ -145,6 +145,9 @@ export class SyncManager {
         if (this.tokenManager.hasToken()) {
             await this.startSync();
         }
+        
+        // Notify UI components that sync state changed
+        this.app.workspace.triggerSyncStateChanged(true);
     }
 
     /**
@@ -162,6 +165,9 @@ export class SyncManager {
         this.lastPassword = null;
         
         await this.saveConfig({ enabled: false });
+        
+        // Notify UI components that sync state changed
+        this.app.workspace.triggerSyncStateChanged(false);
     }
 
     /**

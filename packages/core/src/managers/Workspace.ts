@@ -469,4 +469,12 @@ export class Workspace extends Events {
     triggerSyncUnlockRequired(): void {
         this.trigger('sync-unlock-required');
     }
+
+    /**
+     * Trigger sync state changed event (called by SyncManager)
+     * Used to notify UI components when sync is enabled/disabled
+     */
+    triggerSyncStateChanged(enabled: boolean): void {
+        this.trigger('sync-state-changed', { enabled });
+    }
 }

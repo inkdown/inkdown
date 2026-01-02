@@ -158,6 +158,25 @@ export const SyncStatus: React.FC<{ onLinkWorkspace?: () => void }> = ({ onLinkW
         };
     }, [app, app.syncManager.syncEngine, verifySyncStatus, loadWorkspaceName, status]);
 
+    // Listen for sync state changes (enabled/disabled)
+    useEffect(() => {
+        const handleSyncStateChanged = (data: { enabled: boolean }) => {
+            setIsEnabled(data.enabled);
+            if (!data.enabled) {
+                setStatus('offline');
+                setPendingCount(0);
+                setConflictCount(0);
+                setWorkspaceName(undefined);
+            }
+        };
+
+        const ref = app.workspace.on('sync-state-changed', handleSyncStateChanged);
+
+        return () => {
+            ref.unload();
+        };
+    }, [app]);
+
     // Handle click to open sync modal
     const handleClick = () => {
         if (!app.syncManager.isEnabled()) return;
