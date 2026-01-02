@@ -893,10 +893,29 @@ export class SyncEngine extends Events {
 
                 const localContent = await this.app.fileManager.read(file);
                 const localHash = await this.calculateHash(localContent);
-
-                if (localHash !== note.content_hash) {
-                    // CONFLICT!
-                    this.syncLogger.warn(`Conflict detected: ${path}`);
+                
+                // Get the hash we had at last sync (what we uploaded/downloaded)
+                const lastSyncedHash = await this.localDatabase.getContentHash(path);
+                
+                // Determine what changed since last sync
+                const localChanged = lastSyncedHash && localHash !== lastSyncedHash;
+                const serverChanged = lastSyncedHash && note.content_hash !== lastSyncedHash;
+                
+                if (localHash === note.content_hash) {
+                    // Same content - just update version tracking
+                    await this.localDatabase.saveNoteVersion(
+                        path,
+                        note.version,
+                        note.id,
+                        note.content_hash,
+                    );
+                    this.syncLogger.debug(`Synced (same content): ${path} v${note.version}`);
+                    return;
+                }
+                
+                if (localChanged && serverChanged) {
+                    // TRUE CONFLICT: Both sides changed since last sync
+                    this.syncLogger.warn(`True conflict detected: ${path} (both sides changed since last sync)`);
 
                     // Register conflict in logger for UI
                     this.syncLogger.addConflict({
@@ -924,16 +943,29 @@ export class SyncEngine extends Events {
                         this.fileWatcher.resume();
                     }
                     this.syncLogger.info(`Conflict resolved for ${path}`);
-                } else {
-                    // Same content - just update the version tracking to stay in sync
-                    await this.localDatabase.saveNoteVersion(
-                        path,
-                        note.version,
-                        note.id,
-                        note.content_hash,
-                    );
-                    this.syncLogger.debug(`Synced (same content): ${path} v${note.version}`);
+                } else if (serverChanged && !localChanged) {
+                    // Only server changed - accept server version (normal pull)
+                    this.syncLogger.info(`Server updated: ${path}, applying remote changes`);
+                    this.fileWatcher.pause();
+                    try {
+                        await this.app.fileManager.modify(file, content);
+                    } finally {
+                        this.fileWatcher.resume();
+                    }
+                } else if (localChanged && !serverChanged) {
+                    // Only local changed - this is a normal edit, will be uploaded by file watcher
+                    this.syncLogger.debug(`Local edit detected: ${path}, skipping server version (local is newer)`);
+                    // Don't overwrite local - it will be uploaded by file watcher or next sync
                     return;
+                } else {
+                    // No lastSyncedHash - first sync of this file after mapping, use server version
+                    this.syncLogger.info(`First sync for ${path}, using server version`);
+                    this.fileWatcher.pause();
+                    try {
+                        await this.app.fileManager.modify(file, content);
+                    } finally {
+                        this.fileWatcher.resume();
+                    }
                 }
             } else {
                 // New file, create locally
