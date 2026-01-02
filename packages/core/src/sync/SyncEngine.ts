@@ -442,30 +442,59 @@ export class SyncEngine extends Events {
             ? await this.decryptWithFallback(serverNote.encrypted_content, serverNote.nonce)
             : '';
 
-        // Resolve conflict
-        const resolved = await this.conflictResolver.resolve(
+        // Register conflict in logger for UI
+        this.syncLogger.addConflict({
+            noteId: conflict.note_id,
+            path,
+            localVersion: conflict.local_version,
+            serverVersion: conflict.server_version,
+            localContent,
+            serverContent,
+            localHash: conflict.local_hash,
+            serverHash: conflict.server_hash,
+        });
+
+        // Attempt to resolve conflict
+        const resolution = await this.conflictResolver.resolve(
             path,
             localContent,
             serverContent,
             serverNote,
         );
 
-        // Update local file with resolved content (pause watcher to avoid re-triggering)
+        if (resolution.type === 'needs-user-decision') {
+            // Hard conflict - leave for user to resolve in SyncModal
+            this.syncLogger.warn(
+                `Hard conflict for ${path} - user must resolve manually`,
+                'Check Sync Status for conflict resolution options',
+            );
+            return;
+        }
+
+        // Auto-merge succeeded - update local file with resolved content
         this.fileWatcher.pause();
         try {
-            await this.app.fileManager.modify(file, resolved);
+            await this.app.fileManager.modify(file, resolution.content);
         } finally {
             this.fileWatcher.resume();
         }
 
+        // Mark conflict as resolved
+        const addedConflict = this.syncLogger.getConflicts().find(c => c.path === path && !c.resolved);
+        if (addedConflict) {
+            this.syncLogger.resolveConflict(addedConflict.id, 'merged');
+        }
+
         // Queue upload of resolved version
-        const resolvedHash = await this.calculateHash(resolved);
+        const resolvedHash = await this.calculateHash(resolution.content);
         this.uploadQueue.enqueue({
             type: 'modify',
             path: path,
             contentHash: resolvedHash,
             timestamp: new Date(),
         });
+        
+        this.syncLogger.info(`Conflict auto-resolved for ${path} using ${resolution.strategy}`);
     }
 
     // private async scanAndUploadLocalFiles(): Promise<void> {
@@ -929,20 +958,40 @@ export class SyncEngine extends Events {
                         serverHash: note.content_hash,
                     });
 
-                    const resolved = await this.conflictResolver.resolve(
+                    const resolution = await this.conflictResolver.resolve(
                         path,
                         localContent,
                         content,
                         note,
                     );
-                    // Pause watcher to avoid re-triggering sync
+                    
+                    if (resolution.type === 'needs-user-decision') {
+                        // Hard conflict - leave for user to resolve in SyncModal
+                        // Don't modify the file, don't mark conflict as resolved
+                        this.syncLogger.warn(
+                            `Hard conflict for ${path} - user must resolve manually`,
+                            'Check Sync Status for conflict resolution options',
+                        );
+                        // Keep the conflict in the list (don't resolve it)
+                        // Don't update tracking - user needs to decide first
+                        return;
+                    }
+                    
+                    // Auto-merge succeeded - apply the merged content
                     this.fileWatcher.pause();
                     try {
-                        await this.app.fileManager.modify(file, resolved);
+                        await this.app.fileManager.modify(file, resolution.content);
                     } finally {
                         this.fileWatcher.resume();
                     }
-                    this.syncLogger.info(`Conflict resolved for ${path}`);
+                    
+                    // Mark conflict as resolved since auto-merge worked
+                    const addedConflict = this.syncLogger.getConflicts().find(c => c.path === path && !c.resolved);
+                    if (addedConflict) {
+                        this.syncLogger.resolveConflict(addedConflict.id, 'merged');
+                    }
+                    
+                    this.syncLogger.info(`Conflict auto-resolved for ${path} using ${resolution.strategy}`);
                 } else if (serverChanged && !localChanged) {
                     // Only server changed - accept server version (normal pull)
                     this.syncLogger.info(`Server updated: ${path}, applying remote changes`);
