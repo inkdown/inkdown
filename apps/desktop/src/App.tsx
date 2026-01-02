@@ -7,6 +7,7 @@ import type { FileNode, RecentWorkspace, SyncConfig } from '@inkdown/core';
 import { OnboardingScreen, WorkspaceHistory } from '@inkdown/core';
 import {
     EmptyTabView,
+    ErrorBoundary,
     StatusBar,
     TabBar,
     WorkspaceLinkDialog,
@@ -1083,11 +1084,29 @@ const AppContent: React.FC = () => {
 
 function App() {
     return (
-        <AppProvider>
-            <ThemeProvider>
-                <AppContent />
-            </ThemeProvider>
-        </AppProvider>
+        <ErrorBoundary onError={(error, errorInfo) => {
+            // Log errors to console in development
+            console.error('Application Error:', error);
+            console.error('Component Stack:', errorInfo.componentStack);
+            
+            // TODO: Send to error tracking service in production
+        }}>
+            <AppProvider>
+                <ThemeProvider>
+                    <ErrorBoundary fallback={(error) => (
+                        <div style={{ padding: '2rem', textAlign: 'center' }}>
+                            <h2>Failed to load workspace</h2>
+                            <p>{error.message}</p>
+                            <button onClick={() => window.location.reload()}>
+                                Reload Application
+                            </button>
+                        </div>
+                    )}>
+                        <AppContent />
+                    </ErrorBoundary>
+                </ThemeProvider>
+            </AppProvider>
+        </ErrorBoundary>
     );
 }
 
