@@ -35,7 +35,7 @@ vi.mock('@inkdown/core/native', () => ({
             readThemeCss: vi.fn().mockResolvedValue(''),
         },
         config: {
-            readConfigFile: vi.fn().mockResolvedValue(null),
+            readConfigFile: vi.fn().mockRejectedValue(new Error('File not found')),
             writeConfigFile: vi.fn().mockResolvedValue(undefined),
             configFileExists: vi.fn().mockResolvedValue(false),
             getConfigDir: vi.fn().mockResolvedValue('/mock/config/dir'),

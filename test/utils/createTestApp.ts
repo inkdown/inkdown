@@ -42,7 +42,7 @@ export async function createTestApp(): Promise<App> {
 export async function destroyTestApp(app: App): Promise<void> {
     // Unload all plugins
     if (app.pluginManager) {
-        const plugins = app.pluginManager.getLoadedPlugins();
+        const plugins = app.pluginManager.getAllPlugins();
         for (const plugin of plugins) {
             try {
                 await app.pluginManager.unloadPlugin(plugin.manifest.id);
@@ -54,7 +54,7 @@ export async function destroyTestApp(app: App): Promise<void> {
     
     // Clear tab manager
     if (app.tabManager) {
-        const tabs = app.tabManager.getTabs();
+        const tabs = app.tabManager.getAllTabs();
         for (const tab of tabs) {
             try {
                 await app.tabManager.closeTab(tab.id);
