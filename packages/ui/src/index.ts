@@ -4,6 +4,9 @@
  * Reusable React UI components for Inkdown
  */
 
+// Error Handling
+export { ErrorBoundary } from './components/ErrorBoundary';
+
 export type { ButtonProps } from './components/Button';
 // UI Components
 export { Button } from './components/Button';
