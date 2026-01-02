@@ -531,6 +531,42 @@ export class SyncManager {
     }
 
     /**
+     * Handle local workspace folder change
+     * Cleans up all sync state when user switches to a different local folder
+     * - Stops sync engine
+     * - Clears IndexedDB sync cache
+     * - Unlinks remote workspace
+     * - Disables sync
+     */
+    async handleLocalWorkspaceChange(newLocalPath: string): Promise<void> {
+        this.logger.info(`Local workspace changed to: ${newLocalPath}`);
+        
+        // 1. Stop sync engine if running
+        this.stopSync();
+        
+        // 2. Clear all sync data from IndexedDB
+        this.logger.info('Clearing sync cache...');
+        await this.localDatabase.clear();
+        await this.localDatabase.clearAllMappings();
+        
+        // 3. Clear workspace links and current workspace ID
+        this.workspaceLinks = [];
+        this.currentWorkspaceId = undefined;
+        
+        // 4. Disable sync
+        this.enabled = false;
+        
+        // 5. Save config with cleared state
+        await this.saveConfig({
+            enabled: false,
+            workspaceLinks: [],
+            currentWorkspaceId: undefined,
+        });
+        
+        this.logger.info('Sync state cleared for workspace change');
+    }
+
+    /**
      * Get the workspace link for a local path
      */
     getWorkspaceLink(localPath: string): WorkspaceLink | undefined {

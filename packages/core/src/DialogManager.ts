@@ -196,4 +196,80 @@ export class DialogManager {
             throw error;
         }
     }
+
+    /**
+     * Show a confirmation dialog
+     *
+     * @param options - Dialog options
+     * @returns true if confirmed, false otherwise
+     *
+     * @example
+     * ```ts
+     * const confirmed = await app.dialog.confirm({
+     *   title: 'Delete File',
+     *   message: 'Are you sure you want to delete this file?',
+     *   okLabel: 'Delete',
+     *   cancelLabel: 'Cancel'
+     * });
+     * if (confirmed) {
+     *   // Delete file
+     * }
+     * ```
+     */
+    async confirm(options: {
+        title: string;
+        message: string;
+        okLabel?: string;
+        cancelLabel?: string;
+    }): Promise<boolean> {
+        if (!native.dialog?.confirm) {
+            // Fallback to browser confirm
+            return window.confirm(`${options.title}\n\n${options.message}`);
+        }
+
+        try {
+            return await native.dialog.confirm({
+                title: options.title,
+                message: options.message,
+                okLabel: options.okLabel,
+                cancelLabel: options.cancelLabel,
+            });
+        } catch (error: any) {
+            console.error('Failed to show confirm dialog:', error);
+            // Fallback to browser confirm
+            return window.confirm(`${options.title}\n\n${options.message}`);
+        }
+    }
+
+    /**
+     * Show an alert dialog
+     *
+     * @param options - Dialog options
+     *
+     * @example
+     * ```ts
+     * await app.dialog.alert({
+     *   title: 'Error',
+     *   message: 'An error occurred'
+     * });
+     * ```
+     */
+    async alert(options: { title: string; message: string }): Promise<void> {
+        if (!native.dialog?.alert) {
+            // Fallback to browser alert
+            window.alert(`${options.title}\n\n${options.message}`);
+            return;
+        }
+
+        try {
+            await native.dialog.alert({
+                title: options.title,
+                message: options.message,
+            });
+        } catch (error: any) {
+            console.error('Failed to show alert dialog:', error);
+            // Fallback to browser alert
+            window.alert(`${options.title}\n\n${options.message}`);
+        }
+    }
 }

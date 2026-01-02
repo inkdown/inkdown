@@ -312,6 +312,39 @@ const AppContent: React.FC = () => {
         }
     }, [activeTab?.filePath, app]);
 
+    // Handle workspace selection/change
+    const handleWorkspaceSelected = useCallback(
+        async (path: string) => {
+            // Check if this is actually a workspace change
+            const previousPath = rootPath;
+            const isWorkspaceChange = previousPath && previousPath !== path;
+            
+            setRootPath(path);
+
+            // Sync workspace path to core
+            app.fileSystemManager.setWorkspacePath(path);
+            await app.workspace.refreshFileTree();
+
+            // Reset expanded dirs when changing workspace
+            setExpandedDirs([]);
+
+            // Add to recent workspaces and save to config
+            const config = await app.configManager.loadConfig<AppConfig>('app');
+            const updated = WorkspaceHistory.addWorkspace(config.recentWorkspaces || [], path);
+            setRecentWorkspaces(updated);
+            config.recentWorkspaces = updated;
+            config.workspace = path;
+            config.expandedDirs = [];
+            await app.configManager.saveConfig('app', config);
+
+            // If changing to a different workspace, clean up sync state
+            if (isWorkspaceChange) {
+                await app.syncManager.handleLocalWorkspaceChange(path);
+            }
+        },
+        [app, rootPath],
+    );
+
     // Register desktop-specific commands only
     useEffect(() => {
         // Register app:open-settings command
@@ -388,27 +421,8 @@ const AppContent: React.FC = () => {
                     });
 
                     if (selected) {
-                        // Switch to the selected workspace
                         const path = selected as string;
-                        setRootPath(path);
-
-                        // Sync workspace path to core
-                        app.fileSystemManager.setWorkspacePath(path);
-                        await app.workspace.refreshFileTree();
-
-                        // Reset expanded dirs when changing workspace
-                        setExpandedDirs([]);
-
-                        // Add to recent workspaces and save to config
-                        const config = await app.configManager.loadConfig<AppConfig>('app');
-                        const updated = WorkspaceHistory.addWorkspace(
-                            config.recentWorkspaces || [],
-                            path,
-                        );
-                        setRecentWorkspaces(updated);
-                        config.recentWorkspaces = updated;
-                        config.lastWorkspace = path;
-                        await app.configManager.saveConfig('app', config);
+                        await handleWorkspaceSelected(path);
                     }
                 },
             },
@@ -420,38 +434,7 @@ const AppContent: React.FC = () => {
             app.commandManager.unregisterCommand('app:toggle-sidebar');
             app.commandManager.unregisterCommand('app:open-workspace');
         };
-    }, [app]);
-
-    const handleWorkspaceSelected = useCallback(
-        async (path: string) => {
-            setRootPath(path);
-
-            // Sync workspace path to core
-            app.fileSystemManager.setWorkspacePath(path);
-            await app.workspace.refreshFileTree();
-
-            // Reset expanded dirs when changing workspace
-            setExpandedDirs([]);
-
-            // Add to recent workspaces and save to config
-            const config = await app.configManager.loadConfig<AppConfig>('app');
-            const updated = WorkspaceHistory.addWorkspace(config.recentWorkspaces || [], path);
-            setRecentWorkspaces(updated);
-            config.recentWorkspaces = updated;
-            config.workspace = path;
-            config.expandedDirs = [];
-            await app.configManager.saveConfig('app', config);
-
-            // Check if we need to link a remote workspace
-            if (app.syncManager.isEnabled()) {
-                const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
-                if (!currentWorkspaceId) {
-                    setShowWorkspaceLinkDialog(true);
-                }
-            }
-        },
-        [app],
-    );
+    }, [app, handleWorkspaceSelected]);
 
     const handleLinkWorkspace = useCallback(
         async (workspaceId: string) => {

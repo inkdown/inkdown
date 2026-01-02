@@ -536,17 +536,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     };
 
     const handleClearLocalData = async () => {
-        if (
-            window.confirm(
-                'Are you sure you want to clear all local sync data? This will remove cached notes and metadata. Your local files will NOT be deleted.',
-            )
-        ) {
+        const confirmed = await app.dialog.confirm({
+            title: 'Clear Local Sync Data',
+            message: 'Are you sure you want to clear all local sync data? This will remove cached notes and metadata. Your local files will NOT be deleted.',
+            okLabel: 'Clear',
+            cancelLabel: 'Cancel',
+        });
+        
+        if (confirmed) {
             try {
                 await app.syncManager.localDatabase.clear();
-                alert('Local sync data cleared.');
+                await app.dialog.alert({
+                    title: 'Success',
+                    message: 'Local sync data cleared.',
+                });
             } catch (error: any) {
                 console.error('Failed to clear local data:', error);
-                alert('Failed to clear local data.');
+                await app.dialog.alert({
+                    title: 'Error',
+                    message: 'Failed to clear local data.',
+                });
             }
         }
     };
@@ -618,11 +627,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
     const handleUnlinkWorkspace = async () => {
         if (!config?.workspace) return;
-        if (
-            window.confirm(
-                'Are you sure you want to unlink this folder from the remote workspace? Local files will not be deleted.',
-            )
-        ) {
+        
+        const confirmed = await app.dialog.confirm({
+            title: 'Unlink Workspace',
+            message: 'Are you sure you want to unlink this folder from the remote workspace? Local files will not be deleted.',
+            okLabel: 'Unlink',
+            cancelLabel: 'Cancel',
+        });
+        
+        if (confirmed) {
             try {
                 await app.syncManager.unlinkWorkspace(config.workspace);
                 setLinkedWorkspace(null);
@@ -630,7 +643,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 forceUpdate((v) => v + 1);
             } catch (error: any) {
                 console.error('Failed to unlink workspace:', error);
-                alert('Failed to unlink workspace.');
+                await app.dialog.alert({
+                    title: 'Error',
+                    message: 'Failed to unlink workspace.',
+                });
             }
         }
     };
@@ -660,9 +676,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     };
 
     const handleCustomTitleBarChange = async (useCustom: boolean) => {
-        const confirmed = window.confirm(
-            'Changing the window style requires restarting the app. The app will close and you need to open it again. Continue?',
-        );
+        const confirmed = await app.dialog.confirm({
+            title: 'Restart Required',
+            message: 'Changing the window style requires restarting the app. The app will close and you need to open it again. Continue?',
+            okLabel: 'Restart',
+            cancelLabel: 'Cancel',
+        });
 
         if (!confirmed) return;
 
@@ -687,9 +706,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
      * This will reset all settings and tabs to defaults
      */
     const handleClearCache = async () => {
-        const confirmed = window.confirm(
-            'This will clear all cached data including tabs, settings, and editor state. The app will reload. Continue?',
-        );
+        const confirmed = await app.dialog.confirm({
+            title: 'Clear Cache',
+            message: 'This will clear all cached data including tabs, settings, and editor state. The app will reload. Continue?',
+            okLabel: 'Clear',
+            cancelLabel: 'Cancel',
+        });
 
         if (!confirmed) return;
 
@@ -879,13 +901,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             variant="danger"
                                             size="small"
                                             onClick={async () => {
-                                                if (
-                                                    !window.confirm(
-                                                        '⚠️ FACTORY RESET ⚠️\n\nThis will:\n• Delete ALL localStorage data\n• Delete ALL IndexedDB databases\n• Clear sync tokens and encryption keys\n• Return to onboarding\n\nYour local markdown files will NOT be deleted.\n\nContinue?',
-                                                    )
-                                                ) {
-                                                    return;
-                                                }
+                                                const confirmed = await app.dialog.confirm({
+                                                    title: '⚠️ FACTORY RESET',
+                                                    message: 'This will:\n• Delete ALL localStorage data\n• Delete ALL IndexedDB databases\n• Clear sync tokens and encryption keys\n• Return to onboarding\n\nYour local markdown files will NOT be deleted.\n\nContinue?',
+                                                    okLabel: 'Reset',
+                                                    cancelLabel: 'Cancel',
+                                                });
+                                                
+                                                if (!confirmed) return;
 
                                                 try {
                                                     // 1. Clear ALL localStorage
@@ -916,7 +939,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                     window.location.reload();
                                                 } catch (error: any) {
                                                     console.error('[FactoryReset] Failed:', error);
-                                                    alert('Factory reset failed. Check console.');
+                                                    await app.dialog.alert({
+                                                        title: 'Error',
+                                                        message: 'Factory reset failed. Check console.',
+                                                    });
                                                 }
                                             }}
                                         >
