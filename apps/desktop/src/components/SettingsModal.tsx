@@ -406,9 +406,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const [isSyncEnabled, setIsSyncEnabled] = useState(() => app.syncManager.isEnabled());
     
     // Keep isSyncEnabled in sync with actual manager state
+    // biome-ignore lint/correctness/useExhaustiveDependencies: _forceUpdateValue intentionally triggers recalculation
     useEffect(() => {
         setIsSyncEnabled(app.syncManager.isEnabled());
-    }, [app, _forceUpdateValue]); // _forceUpdateValue triggers recalculation
+    }, [app, _forceUpdateValue]);
 
     // Subscribe to plugin changes to update sidebar
     useEffect(() => {
