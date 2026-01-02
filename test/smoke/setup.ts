@@ -149,7 +149,7 @@ vi.mock('@inkdown/core/native', () => ({
 Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: vi.fn().mockImplementation((query: string) => ({
-        matches: query.includes('dark') ? false : false,
+        matches: false,
         media: query,
         onchange: null,
         addListener: vi.fn(),

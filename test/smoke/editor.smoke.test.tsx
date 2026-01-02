@@ -263,6 +263,7 @@ describe('Editor Smoke Tests', () => {
             
             const EditorWithSave = () => {
                 return React.createElement('button', {
+                    type: 'button',
                     'data-testid': 'save-button',
                     onClick: onSave,
                 }, 'Save');
@@ -312,11 +313,13 @@ describe('Editor Smoke Tests', () => {
                     }),
                     React.createElement('button', {
                         key: 'undo',
+                        type: 'button',
                         'data-testid': 'undo-button',
                         onClick: undo,
                     }, 'Undo'),
                     React.createElement('button', {
                         key: 'redo',
+                        type: 'button',
                         'data-testid': 'redo-button',
                         onClick: redo,
                     }, 'Redo'),

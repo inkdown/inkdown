@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { CredentialStorage } from './CredentialStorage';
+import { CredentialStorage } from '../../../packages/core/src/sync/CredentialStorage';
 
 describe('CredentialStorage', () => {
     // Store original localStorage and sessionStorage
@@ -49,7 +49,9 @@ describe('CredentialStorage', () => {
                 delete localStorageMock[key];
             },
             clear: () => {
-                Object.keys(localStorageMock).forEach(key => delete localStorageMock[key]);
+                for (const key of Object.keys(localStorageMock)) {
+                    delete localStorageMock[key];
+                }
             },
             get length() {
                 return Object.keys(localStorageMock).length;
@@ -66,7 +68,9 @@ describe('CredentialStorage', () => {
                 delete sessionStorageMock[key];
             },
             clear: () => {
-                Object.keys(sessionStorageMock).forEach(key => delete sessionStorageMock[key]);
+                for (const key of Object.keys(sessionStorageMock)) {
+                    delete sessionStorageMock[key];
+                }
             },
             get length() {
                 return Object.keys(sessionStorageMock).length;

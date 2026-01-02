@@ -53,7 +53,7 @@ describe('Result<T, E>', () => {
             const result = Ok(42);
             const value = result.match(
                 (val) => val * 2,
-                (err) => 0
+                (_err) => 0
             );
             
             expect(value).toBe(84);
@@ -116,7 +116,7 @@ describe('Result<T, E>', () => {
 
         it('should short-circuit on error', () => {
             const result: Result<number, string> = Ok(10)
-                .andThen(x => Err('failed'))
+                .andThen(_x => Err('failed'))
                 .andThen(x => Ok(x * 2));
             
             expect(result.isErr()).toBe(true);
@@ -183,7 +183,7 @@ describe('Result<T, E>', () => {
             // TypeScript should know this is number
             const value = result.match(
                 (val) => val + 10,
-                (err) => 0
+                (_err) => 0
             );
             
             expect(value).toBe(52);

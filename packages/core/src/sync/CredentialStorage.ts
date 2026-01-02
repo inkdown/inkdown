@@ -17,7 +17,7 @@ export class CredentialStorage {
      * Clear device key cache (useful for testing)
      */
     static clearDeviceKeyCache(): void {
-        this.deviceKey = null;
+        CredentialStorage.deviceKey = null;
     }
 
     /**
@@ -25,17 +25,17 @@ export class CredentialStorage {
      * Uses combination of navigator properties as fingerprint
      */
     private static async getDeviceKey(): Promise<CryptoKey> {
-        if (this.deviceKey) return this.deviceKey;
+        if (CredentialStorage.deviceKey) return CredentialStorage.deviceKey;
 
         // Get or create salt
-        let saltB64 = localStorage.getItem(this.SALT_KEY);
+        const saltB64 = localStorage.getItem(CredentialStorage.SALT_KEY);
         let salt: Uint8Array;
 
-        if (!saltB64) {
-            salt = crypto.getRandomValues(new Uint8Array(16));
-            localStorage.setItem(this.SALT_KEY, this.arrayBufferToBase64(salt));
+        if (saltB64) {
+            salt = CredentialStorage.base64ToArrayBuffer(saltB64);
         } else {
-            salt = this.base64ToArrayBuffer(saltB64);
+            salt = crypto.getRandomValues(new Uint8Array(16));
+            localStorage.setItem(CredentialStorage.SALT_KEY, CredentialStorage.arrayBufferToBase64(salt));
         }
 
         // Create device fingerprint (not perfect but reasonable for browser)
@@ -57,7 +57,7 @@ export class CredentialStorage {
             ['deriveBits', 'deriveKey'],
         );
 
-        this.deviceKey = await crypto.subtle.deriveKey(
+        CredentialStorage.deviceKey = await crypto.subtle.deriveKey(
             {
                 name: 'PBKDF2',
                 salt: salt,
@@ -70,7 +70,7 @@ export class CredentialStorage {
             ['encrypt', 'decrypt'],
         );
 
-        return this.deviceKey;
+        return CredentialStorage.deviceKey;
     }
 
     /**
@@ -104,7 +104,7 @@ export class CredentialStorage {
         try {
             logger.debug('Storing password securely');
 
-            const deviceKey = await this.getDeviceKey();
+            const deviceKey = await CredentialStorage.getDeviceKey();
             const encoder = new TextEncoder();
             const passwordData = encoder.encode(password);
             const nonce = crypto.getRandomValues(new Uint8Array(12));
@@ -120,8 +120,8 @@ export class CredentialStorage {
             combined.set(nonce, 0);
             combined.set(new Uint8Array(encrypted), nonce.length);
 
-            const blob = this.arrayBufferToBase64(combined);
-            localStorage.setItem(this.STORAGE_KEY, blob);
+            const blob = CredentialStorage.arrayBufferToBase64(combined);
+            localStorage.setItem(CredentialStorage.STORAGE_KEY, blob);
 
             logger.info('Password stored successfully');
             return { success: true, data: undefined };
@@ -139,15 +139,15 @@ export class CredentialStorage {
      */
     static async getPassword(): Promise<Result<string>> {
         try {
-            const blob = localStorage.getItem(this.STORAGE_KEY);
+            const blob = localStorage.getItem(CredentialStorage.STORAGE_KEY);
 
             if (!blob) {
                 // Check for migration from sessionStorage
-                const oldPassword = sessionStorage.getItem(this.OLD_SESSION_KEY);
+                const oldPassword = sessionStorage.getItem(CredentialStorage.OLD_SESSION_KEY);
                 if (oldPassword) {
                     logger.info('Migrating password from sessionStorage');
-                    await this.storePassword(oldPassword);
-                    sessionStorage.removeItem(this.OLD_SESSION_KEY);
+                    await CredentialStorage.storePassword(oldPassword);
+                    sessionStorage.removeItem(CredentialStorage.OLD_SESSION_KEY);
                     return { success: true, data: oldPassword };
                 }
 
@@ -158,8 +158,8 @@ export class CredentialStorage {
                 };
             }
 
-            const deviceKey = await this.getDeviceKey();
-            const combined = this.base64ToArrayBuffer(blob);
+            const deviceKey = await CredentialStorage.getDeviceKey();
+            const combined = CredentialStorage.base64ToArrayBuffer(blob);
 
             const nonce = combined.slice(0, 12);
             const encrypted = combined.slice(12);
@@ -190,8 +190,8 @@ export class CredentialStorage {
     static async clearPassword(): Promise<Result<void>> {
         try {
             logger.debug('Clearing stored password');
-            localStorage.removeItem(this.STORAGE_KEY);
-            sessionStorage.removeItem(this.OLD_SESSION_KEY); // Also clear old format
+            localStorage.removeItem(CredentialStorage.STORAGE_KEY);
+            sessionStorage.removeItem(CredentialStorage.OLD_SESSION_KEY); // Also clear old format
             logger.info('Password cleared successfully');
             return { success: true, data: undefined };
         } catch (error) {
@@ -208,8 +208,8 @@ export class CredentialStorage {
      */
     static async hasPassword(): Promise<boolean> {
         try {
-            const hasNew = localStorage.getItem(this.STORAGE_KEY) !== null;
-            const hasOld = sessionStorage.getItem(this.OLD_SESSION_KEY) !== null;
+            const hasNew = localStorage.getItem(CredentialStorage.STORAGE_KEY) !== null;
+            const hasOld = sessionStorage.getItem(CredentialStorage.OLD_SESSION_KEY) !== null;
             return hasNew || hasOld;
         } catch {
             return false;

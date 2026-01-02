@@ -20,9 +20,9 @@ const { execSync } = require('child_process');
 function extractDotBlocks(markdown) {
   const blocks = [];
   const regex = /```dot\n([\s\S]*?)```/g;
-  let match;
+  const match = regex.exec(markdown);
 
-  while ((match = regex.exec(markdown)) !== null) {
+  while (match !== null) {
     const content = match[1].trim();
 
     // Extract digraph name
@@ -54,7 +54,7 @@ function combineGraphs(blocks, skillName) {
     // Wrap each subgraph in a cluster for visual grouping
     return `  subgraph cluster_${i} {
     label="${block.name}";
-    ${body.split('\n').map(line => '  ' + line).join('\n')}
+    ${body.split('\n').map(line => `  ${line}`).join('\n')}
   }`;
   });
 

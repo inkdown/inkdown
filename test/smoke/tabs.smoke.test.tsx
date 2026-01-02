@@ -40,6 +40,7 @@ describe('Tab Management Smoke Tests', () => {
                     tabs.map(tab => 
                         React.createElement('button', {
                             key: tab.id,
+                            type: 'button',
                             'data-testid': `tab-${tab.id}`,
                             role: 'tab',
                             className: 'tab',
@@ -66,6 +67,7 @@ describe('Tab Management Smoke Tests', () => {
                     tabs.map(tab => 
                         React.createElement('button', {
                             key: tab.id,
+                            type: 'button',
                             'data-testid': `tab-${tab.id}`,
                             className: tab.active ? 'tab active' : 'tab',
                             'aria-selected': tab.active,
@@ -96,6 +98,7 @@ describe('Tab Management Smoke Tests', () => {
                         tabs.map(tab => 
                             React.createElement('button', {
                                 key: tab.id,
+                                type: 'button',
                                 'data-testid': `tab-${tab.id}`,
                                 className: activeTab === tab.id ? 'tab active' : 'tab',
                                 onClick: () => setActiveTab(tab.id),
@@ -133,6 +136,7 @@ describe('Tab Management Smoke Tests', () => {
                         Object.keys(tabContents).map(tabId => 
                             React.createElement('button', {
                                 key: tabId,
+                                type: 'button',
                                 'data-testid': `tab-${tabId}`,
                                 onClick: () => setActiveTab(tabId),
                             }, tabId)
@@ -172,6 +176,7 @@ describe('Tab Management Smoke Tests', () => {
                         tabs.map(tab => 
                             React.createElement('button', {
                                 key: tab.id,
+                                type: 'button',
                                 'data-testid': `tab-${tab.id}`,
                                 className: 'tab',
                             }, tab.title)
@@ -179,6 +184,7 @@ describe('Tab Management Smoke Tests', () => {
                     ),
                     React.createElement('button', {
                         key: 'add',
+                        type: 'button',
                         'data-testid': 'add-tab-button',
                         onClick: addTab,
                     }, '+'),
@@ -222,6 +228,7 @@ describe('Tab Management Smoke Tests', () => {
                                 React.createElement('span', { key: 'title' }, tab.title),
                                 React.createElement('button', {
                                     key: 'close',
+                                    type: 'button',
                                     'data-testid': `close-${tab.id}`,
                                     onClick: () => closeTab(tab.id),
                                 }, '×'),
@@ -271,6 +278,7 @@ describe('Tab Management Smoke Tests', () => {
                                 React.createElement('span', { key: 'title' }, tab.title),
                                 React.createElement('button', {
                                     key: 'close',
+                                    type: 'button',
                                     'data-testid': `close-${tab.id}`,
                                     onClick: () => closeTab(tab.id),
                                 }, '×'),
