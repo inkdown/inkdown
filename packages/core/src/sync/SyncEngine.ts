@@ -185,8 +185,9 @@ export class SyncEngine extends Events {
             this.webSocketService.on('conflict', this.handleConflict.bind(this));
             this.logger.info('WebSocket connected.');
 
-            // 5. Start periodic scan for undetected changes
-            this.startPeriodicScan();
+            // 5. Periodic scan is disabled - file watcher handles changes in real-time
+            // If needed for debugging, uncomment the next line:
+            // this.startPeriodicScan();
 
             this.logger.info('SyncEngine started successfully');
         } catch (error: any) {
