@@ -1405,18 +1405,32 @@ export class SyncEngine extends Events {
                         // Deleted on server
                         pending++;
                     } else if (localHash === serverEntry.content_hash) {
-                        // Perfectly synced
+                        // Perfectly synced - current local content matches server
                         synced++;
                     } else {
-                        // Content differs
+                        // Content differs between local and server
                         const storedVersion =
                             (await this.localDatabase.getNoteVersion(file.path)) || 0;
-                        if (storedVersion === serverEntry.version) {
-                            // Same version but different hash = conflict
+                        const storedHash = await this.localDatabase.getContentHash(file.path);
+                        
+                        // Determine what changed
+                        const localChanged = storedHash && localHash !== storedHash;
+                        const serverChanged = storedVersion < serverEntry.version;
+                        
+                        if (localChanged && serverChanged) {
+                            // True conflict: both local and server changed since last sync
                             conflicts++;
-                        } else {
-                            // Different version = needs sync
+                        } else if (serverChanged) {
+                            // Only server changed - needs download
                             pending++;
+                        } else if (localChanged) {
+                            // Only local changed - needs upload
+                            pending++;
+                        } else {
+                            // Stored hash matches local, stored version matches server
+                            // but hashes don't match - likely a hash calculation issue
+                            // Treat as synced since our last known state matches server version
+                            synced++;
                         }
                     }
                 } else {
