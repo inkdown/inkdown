@@ -441,9 +441,13 @@ export class SyncManager {
      */
     getWorkspaceSyncService(): WorkspaceSyncService {
         if (!this.workspaceSyncService) {
-            this.workspaceSyncService = new WorkspaceSyncService(this.baseURL, () =>
-                Promise.resolve(this.tokenManager.getToken()),
-            );
+            this.workspaceSyncService = new WorkspaceSyncService(this.baseURL, async () => {
+                // Check if token needs refresh before returning
+                if (this.tokenManager.isTokenExpired()) {
+                    await this.tryRefreshToken();
+                }
+                return this.tokenManager.getToken();
+            });
         }
         return this.workspaceSyncService;
     }

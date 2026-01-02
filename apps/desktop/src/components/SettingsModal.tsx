@@ -1202,62 +1202,65 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 </Button>
                                             </Setting>
 
-                                            <Setting
-                                                name="Workspace Link"
-                                                description={
-                                                    linkedWorkspace
-                                                        ? `Linked to workspace: ${linkedWorkspace.name}`
-                                                        : 'Link this folder to a remote workspace to sync notes'
-                                                }
-                                            >
-                                                {linkedWorkspace ? (
-                                                    <div
-                                                        className="workspace-link-actions"
-                                                        style={{
-                                                            display: 'flex',
-                                                            gap: 8,
-                                                            alignItems: 'center',
-                                                        }}
-                                                    >
-                                                        <span
-                                                            className="workspace-badge"
+                                            {/* Only show workspace link section when sync is enabled */}
+                                            {isSyncEnabled && (
+                                                <Setting
+                                                    name="Workspace Link"
+                                                    description={
+                                                        linkedWorkspace
+                                                            ? `Syncing to workspace: ${linkedWorkspace.name}`
+                                                            : 'No workspace linked - sync will not work until a workspace is selected'
+                                                    }
+                                                >
+                                                    {linkedWorkspace ? (
+                                                        <div
+                                                            className="workspace-link-actions"
                                                             style={{
-                                                                fontSize: 12,
-                                                                padding: '2px 8px',
-                                                                background: 'var(--accent-bg)',
-                                                                color: 'var(--accent-color)',
-                                                                borderRadius: 4,
+                                                                display: 'flex',
+                                                                gap: 8,
+                                                                alignItems: 'center',
                                                             }}
                                                         >
-                                                            {linkedWorkspace.name}
-                                                        </span>
+                                                            <span
+                                                                className="workspace-badge"
+                                                                style={{
+                                                                    fontSize: 12,
+                                                                    padding: '2px 8px',
+                                                                    background: 'var(--accent-bg)',
+                                                                    color: 'var(--accent-color)',
+                                                                    borderRadius: 4,
+                                                                }}
+                                                            >
+                                                                {linkedWorkspace.name}
+                                                            </span>
+                                                            <Button
+                                                                variant="secondary"
+                                                                size="small"
+                                                                onClick={handleUnlinkWorkspace}
+                                                                title="Unlink workspace"
+                                                            >
+                                                                <Unlink
+                                                                    size={14}
+                                                                    style={{ marginRight: 4 }}
+                                                                />
+                                                                Unlink
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
                                                         <Button
-                                                            variant="secondary"
+                                                            variant="primary"
                                                             size="small"
-                                                            onClick={handleUnlinkWorkspace}
-                                                            title="Unlink workspace"
+                                                            onClick={() => setShowWorkspaceDialog(true)}
                                                         >
-                                                            <Unlink
+                                                            <Link
                                                                 size={14}
-                                                                style={{ marginRight: 4 }}
+                                                                style={{ marginRight: 6 }}
                                                             />
-                                                            Unlink
+                                                            Link Workspace
                                                         </Button>
-                                                    </div>
-                                                ) : (
-                                                    <Button
-                                                        variant="primary"
-                                                        size="small"
-                                                        onClick={() => setShowWorkspaceDialog(true)}
-                                                    >
-                                                        <Link
-                                                            size={14}
-                                                            style={{ marginRight: 6 }}
-                                                        />
-                                                        Link Workspace
-                                                    </Button>
-                                                )}
-                                            </Setting>
+                                                    )}
+                                                </Setting>
+                                            )}
 
                                             {isSyncEnabled && (
                                                 <Setting
