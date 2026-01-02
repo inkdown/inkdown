@@ -318,26 +318,34 @@ export class SyncManager {
 
     /**
      * Setup encryption with a dedicated password (new user/first device)
+     * @param password - The encryption password
+     * @param autoEnable - Whether to automatically enable sync after setup (default: true for backward compatibility)
      */
-    async setupEncryption(password: string): Promise<void> {
+    async setupEncryption(password: string, autoEnable = true): Promise<void> {
         await this.encryptionManager.setupEncryption(password);
 
         // Cache password in memory for auto-restore
         this.setLastPassword(password);
 
-        await this.enable();
+        if (autoEnable) {
+            await this.enable();
+        }
     }
 
     /**
      * Unlock encryption with existing password (subsequent devices)
+     * @param password - The encryption password
+     * @param autoEnable - Whether to automatically enable sync after unlock (default: true for backward compatibility)
      */
-    async unlockEncryption(password: string): Promise<void> {
+    async unlockEncryption(password: string, autoEnable = true): Promise<void> {
         await this.encryptionManager.syncKeys(password);
 
         // Cache password in memory for auto-restore
         this.setLastPassword(password);
 
-        await this.enable();
+        if (autoEnable) {
+            await this.enable();
+        }
     }
 
     /**

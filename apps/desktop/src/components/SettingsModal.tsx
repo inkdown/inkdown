@@ -469,12 +469,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const handleEncryptionConfirm = useCallback(
         async (password: string) => {
             try {
+                // Check if workspace is already linked BEFORE setting up encryption
+                const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
+                const needsWorkspaceSelection = !currentWorkspaceId;
+                
                 if (encryptionMode === 'setup') {
-                    await app.syncManager.setupEncryption(password);
+                    // Don't auto-enable if we need workspace selection first
+                    await app.syncManager.setupEncryption(password, !needsWorkspaceSelection);
                 } else {
                     // Try to unlock
                     try {
-                        await app.syncManager.unlockEncryption(password);
+                        await app.syncManager.unlockEncryption(password, !needsWorkspaceSelection);
                     } catch (error: any) {
                         // If unlock fails because keys not found (404), maybe we need setup?
                         if (
@@ -484,7 +489,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         ) {
                             // HACK: If unlock fails with 404, we assume it's a new user and try setup
                             console.log('Unlock failed, trying setup...', error);
-                            await app.syncManager.setupEncryption(password);
+                            await app.syncManager.setupEncryption(password, !needsWorkspaceSelection);
                         } else {
                             throw error;
                         }
@@ -494,16 +499,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 // Close password modal
                 setShowEncryptionModal(false);
                 
-                // Check if workspace is already linked
-                const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
-                
-                if (!currentWorkspaceId) {
+                if (needsWorkspaceSelection) {
                     // No workspace linked - show workspace selection dialog
+                    // Sync will be enabled AFTER workspace is selected
                     setShowWorkspaceSelectionAfterPassword(true);
                     setShowWorkspaceDialog(true);
                 } else {
-                    // Workspace already linked - enable sync directly
-                    await app.syncManager.enable();
+                    // Workspace already linked - sync was auto-enabled
                     forceUpdate((v) => v + 1);
                 }
             } catch (error: any) {
