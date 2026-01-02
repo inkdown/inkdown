@@ -29,6 +29,7 @@ export class SyncEngine extends Events {
     private isRunning = false;
     private isSyncingActive = false;
     private workspaceId: string | undefined;
+    private pendingSyncRequest = false;
 
     constructor(
         app: App,
@@ -106,6 +107,13 @@ export class SyncEngine extends Events {
     async triggerSync(): Promise<void> {
         if (!this.isRunning) {
             this.logger.warn('Cannot trigger sync - engine not running');
+            return;
+        }
+        
+        // If sync is already in progress, queue another sync for after completion
+        if (this.isSyncingActive) {
+            this.logger.info('Sync already in progress, will trigger after completion');
+            this.pendingSyncRequest = true;
             return;
         }
         
@@ -223,11 +231,20 @@ export class SyncEngine extends Events {
             if (queueSize === 0) {
                 this.isSyncingActive = false;
                 this.trigger('sync-complete');
+                
+                // Check if there's a pending sync request (e.g., workspace changed during sync)
+                if (this.pendingSyncRequest) {
+                    this.pendingSyncRequest = false;
+                    this.logger.info('Processing pending sync request...');
+                    // Use setTimeout to avoid stack overflow
+                    setTimeout(() => this.triggerSync(), 100);
+                }
             }
             // If queue has items, sync-complete will be emitted when queue empties
         } catch (error: any) {
             this.logger.error('Initial sync failed:', error);
             this.isSyncingActive = false;
+            this.pendingSyncRequest = false;  // Clear pending request on error
             // Reset count on error too
             this.trigger('sync-count-change', 0);
             this.trigger('sync-error', error);
