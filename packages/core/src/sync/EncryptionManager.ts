@@ -153,6 +153,46 @@ export class EncryptionManager {
     }
 
     /**
+     * Save master key encrypted with session token for auto-restore on app restart
+     * This allows the app to restore encryption without asking for password every time
+     */
+    async saveForAutoRestore(accessToken: string): Promise<void> {
+        if (!this.masterKey) {
+            throw new Error('Master key not initialized');
+        }
+
+        console.log('[EncryptionManager] Saving for auto-restore...');
+
+        try {
+            // Export master key
+            const exportedKey = await crypto.subtle.exportKey('raw', this.masterKey);
+
+            // Derive session key from token
+            const sessionKey = await this.deriveSessionKey(accessToken);
+
+            // Generate nonce and encrypt
+            const nonce = this.generateNonce();
+            const encryptedKeyBuffer = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv: nonce },
+                sessionKey,
+                exportedKey,
+            );
+
+            // Concatenate nonce + encrypted data
+            const encryptedWithNonce = new Uint8Array(nonce.length + encryptedKeyBuffer.byteLength);
+            encryptedWithNonce.set(nonce, 0);
+            encryptedWithNonce.set(new Uint8Array(encryptedKeyBuffer), nonce.length);
+
+            // Save to localStorage
+            localStorage.setItem('inkdown-encrypted-master-key', this.arrayBufferToBase64(encryptedWithNonce));
+            console.log('[EncryptionManager] Auto-restore data saved');
+        } catch (error: any) {
+            console.error('[EncryptionManager] Failed to save auto-restore data:', error);
+            // Don't throw - this is optional convenience feature
+        }
+    }
+
+    /**
      * Restore encryption from localStorage using password (v2 format)
      * Returns true if successful, false otherwise
      */
@@ -331,8 +371,13 @@ export class EncryptionManager {
             }
         });
 
-        // Save to local storage (no longer needs token)
+        // Save to local storage (password-based backup)
         await this.saveToStorage();
+
+        // Also save for auto-restore (token-based, for seamless app restart)
+        await this.tokenRefresh.withAuth(async (token) => {
+            await this.saveForAutoRestore(token);
+        });
 
         console.log('[EncryptionManager] Encryption setup complete');
     }
@@ -422,8 +467,13 @@ export class EncryptionManager {
                 ['encrypt', 'decrypt'],
             );
 
-            // Save to local storage (no longer needs token)
+            // Save to local storage (password-based backup)
             await this.saveToStorage();
+
+            // Also save for auto-restore (token-based, for seamless app restart)
+            await this.tokenRefresh.withAuth(async (token) => {
+                await this.saveForAutoRestore(token);
+            });
 
             console.log('[EncryptionManager] Keys synced successfully');
         } catch (error: any) {
