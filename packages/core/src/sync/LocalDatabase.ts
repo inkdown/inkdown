@@ -310,6 +310,44 @@ export class LocalDatabase {
     }
 
     /**
+     * Clear all path-to-note mappings and version tracking
+     * Used when switching workspaces to avoid stale mappings
+     */
+    async clearAllMappings(): Promise<void> {
+        if (!this.db) throw new Error('Database not initialized');
+
+        this.logger.info('Clearing all path mappings and version data...');
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.db!.transaction(
+                ['pathMappings', 'noteVersions'],
+                'readwrite'
+            );
+            
+            const pathStore = transaction.objectStore('pathMappings');
+            const versionStore = transaction.objectStore('noteVersions');
+            
+            pathStore.clear();
+            versionStore.clear();
+            
+            transaction.oncomplete = () => {
+                // Clear in-memory cache
+                this.cache.pathToNoteId.clear();
+                this.cache.noteIdToPath.clear();
+                this.cache.contentHashes.clear();
+                this.cache.versions.clear();
+                this.logger.info('All mappings cleared');
+                resolve();
+            };
+            
+            transaction.onerror = () => {
+                this.logger.error('Failed to clear mappings', transaction.error);
+                reject(transaction.error);
+            };
+        });
+    }
+
+    /**
      * Change database name (re-initialize with new name)
      */
     async changeDatabaseName(newName: string): Promise<void> {
