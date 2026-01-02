@@ -14,6 +14,12 @@ import { IDBFactory } from 'fake-indexeddb';
 // =============================================================================
 
 /**
+ * In-memory config storage for tests
+ * This simulates the file system behavior
+ */
+const mockConfigStorage = new Map<string, string>();
+
+/**
  * Mock the native module (Tauri bindings)
  * This prevents tests from making actual IPC calls
  */
@@ -35,9 +41,19 @@ vi.mock('@inkdown/core/native', () => ({
             readThemeCss: vi.fn().mockResolvedValue(''),
         },
         config: {
-            readConfigFile: vi.fn().mockRejectedValue(new Error('File not found')),
-            writeConfigFile: vi.fn().mockResolvedValue(undefined),
-            configFileExists: vi.fn().mockResolvedValue(false),
+            readConfigFile: vi.fn().mockImplementation(async (fileName: string) => {
+                const content = mockConfigStorage.get(fileName);
+                if (!content) {
+                    throw new Error(`Config file not found: ${fileName}`);
+                }
+                return content;
+            }),
+            writeConfigFile: vi.fn().mockImplementation(async (fileName: string, content: string) => {
+                mockConfigStorage.set(fileName, content);
+            }),
+            configFileExists: vi.fn().mockImplementation(async (fileName: string) => {
+                return mockConfigStorage.has(fileName);
+            }),
             getConfigDir: vi.fn().mockResolvedValue('/mock/config/dir'),
         },
         dialog: {
@@ -279,6 +295,12 @@ beforeEach(() => {
     
     // Reset IndexedDB for each test
     global.indexedDB = new IDBFactory();
+    
+    // Clear config storage
+    mockConfigStorage.clear();
+    
+    // Clear localStorage
+    localStorage.clear();
 });
 
 afterEach(async () => {
@@ -296,4 +318,10 @@ afterEach(async () => {
     
     // Reset IndexedDB for next test
     global.indexedDB = new IDBFactory();
+    
+    // Clear config storage
+    mockConfigStorage.clear();
+    
+    // Clear localStorage
+    localStorage.clear();
 });
