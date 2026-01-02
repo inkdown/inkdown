@@ -19,6 +19,9 @@
 <p align="center">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-blue" alt="Platform">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
+  <a href="https://github.com/inkdown/inkdown/actions/workflows/ci.yml">
+    <img src="https://github.com/inkdown/inkdown/actions/workflows/ci.yml/badge.svg" alt="CI Status">
+  </a>
 </p>
 
 ---

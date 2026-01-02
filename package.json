@@ -55,7 +55,8 @@
     "scripts": {
         "dev": "bun run --cwd apps/desktop dev",
         "build": "bun run --cwd apps/desktop build",
-        "typecheck": "bun run --filter '*' typecheck",
+        "typecheck": "bun x tsc --noEmit",
+        "typecheck:packages": "bun run --filter '*' typecheck",
         "clean": "bun run --filter '*' clean",
         "tauri": "bun run --cwd apps/desktop tauri",
         "lint": "biome lint .",

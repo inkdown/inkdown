@@ -2,7 +2,7 @@ import { RotateCcw } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { KeybindingManager } from '../managers/KeybindingManager';
+import type { KeybindingManager } from '../managers/KeybindingManager';
 import './ShortcutsSettings.css';
 
 interface ShortcutItem {
