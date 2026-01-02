@@ -48,11 +48,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Initialize Desktop-specific managers
     // Initialize Desktop-specific managers
     if (!app.windowConfigManager) {
-        // @ts-ignore - Assigned via module augmentation
+        // @ts-expect-error - Assigned via module augmentation
         app.windowConfigManager = new WindowConfigManager(app);
     }
     if (!app.keybindingManager) {
-        // @ts-ignore - Assigned via module augmentation
+        // @ts-expect-error - Assigned via module augmentation
         app.keybindingManager = new KeybindingManager(app);
     }
 

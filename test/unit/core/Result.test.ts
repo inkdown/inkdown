@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-    Result,
+    type Result,
     Ok,
     Err,
     fromPromise,

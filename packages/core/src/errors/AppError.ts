@@ -11,7 +11,7 @@ export class AppError extends Error {
     public readonly code: string;
     public readonly metadata?: Record<string, any>;
 
-    constructor(message: string, code: string = 'APP_ERROR', metadata?: Record<string, any>) {
+    constructor(message: string, code = 'APP_ERROR', metadata?: Record<string, any>) {
         super(message);
         this.name = 'AppError';
         this.code = code;
@@ -30,7 +30,7 @@ export class AppError extends Error {
 export class FileSystemError extends AppError {
     public readonly path: string;
 
-    constructor(message: string, path: string, code: string = 'FILESYSTEM_ERROR') {
+    constructor(message: string, path: string, code = 'FILESYSTEM_ERROR') {
         super(message, code);
         this.name = 'FileSystemError';
         this.path = path;
@@ -43,7 +43,7 @@ export class FileSystemError extends AppError {
 export class ConfigError extends AppError {
     public readonly configKey: string;
 
-    constructor(message: string, configKey: string, code: string = 'CONFIG_ERROR') {
+    constructor(message: string, configKey: string, code = 'CONFIG_ERROR') {
         super(message, code);
         this.name = 'ConfigError';
         this.configKey = configKey;
@@ -57,7 +57,7 @@ export class ValidationError extends AppError {
     public readonly field: string;
     public readonly value: any;
 
-    constructor(message: string, field: string, value: any, code: string = 'VALIDATION_ERROR') {
+    constructor(message: string, field: string, value: any, code = 'VALIDATION_ERROR') {
         super(message, code);
         this.name = 'ValidationError';
         this.field = field;
@@ -72,7 +72,7 @@ export class NetworkError extends AppError {
     public readonly url: string;
     public readonly statusCode?: number;
 
-    constructor(message: string, url: string, statusCode?: number, code: string = 'NETWORK_ERROR') {
+    constructor(message: string, url: string, statusCode?: number, code = 'NETWORK_ERROR') {
         super(message, code);
         this.name = 'NetworkError';
         this.url = url;

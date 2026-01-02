@@ -46,7 +46,7 @@ export async function destroyTestApp(app: App): Promise<void> {
         for (const plugin of plugins) {
             try {
                 await app.pluginManager.unloadPlugin(plugin.manifest.id);
-            } catch (error) {
+            } catch (_error) {
                 // Ignore errors during cleanup
             }
         }
@@ -58,7 +58,7 @@ export async function destroyTestApp(app: App): Promise<void> {
         for (const tab of tabs) {
             try {
                 await app.tabManager.closeTab(tab.id);
-            } catch (error) {
+            } catch (_error) {
                 // Ignore errors during cleanup
             }
         }
@@ -72,7 +72,7 @@ export async function destroyTestApp(app: App): Promise<void> {
                 indexedDB.deleteDatabase(dbInfo.name);
             }
         }
-    } catch (error) {
+    } catch (_error) {
         // Ignore errors during cleanup
     }
     
@@ -102,7 +102,7 @@ export async function clearAllIndexedDB(): Promise<void> {
         }
         // Wait for delete operations to complete
         await flushIndexedDB();
-    } catch (error) {
+    } catch (_error) {
         // Ignore errors
     }
 }

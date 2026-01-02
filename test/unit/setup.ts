@@ -97,8 +97,8 @@ const createMockElement = (): any => ({
     removeEventListener: vi.fn(),
     textContent: '',
     innerHTML: '',
-    createEl: vi.fn(function() { return createMockElement(); }),
-    createDiv: vi.fn(function() { return createMockElement(); }),
+    createEl: vi.fn(() => createMockElement()),
+    createDiv: vi.fn(() => createMockElement()),
     addClass: vi.fn(function() { return this; }),
     setText: vi.fn(function() { return this; }),
     empty: vi.fn(),
@@ -148,7 +148,7 @@ if (typeof HTMLElement !== 'undefined') {
 
 // Also add to Document.prototype
 if (typeof Document !== 'undefined') {
-    Document.prototype.createEl = function(tag: string, options?: any) {
+    Document.prototype.createEl = (tag: string, options?: any) => {
         const el = document.createElement(tag);
         if (options?.cls) {
             el.className = options.cls;
@@ -312,7 +312,7 @@ afterEach(async () => {
                 indexedDB.deleteDatabase(dbInfo.name);
             }
         }
-    } catch (error) {
+    } catch (_error) {
         // Ignore errors during cleanup
     }
     

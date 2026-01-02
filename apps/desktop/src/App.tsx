@@ -1097,7 +1097,7 @@ function App() {
                         <div style={{ padding: '2rem', textAlign: 'center' }}>
                             <h2>Failed to load workspace</h2>
                             <p>{error.message}</p>
-                            <button onClick={() => window.location.reload()}>
+                            <button type="button" onClick={() => window.location.reload()}>
                                 Reload Application
                             </button>
                         </div>

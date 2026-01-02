@@ -89,6 +89,7 @@ function DefaultErrorFallback({ error }: { error: Error }) {
 
             <div className="error-boundary__actions">
                 <button 
+                    type="button"
                     onClick={handleReload}
                     className="error-boundary__button error-boundary__button--primary"
                 >
@@ -99,6 +100,7 @@ function DefaultErrorFallback({ error }: { error: Error }) {
                 </button>
                 
                 <button 
+                    type="button"
                     onClick={handleGoBack}
                     className="error-boundary__button error-boundary__button--secondary"
                 >
