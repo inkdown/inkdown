@@ -33,7 +33,7 @@ export function OnboardingScreen({ app, onComplete }: OnboardingScreenProps) {
             await app.syncManager.login(email, password);
             await app.configManager.saveConfig('sync', {
                 onboardingCompleted: true,
-                enabled: true,
+                enabled: false, // User must explicitly enable sync in Settings
             });
             onComplete();
         } catch (err) {
