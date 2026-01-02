@@ -74,6 +74,13 @@ export class SyncManager {
         this.workspaceLinks = config?.workspaceLinks || [];
         this.currentWorkspaceId = config?.currentWorkspaceId;
 
+        // Log loaded config for debugging
+        this.logger.info('SyncManager config loaded:', {
+            enabled: this.enabled,
+            currentWorkspaceId: this.currentWorkspaceId,
+            workspaceLinksCount: this.workspaceLinks.length,
+        });
+
         // Initialize selective sync
         await this.selectiveSync.init();
 
@@ -100,7 +107,6 @@ export class SyncManager {
                 const restored = await this.encryptionManager.restoreFromStorage(token);
 
                 if (restored) {
-                    this.logger.info('Encryption session restored, starting sync');
                     this.logger.info('Encryption session restored, starting sync');
                     // Do not await startSync here, as it waits for workspace to be ready
                     // and workspace readiness depends on App.init completing and UI mounting
