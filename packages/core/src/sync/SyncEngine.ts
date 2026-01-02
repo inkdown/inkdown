@@ -386,7 +386,36 @@ export class SyncEngine extends Events {
         }
 
         // 7. Upload unmapped local files (new files not yet on server)
-        const filesToUpload = [...unmappedFiles, ...orphanedFiles];
+        // DEDUPLICATION: Check if server already has a note with same content hash
+        // This prevents duplicates when the same workspace is synced from multiple local folders
+        const filesToUpload: string[] = [];
+        
+        for (const path of [...unmappedFiles, ...orphanedFiles]) {
+            const fileData = localFileMap.get(path);
+            if (!fileData) continue;
+            
+            // Check if server already has a note with this exact content hash
+            const serverMatch = manifestNotes.find(
+                (n) => !n.is_deleted && n.content_hash === fileData.hash
+            );
+            
+            if (serverMatch) {
+                // Content already exists on server - just create local mapping instead of uploading
+                this.logger.info(`Found matching server note for ${path} (hash match), creating mapping`);
+                await this.mapPathToNote(path, serverMatch.id);
+                await this.localDatabase.saveNoteVersion(
+                    path,
+                    serverMatch.version,
+                    serverMatch.id,
+                    serverMatch.content_hash
+                );
+                this.syncLogger.info(`Mapped existing: ${path} → ${serverMatch.id}`);
+                // Don't add to upload queue - already on server
+            } else {
+                // Truly new content - queue for upload
+                filesToUpload.push(path);
+            }
+        }
 
         if (filesToUpload.length > 0) {
             // CRITICAL: Pause queue BEFORE enqueueing to prevent timer-based processing
