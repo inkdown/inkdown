@@ -16,6 +16,8 @@ export {
     isAppError,
     toAppError,
 } from './errors/AppError';
+export type { Result } from './errors/Result';
+export { Ok, Err, fromPromise, tryCatch, tryCatchAsync } from './errors/Result';
 
 // Core classes
 export { App } from './App';
