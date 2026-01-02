@@ -400,10 +400,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         loadSyncData();
     }, [app]);
 
-    // Memoize sync state to prevent unnecessary re-renders
+    // Sync state - use useState instead of useMemo for reactivity
     const isLoggedIn = useMemo(() => app.syncManager.isLoggedIn(), [app.syncManager]);
-
-    const isSyncEnabled = useMemo(() => app.syncManager.isEnabled(), [app.syncManager]);
+    
+    const [isSyncEnabled, setIsSyncEnabled] = useState(() => app.syncManager.isEnabled());
+    
+    // Keep isSyncEnabled in sync with actual manager state
+    useEffect(() => {
+        setIsSyncEnabled(app.syncManager.isEnabled());
+    }, [app, _forceUpdateValue]); // _forceUpdateValue triggers recalculation
 
     // Subscribe to plugin changes to update sidebar
     useEffect(() => {
@@ -434,6 +439,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         async (enabled: boolean) => {
             if (!enabled) {
                 await app.syncManager.disable();
+                setIsSyncEnabled(false); // Update local state immediately
                 forceUpdate((v) => v + 1);
                 return;
             }
@@ -460,6 +466,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             } else {
                 // Not logged in, just enable (will prompt login later or show login link)
                 await app.syncManager.enable();
+                setIsSyncEnabled(true); // Update local state immediately
                 forceUpdate((v) => v + 1);
             }
         },
@@ -569,6 +576,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             if (showWorkspaceSelectionAfterPassword) {
                 setShowWorkspaceSelectionAfterPassword(false);
                 await app.syncManager.enable();
+                setIsSyncEnabled(true); // Update local state immediately
             }
             
             // Force re-render of sync status
@@ -590,6 +598,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             if (showWorkspaceSelectionAfterPassword) {
                 setShowWorkspaceSelectionAfterPassword(false);
                 await app.syncManager.enable();
+                setIsSyncEnabled(true); // Update local state immediately
             }
             
             // Force re-render of sync status
