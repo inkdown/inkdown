@@ -99,6 +99,20 @@ export class SyncEngine extends Events {
         return this.workspaceId;
     }
 
+    /**
+     * Trigger a full sync/reconciliation
+     * Used when workspace changes or manual sync is requested
+     */
+    async triggerSync(): Promise<void> {
+        if (!this.isRunning) {
+            this.logger.warn('Cannot trigger sync - engine not running');
+            return;
+        }
+        
+        this.logger.info('Triggering full sync...');
+        await this.performInitialSync();
+    }
+
     async start(): Promise<void> {
         if (this.isRunning) {
             this.logger.info('SyncEngine already running');
