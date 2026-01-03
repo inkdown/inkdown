@@ -1002,22 +1002,20 @@ export class SyncEngine extends Events {
       this.syncLogger.debug(`Path determined: ${path} (existing: ${existingPath || 'none'}, server title path: ${serverPath})`);
 
       // If we found a matching local file but its name differs from server title, rename it
+      // If we found a matching local file but its name differs from server title, rename it
+      let finalPath = existingPath || serverPath;
+      
       if (matchedLocalFile && existingPath && existingPath !== serverPath) {
         this.syncLogger.info(`Renaming local file to match server title: ${existingPath} → ${serverPath}`);
-        this.fileWatcher.pause();
         try {
-          await this.app.fileManager.renameFile(matchedLocalFile, serverPath);
-          // Update the path to the new location
-          existingPath = serverPath;
+          // Use dedicated rename method that handles mapping atomically
+          await this.renameLocalFile(existingPath, serverPath);
+          finalPath = serverPath;
         } catch (renameError) {
           this.syncLogger.warn(`Failed to rename file: ${renameError}, keeping original path`);
-        } finally {
-          this.fileWatcher.resume();
+          // finalPath remains as existingPath on error
         }
       }
-
-      // Use the final path (after potential rename)
-      const finalPath = existingPath || serverPath;
 
       // Check for local conflict
       const localExists = await this.app.fileSystemManager.exists(finalPath);
@@ -1139,7 +1137,13 @@ export class SyncEngine extends Events {
       }
 
       // Update tracking
-      await this.mapPathToNote(finalPath, note.id);
+      // Note: If file was renamed, mapping already updated by renameLocalFile()
+      // Only create mapping if this is a new file or no rename occurred
+      const existingNoteId = await this.localDatabase.getNoteIdByPath(finalPath);
+      if (!existingNoteId) {
+        await this.mapPathToNote(finalPath, note.id);
+      }
+      
       await this.localDatabase.saveNoteVersion(
         finalPath,
         note.version,
