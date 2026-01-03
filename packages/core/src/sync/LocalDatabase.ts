@@ -40,7 +40,7 @@ export class LocalDatabase {
         this.logger.debug(`Initializing IndexedDB: ${this.dbName}`);
 
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, 2); // Version 2 - added new stores
+            const request = globalThis.indexedDB.open(this.dbName, 2); // Version 2 - added new stores
 
             request.onerror = () => {
                 this.logger.error('Failed to open IndexedDB', request.error);
@@ -465,6 +465,83 @@ export class LocalDatabase {
                 this.logger.error('Failed to delete path mapping', request.error);
                 reject(request.error);
             };
+        });
+    }
+
+    /**
+     * Update path mapping when a file is renamed
+     * This atomically: deletes old path mapping, creates new mapping, transfers version data
+     */
+    async updatePathMapping(oldPath: string, newPath: string, noteId: string): Promise<void> {
+        if (!this.db) throw new Error('Database not initialized');
+
+        this.logger.debug(`Updating path mapping: ${oldPath} → ${newPath} (noteId: ${noteId})`);
+
+        // Get existing version data before deleting
+        const existingVersion = await this.getNoteVersion(oldPath);
+        const existingHash = await this.getContentHash(oldPath);
+        const hasVersionData = existingVersion !== undefined || existingHash !== undefined;
+
+        return new Promise((resolve, reject) => {
+            // Only include noteVersions store if we have version data to transfer
+            const stores: ('pathMappings' | 'noteVersions')[] = hasVersionData 
+                ? ['pathMappings', 'noteVersions'] 
+                : ['pathMappings'];
+            const transaction = this.db!.transaction(stores, 'readwrite');
+
+            transaction.onerror = (event) => {
+                this.logger.error('Failed to update path mapping', transaction.error);
+                reject(transaction.error);
+            };
+
+            transaction.onabort = (event) => {
+                this.logger.error('Transaction aborted', transaction.error);
+                reject(new Error('Transaction aborted'));
+            };
+
+            transaction.oncomplete = () => {
+                // Update caches after transaction completes
+                this.cache.pathToNoteId.delete(oldPath);
+                this.cache.pathToNoteId.set(newPath, noteId);
+                this.cache.noteIdToPath.set(noteId, newPath);
+                
+                if (existingVersion !== undefined) {
+                    this.cache.versions.set(newPath, existingVersion);
+                    this.cache.versions.delete(oldPath);
+                }
+                
+                if (existingHash !== undefined) {
+                    this.cache.contentHashes.set(newPath, existingHash);
+                    this.cache.contentHashes.delete(oldPath);
+                }
+
+                this.logger.debug(`Path mapping updated successfully: ${oldPath} → ${newPath}`);
+                resolve();
+            };
+
+            // Delete old path mapping
+            const pathMappingsStore = transaction.objectStore('pathMappings');
+            pathMappingsStore.delete(oldPath);
+
+            // Create new path mapping
+            pathMappingsStore.put({ path: newPath, noteId, updatedAt: new Date() });
+
+            // Handle version data transfer if it exists
+            if (hasVersionData) {
+                const noteVersionsStore = transaction.objectStore('noteVersions');
+                
+                // Delete old version entry
+                noteVersionsStore.delete(oldPath);
+
+                // Create new version entry
+                noteVersionsStore.put({
+                    path: newPath,
+                    version: existingVersion || 0,
+                    noteId,
+                    contentHash: existingHash || '',
+                    updatedAt: new Date(),
+                });
+            }
         });
     }
 

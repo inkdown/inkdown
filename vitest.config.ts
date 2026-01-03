@@ -20,6 +20,10 @@ export default defineConfig({
             jsdom: {
                 // Include default HTML structure
                 html: '<!DOCTYPE html><html><head></head><body><div id="root"></div></body></html>',
+                // Expose globals
+                beforeParse(window: any) {
+                    // IndexedDB will be set up by the setup file
+                },
             },
         },
         
