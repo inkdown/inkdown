@@ -368,37 +368,60 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const [isSyncing, setIsSyncing] = useState(false);
 
     // Load local DB name and ignore patterns
-    useEffect(() => {
-        const loadSyncData = async () => {
-            try {
-                const syncConfig = await app.configManager.loadConfig<any>('sync');
-                if (syncConfig?.localDbName) {
-                    setLocalDbName(syncConfig.localDbName);
-                }
-
-                // Load ignore patterns
-                const patterns = app.syncManager.selectiveSync.getIgnorePatterns();
-                setIgnoredPatterns(patterns);
-
-                // Load linked workspace
-                const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
-                if (currentWorkspaceId) {
-                    try {
-                        const allWorkspaces = await app.syncManager.listWorkspaces();
-                        const linked = allWorkspaces.find((w) => w.id === currentWorkspaceId);
-                        if (linked) {
-                            setLinkedWorkspace(linked);
-                        }
-                    } catch (err) {
-                        console.error('Failed to load linked workspace:', err);
-                    }
-                }
-            } catch (error: any) {
-                console.error('Failed to load sync data:', error);
+    const loadSyncData = useCallback(async () => {
+        try {
+            const syncConfig = await app.configManager.loadConfig<any>('sync');
+            if (syncConfig?.localDbName) {
+                setLocalDbName(syncConfig.localDbName);
             }
-        };
-        loadSyncData();
+
+            // Load ignore patterns
+            const patterns = app.syncManager.selectiveSync.getIgnorePatterns();
+            setIgnoredPatterns(patterns);
+
+            // Load linked workspace
+            const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
+            if (currentWorkspaceId) {
+                try {
+                    const allWorkspaces = await app.syncManager.listWorkspaces();
+                    const linked = allWorkspaces.find((w) => w.id === currentWorkspaceId);
+                    if (linked) {
+                        setLinkedWorkspace(linked);
+                    } else {
+                        setLinkedWorkspace(null);
+                    }
+                } catch (err) {
+                    console.error('Failed to load linked workspace:', err);
+                    setLinkedWorkspace(null);
+                }
+            } else {
+                setLinkedWorkspace(null);
+            }
+            
+            // Update sync enabled state
+            setIsSyncEnabled(app.syncManager.isEnabled());
+        } catch (error: any) {
+            console.error('Failed to load sync data:', error);
+        }
     }, [app]);
+
+    // Initial load of sync data
+    useEffect(() => {
+        loadSyncData();
+    }, [loadSyncData]);
+
+    // Listen for sync state changes (workspace switch, etc.)
+    useEffect(() => {
+        const handleSyncStateChanged = () => {
+            loadSyncData();
+        };
+
+        const ref = app.workspace.on('sync-state-changed', handleSyncStateChanged);
+
+        return () => {
+            ref.unload();
+        };
+    }, [app, loadSyncData]);
 
     // Sync state - use useState instead of useMemo for reactivity
     const isLoggedIn = useMemo(() => app.syncManager.isLoggedIn(), [app.syncManager]);
@@ -1252,8 +1275,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 </Button>
                                             </Setting>
 
-                                            {/* Only show workspace link section when sync is enabled */}
-                                            {isSyncEnabled && (
+                                            {/* Show workspace link section when logged in (needed to link before enabling sync) */}
+                                            {isLoggedIn && (
                                                 <Setting
                                                     name="Workspace Link"
                                                     description={

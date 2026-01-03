@@ -6,6 +6,7 @@ import type { EncryptionManager } from './EncryptionManager';
 import { FileWatcherService } from './FileWatcherService';
 import type { LocalDatabase } from './LocalDatabase';
 import { NoteSyncService } from './NoteSyncService';
+import { PathManager } from './PathManager';
 import { SelectiveSyncManager } from './SelectiveSyncManager';
 import { getSyncLogger } from './SyncLogger';
 import type { FileChangeEvent, LocalNoteInfo, NoteResponse, SyncVerificationResult } from './types';
@@ -21,6 +22,7 @@ export class SyncEngine extends Events {
   private selectiveSync: SelectiveSyncManager;
   private encryptionManager: EncryptionManager;
   private localDatabase: LocalDatabase;
+  private pathManager: PathManager;
   private logger = loggers.sync || loggers.app;
   private syncLogger = getSyncLogger();
 
@@ -42,6 +44,10 @@ export class SyncEngine extends Events {
     this.app = app;
     this.encryptionManager = encryptionManager;
     this.localDatabase = localDatabase;
+
+    // Initialize path manager with workspace root
+    const workspaceRoot = app.workspace.getRoot() || '';
+    this.pathManager = new PathManager(app, workspaceRoot);
 
     // Initialize components
     this.selectiveSync = new SelectiveSyncManager(app);
@@ -265,15 +271,16 @@ export class SyncEngine extends Events {
     // 1. Get manifest from server (compact list of all notes)
     const manifest = await this.noteSyncService.getManifest(this.workspaceId);
     const manifestNotes = manifest?.notes || [];
-    this.logger.info(`Server manifest: ${manifestNotes.length} notes`);
-    this.syncLogger.info(`Server has ${manifestNotes.length} notes`, undefined, 'Sync');
+    const activeNotes = manifestNotes.filter(n => !n.is_deleted);
+    const deletedNotes = manifestNotes.filter(n => n.is_deleted);
+    this.logger.info(`Server manifest: ${activeNotes.length} active notes, ${deletedNotes.length} deleted notes`);
+    this.syncLogger.info(`Server has ${activeNotes.length} notes`, undefined, 'Sync');
 
     // 2. Get all local markdown files
     const localFiles = await this.app.workspace.getFiles(['md']);
     this.logger.info(`Local files: ${localFiles.length} markdown files`);
 
     // 3. Build server map for quick lookup
-    const serverNoteIds = new Set(manifestNotes.map((n) => n.id));
     const serverMap = new Map(manifestNotes.map((n) => [n.id, n]));
 
     // 4. Build local state for batch diff
@@ -295,7 +302,25 @@ export class SyncEngine extends Events {
       const noteId = await this.localDatabase.getNoteIdByPath(file.path);
       if (noteId) {
         // Check if this ID actually exists on the server
-        if (serverNoteIds.has(noteId)) {
+        const serverNote = serverMap.get(noteId);
+        if (serverNote) {
+          // Check if the note is deleted on server
+          if (serverNote.is_deleted) {
+            // Server note is deleted - remove local file
+            this.logger.info(`Deleting local file (note deleted on server): ${file.path}`);
+            this.fileWatcher.pause();
+            try {
+              await this.app.fileManager.trashFile(file);
+              await this.localDatabase.deletePathMapping(file.path);
+              this.syncLogger.info(`Deleted: ${file.path}`);
+            } catch (error) {
+              this.logger.warn(`Failed to delete ${file.path}: ${error}`);
+            } finally {
+              this.fileWatcher.resume();
+            }
+            continue; // Skip this file
+          }
+          
           // Valid mapping - include in batch diff
           const storedVersion = (await this.localDatabase.getNoteVersion(file.path)) || 0;
           localNotes.push({
@@ -394,60 +419,130 @@ export class SyncEngine extends Events {
       const fileData = localFileMap.get(path);
       if (!fileData) continue;
 
-      // Check if server already has a note with this exact content hash
+      // Skip hash-based matching for empty files
+      // Empty files all have the same hash (SHA-256 of empty string), causing false positive matches
+      const EMPTY_FILE_HASH = '47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=';
+      if (fileData.hash === EMPTY_FILE_HASH) {
+        this.logger.info(`Skipping hash-based deduplication for empty file: ${path}`);
+        filesToUpload.push(path);
+        continue;
+      }
+
+      // FIRST: Check if server already has an ACTIVE note with this exact content hash
+      // This prevents duplicates when the same workspace is synced from multiple local folders
       const serverMatch = manifestNotes.find(
         (n) => !n.is_deleted && n.content_hash === fileData.hash
       );
 
       if (serverMatch) {
-        // Content already exists on server - check if local file needs renaming
-        this.logger.info(`Found matching server note for ${path} (hash match), creating mapping`);
+        // Content might exist on server - verify with full note (manifest could be stale)
+        this.logger.info(`Found potential matching server note for ${path} (manifest hash match), verifying...`);
 
-        // Fetch full note to get the title
+        // Fetch full note to get the title AND verify content hash
         let serverTitle: string | null = null;
+        let fullNote: any = null;
         try {
-          const fullNote = await this.noteSyncService.getNote(serverMatch.id);
+          fullNote = await this.noteSyncService.getNote(serverMatch.id);
+          
+          // CRITICAL: Verify content hash from full note, not manifest (which could be stale)
+          if (fullNote.content_hash !== fileData.hash) {
+            this.logger.info(`Content hash mismatch (manifest stale): manifest=${serverMatch.content_hash}, actual=${fullNote.content_hash}, local=${fileData.hash}`);
+            this.logger.info(`Skipping deduplication for ${path}, will be handled by batch diff or applyRemoteUpdate`);
+            continue; // Not a real match, skip deduplication
+          }
+          
           serverTitle = await this.decryptWithFallback(fullNote.encrypted_title, fullNote.nonce);
+          this.logger.info(`Confirmed matching server note for ${path} (full note hash match)`);
         } catch (e) {
-          this.logger.warn(`Failed to get/decrypt title for ${serverMatch.id}, skipping rename check`);
+          this.logger.warn(`Failed to get/decrypt note for ${serverMatch.id}, skipping: ${e}`);
+          continue;
         }
 
         let finalPath = path;
+        let renameSucceeded = true;
+        
         if (serverTitle) {
           const expectedPath = this.sanitizePath(serverTitle);
 
           // If local path differs from server title, rename the local file
           if (path !== expectedPath) {
-            this.logger.info(`Renaming local file to match server: ${path} → ${expectedPath}`);
-            try {
-              // Use dedicated rename method that handles mapping atomically
-              await this.renameLocalFile(path, expectedPath);
-              finalPath = expectedPath;
-              this.syncLogger.info(`Renamed: ${path} → ${expectedPath}`);
-            } catch (renameError) {
-              this.logger.warn(`Failed to rename ${path}: ${renameError}`);
-              // Keep original path on error
+            // Check if expected path already exists
+            const expectedExists = await this.app.fileSystemManager.exists(expectedPath);
+            if (expectedExists) {
+              // Can't rename - destination already exists
+              // This might be a duplicate or the correct file is already there
+              // Don't match to this server note - let the file be checked against deleted notes
+              this.logger.warn(`Cannot rename ${path} to ${expectedPath}: destination already exists. Will check if it matches a deleted note.`);
+              renameSucceeded = false;
+            } else {
+              this.logger.info(`Renaming local file to match server: ${path} → ${expectedPath}`);
+              const file = this.app.workspace.getAbstractFileByPath(path);
+              if (file) {
+                this.fileWatcher.pause();
+                try {
+                  // NOTE: Can't use renameLocalFile() here because no mapping exists yet
+                  // This is content-hash matching during deduplication
+                  await this.app.fileManager.renameFile(file, expectedPath);
+                  finalPath = expectedPath;
+                  this.syncLogger.info(`Renamed: ${path} → ${expectedPath}`);
+                } catch (renameError) {
+                  this.logger.warn(`Failed to rename ${path}: ${renameError}`);
+                  renameSucceeded = false;
+                } finally {
+                  this.fileWatcher.resume();
+                }
+              } else {
+                renameSucceeded = false;
+              }
             }
-          } else {
-            // No rename needed, just ensure mapping exists
-            await this.mapPathToNote(finalPath, serverMatch.id);
           }
-        } else {
-          // No server title, use existing path
-          await this.mapPathToNote(finalPath, serverMatch.id);
         }
-        await this.localDatabase.saveNoteVersion(
-          finalPath,
-          serverMatch.version,
-          serverMatch.id,
-          serverMatch.content_hash
-        );
-        this.syncLogger.info(`Mapped existing: ${finalPath} → ${serverMatch.id}`);
-        // Don't add to upload queue - already on server
-      } else {
-        // Truly new content - queue for upload
-        filesToUpload.push(path);
+        
+        // Only create mapping if rename succeeded (or wasn't needed)
+        if (renameSucceeded) {
+          // Create mapping for the final path (after potential rename)
+          await this.mapPathToNote(finalPath, serverMatch.id);
+          await this.localDatabase.saveNoteVersion(
+            finalPath,
+            serverMatch.version,
+            serverMatch.id,
+            serverMatch.content_hash
+          );
+          this.syncLogger.info(`Mapped existing: ${finalPath} → ${serverMatch.id}`);
+          // Don't add to upload queue - already on server
+          continue; // Skip to next file
+        }
+        
+        // If rename failed, don't match to this note - fall through to check deleted notes
+        // or upload as new
       }
+
+      // SECOND: Check if server has a DELETED note with this exact content hash
+      // This prevents re-uploading files that were deleted in another workspace
+      const deletedMatch = manifestNotes.find(
+        (n) => n.is_deleted && n.content_hash === fileData.hash
+      );
+
+      if (deletedMatch) {
+        // File matches a deleted note - delete local file instead of uploading
+        this.logger.info(`Found deleted note matching ${path} (hash=${fileData.hash}), deleting local file`);
+        const file = this.app.workspace.getAbstractFileByPath(path);
+        if (file) {
+          this.fileWatcher.pause();
+          try {
+            await this.app.fileManager.trashFile(file);
+            this.syncLogger.info(`Deleted (matched deleted note): ${path}`);
+          } catch (error) {
+            this.logger.warn(`Failed to delete ${path}: ${error}`);
+          } finally {
+            this.fileWatcher.resume();
+          }
+        }
+        continue; // Skip this file, don't upload
+      }
+
+      // THIRD: No match found - truly new content, queue for upload
+      filesToUpload.push(path);
     }
 
     if (filesToUpload.length > 0) {
@@ -499,6 +594,9 @@ export class SyncEngine extends Events {
     }
 
     this.logger.info('Full reconciliation complete');
+    
+    // Trigger workspace refresh to update file explorer UI
+    this.app.workspace.triggerSyncComplete();
   }
 
   /**
@@ -676,7 +774,7 @@ export class SyncEngine extends Events {
   }
 
   private async uploadChange(event: FileChangeEvent): Promise<void> {
-    const { type, path, contentHash } = event;
+    const { type, path } = event;
 
     if (type === 'delete') {
       await this.handleLocalDelete(path);
@@ -698,6 +796,10 @@ export class SyncEngine extends Events {
     const content = await this.app.fileManager.read(file);
     const title = this.extractTitle(path);
 
+    // CRITICAL: Calculate hash from actual content being uploaded
+    // Don't use event.contentHash as it may be stale
+    const contentHash = await this.calculateHash(content);
+
     // Encrypt content with embedded nonce (self-contained blobs)
     const encryptedTitle = await this.encryptionManager.encryptBlob(title);
     const encryptedContent = await this.encryptionManager.encryptBlob(content);
@@ -708,6 +810,8 @@ export class SyncEngine extends Events {
     if (existingNoteId) {
       // Update existing note with version check
       const currentVersion = (await this.localDatabase.getNoteVersion(path)) || 0;
+
+      this.logger.info(`[UPLOAD DEBUG] Updating note ${existingNoteId}: content_length=${content.length}, content_hash=${contentHash}`);
 
       try {
         const updatedNote = await this.noteSyncService.updateNote(existingNoteId, {
@@ -827,11 +931,34 @@ export class SyncEngine extends Events {
   }
 
   private async handleLocalDelete(path: string): Promise<void> {
+    // Check if this is a file with a mapping
     const noteId = await this.localDatabase.getNoteIdByPath(path);
     if (noteId) {
       await this.noteSyncService.deleteNote(noteId);
       await this.unmapPath(path);
       this.syncLogger.info(`Deleted note: ${path}`);
+      return;
+    }
+
+    // If no direct mapping, this might be a directory deletion
+    // Check for any mapped files that are children of this path
+    const allMappings = await this.localDatabase.getAllPathMappings();
+    const childrenToDelete = allMappings.filter(mapping => 
+      this.pathManager.isChildOf(mapping.path, path)
+    );
+
+    if (childrenToDelete.length > 0) {
+      this.syncLogger.info(`Directory deleted: ${path}, deleting ${childrenToDelete.length} child notes`);
+      
+      for (const { path: childPath, noteId: childNoteId } of childrenToDelete) {
+        try {
+          await this.noteSyncService.deleteNote(childNoteId);
+          await this.unmapPath(childPath);
+          this.syncLogger.info(`Deleted child note: ${childPath}`);
+        } catch (error) {
+          this.syncLogger.error(`Failed to delete child note ${childPath}: ${error}`);
+        }
+      }
     }
   }
 
@@ -840,7 +967,7 @@ export class SyncEngine extends Events {
 
     const noteId = await this.localDatabase.getNoteIdByPath(oldPath);
     if (noteId) {
-      // Update mapping atomically (transfers version data)
+      // Single file rename - update mapping atomically (transfers version data)
       await this.localDatabase.updatePathMapping(oldPath, newPath, noteId);
 
       // Update note title with embedded nonce
@@ -854,7 +981,45 @@ export class SyncEngine extends Events {
 
       this.syncLogger.info(`Renamed: ${oldPath} → ${newPath}`);
     } else {
-      // No mapping found for oldPath - check if server has a note with matching content
+      // No direct mapping - might be directory rename or unmapped file
+      
+      // Check for directory rename (children need path updates)
+      const allMappings = await this.localDatabase.getAllPathMappings();
+      const childrenToRename = allMappings.filter(mapping => 
+        this.pathManager.isChildOf(mapping.path, oldPath)
+      );
+
+      if (childrenToRename.length > 0) {
+        // Directory rename - update all child file paths and titles
+        this.syncLogger.info(`Directory renamed: ${oldPath} → ${newPath}, updating ${childrenToRename.length} child notes`);
+        
+        for (const { path: childOldPath, noteId: childNoteId } of childrenToRename) {
+          try {
+            // Calculate new path by replacing old directory prefix with new
+            const relativePart = childOldPath.substring(oldPath.length);
+            const childNewPath = `${newPath}${relativePart}`;
+            
+            // Update mapping
+            await this.localDatabase.updatePathMapping(childOldPath, childNewPath, childNoteId);
+            
+            // Update note title on server
+            const newTitle = this.extractTitle(childNewPath);
+            const encryptedTitle = await this.encryptionManager.encryptBlob(newTitle);
+            
+            await this.noteSyncService.updateNote(childNoteId, {
+              encrypted_title: encryptedTitle,
+              nonce: 'embedded',
+            });
+            
+            this.syncLogger.info(`Renamed child: ${childOldPath} → ${childNewPath}`);
+          } catch (error) {
+            this.syncLogger.error(`Failed to rename child ${childOldPath}: ${error}`);
+          }
+        }
+        return;
+      }
+
+      // Not a directory, check if it's an unmapped file with matching content
       this.logger.warn(`[handleLocalRename] No note mapping found for oldPath: ${oldPath}`);
 
       const file = this.app.workspace.getAbstractFileByPath(newPath) as any;
@@ -957,6 +1122,32 @@ export class SyncEngine extends Events {
 
   private async applyRemoteUpdate(note: NoteResponse): Promise<void> {
     this.syncLogger.debug(`applyRemoteUpdate called for note ${note.id}`);
+    
+    // Handle deleted notes
+    if (note.is_deleted) {
+      const existingPath = await this.localDatabase.getPathByNoteId(note.id);
+      if (existingPath) {
+        this.logger.info(`Deleting local file (note deleted on server): ${existingPath}`);
+        const file = this.app.workspace.getAbstractFileByPath(existingPath);
+        if (file) {
+          this.fileWatcher.pause();
+          try {
+            await this.app.fileManager.trashFile(file);
+            await this.localDatabase.deletePathMapping(existingPath);
+            this.syncLogger.info(`Deleted: ${existingPath}`);
+          } catch (error) {
+            this.logger.warn(`Failed to delete ${existingPath}: ${error}`);
+          } finally {
+            this.fileWatcher.resume();
+          }
+        } else {
+          // File doesn't exist locally, just clean up mapping
+          await this.localDatabase.deletePathMapping(existingPath);
+        }
+      }
+      return; // Don't process deleted notes further
+    }
+    
     try {
       // Decrypt using embedded nonce format with legacy fallback
       this.syncLogger.debug(`Decrypting title for note ${note.id}...`);
@@ -986,9 +1177,11 @@ export class SyncEngine extends Events {
           const fileContent = await this.app.fileManager.read(file);
           const fileHash = await this.calculateHash(fileContent);
 
+          this.logger.debug(`Comparing hashes for ${file.path}: local=${fileHash}, server=${note.content_hash}, match=${fileHash === note.content_hash}`);
+
           if (fileHash === note.content_hash) {
             // Found a local file with matching content - use this path
-            this.syncLogger.info(`Found local file with matching content: ${file.path} → ${note.id}`);
+            this.syncLogger.info(`Found local file with matching content: ${file.path} → ${note.id} (hash=${fileHash})`);
             existingPath = file.path;
             matchedLocalFile = file;
             break;
@@ -1002,18 +1195,29 @@ export class SyncEngine extends Events {
       this.syncLogger.debug(`Path determined: ${path} (existing: ${existingPath || 'none'}, server title path: ${serverPath})`);
 
       // If we found a matching local file but its name differs from server title, rename it
-      // If we found a matching local file but its name differs from server title, rename it
       let finalPath = existingPath || serverPath;
       
       if (matchedLocalFile && existingPath && existingPath !== serverPath) {
         this.syncLogger.info(`Renaming local file to match server title: ${existingPath} → ${serverPath}`);
+        this.fileWatcher.pause();
         try {
-          // Use dedicated rename method that handles mapping atomically
-          await this.renameLocalFile(existingPath, serverPath);
+          // Ensure target directory exists
+          await this.pathManager.ensureDirectoryExists(serverPath);
+          
+          // Rename the file
+          await this.app.fileManager.renameFile(matchedLocalFile, serverPath);
           finalPath = serverPath;
+          
+          // If there's an existing mapping, update it (atomic operation)
+          const existingNoteId = await this.localDatabase.getNoteIdByPath(existingPath);
+          if (existingNoteId) {
+            await this.localDatabase.updatePathMapping(existingPath, serverPath, existingNoteId);
+          }
         } catch (renameError) {
           this.syncLogger.warn(`Failed to rename file: ${renameError}, keeping original path`);
           // finalPath remains as existingPath on error
+        } finally {
+          this.fileWatcher.resume();
         }
       }
 
@@ -1126,6 +1330,8 @@ export class SyncEngine extends Events {
         // Pause file watcher to prevent detecting our own changes
         this.fileWatcher.pause();
         try {
+          // Ensure parent directories exist before creating file
+          await this.pathManager.ensureDirectoryExists(finalPath);
           await this.app.fileManager.createFile(finalPath, content);
           this.syncLogger.info(`Created local file: ${finalPath}`);
         } catch (createError) {
@@ -1187,17 +1393,11 @@ export class SyncEngine extends Events {
 
   // Helper methods
   private extractTitle(path: string): string {
-    return (path.split('/').pop() || '').replace(/\.md$/, '');
+    return this.pathManager.extractTitle(path);
   }
 
   private sanitizePath(title: string): string {
-    const sanitizedName = `${title.replace(/[/\\?%*:|"<>]/g, '-')}.md`;
-    const workspaceRoot = this.app.workspace.getRoot();
-    if (workspaceRoot) {
-      // Join workspace root with sanitized filename
-      return `${workspaceRoot}/${sanitizedName}`;
-    }
-    return sanitizedName;
+    return this.pathManager.sanitizePath(title);
   }
 
   private async calculateHash(content: string): Promise<string> {
@@ -1225,45 +1425,6 @@ export class SyncEngine extends Events {
     await this.localDatabase.deleteNoteVersion(path);
   }
 
-  /**
-   * Rename a local file and update all associated mappings atomically
-   * Follows Single Responsibility Principle - one method does one thing correctly
-   * 
-   * @param oldPath - Current file path
-   * @param newPath - Target file path
-   * @throws Error if file doesn't exist or no mapping found
-   */
-  private async renameLocalFile(oldPath: string, newPath: string): Promise<void> {
-    // Validate file exists
-    const file = this.app.workspace.getAbstractFileByPath(oldPath);
-    if (!file) {
-      throw new Error(`File not found: ${oldPath}`);
-    }
-
-    // Validate mapping exists
-    const noteId = await this.localDatabase.getNoteIdByPath(oldPath);
-    if (!noteId) {
-      throw new Error(`No mapping found for path: ${oldPath}`);
-    }
-
-    this.logger.debug(`Renaming local file: ${oldPath} → ${newPath}`);
-    this.fileWatcher.pause();
-    
-    try {
-      // Rename physical file
-      await this.app.fileManager.renameFile(file, newPath);
-      
-      // Update database mapping atomically (includes version data transfer)
-      await this.localDatabase.updatePathMapping(oldPath, newPath, noteId);
-      
-      this.logger.info(`Successfully renamed: ${oldPath} → ${newPath}`);
-    } catch (error) {
-      this.logger.error(`Failed to rename ${oldPath} → ${newPath}:`, error);
-      throw error;
-    } finally {
-      this.fileWatcher.resume();
-    }
-  }
 
   // private async getLastSyncTime(): Promise<Date> {
   //     const config = await this.app.configManager.loadConfig<any>('sync');

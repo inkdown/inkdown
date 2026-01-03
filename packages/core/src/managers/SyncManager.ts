@@ -557,10 +557,16 @@ export class SyncManager {
         // 1. Stop sync engine if running
         this.stopSync();
         
-        // 2. Clear all sync data from IndexedDB
+        // 2. Clear all sync data from IndexedDB (if initialized)
         this.logger.info('Clearing sync cache...');
-        await this.localDatabase.clear();
-        await this.localDatabase.clearAllMappings();
+        try {
+            if (this.localDatabase['db']) {
+                await this.localDatabase.clear();
+                await this.localDatabase.clearAllMappings();
+            }
+        } catch (error: any) {
+            this.logger.warn('Failed to clear local database:', error);
+        }
         
         // 3. Clear workspace links and current workspace ID
         this.workspaceLinks = [];
@@ -569,12 +575,18 @@ export class SyncManager {
         // 4. Disable sync
         this.enabled = false;
         
-        // 5. Save config with cleared state
+        // 5. Clear cached password
+        this.lastPassword = null;
+        
+        // 6. Save config with cleared state
         await this.saveConfig({
             enabled: false,
             workspaceLinks: [],
             currentWorkspaceId: undefined,
         });
+        
+        // 7. Notify UI that sync state changed
+        this.app.workspace.triggerSyncStateChanged(false);
         
         this.logger.info('Sync state cleared for workspace change');
     }

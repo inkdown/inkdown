@@ -477,4 +477,12 @@ export class Workspace extends Events {
     triggerSyncStateChanged(enabled: boolean): void {
         this.trigger('sync-state-changed', { enabled });
     }
+
+    /**
+     * Trigger sync complete event (called by SyncEngine)
+     * Used to refresh UI after sync operations complete
+     */
+    triggerSyncComplete(): void {
+        this.trigger('sync-complete');
+    }
 }

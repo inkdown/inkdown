@@ -222,6 +222,9 @@ export class EncryptionManager {
             const derivedKey = await this.deriveKey(password, this.keySalt);
 
             // Decrypt the master key blob
+            if (!this.encryptedMasterKeyBlob) {
+                throw new Error('No encrypted master key blob available');
+            }
             const blob = this.base64ToArrayBuffer(this.encryptedMasterKeyBlob);
             const nonce = blob.slice(0, 12);
             const encrypted = blob.slice(12);
