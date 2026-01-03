@@ -840,9 +840,8 @@ export class SyncEngine extends Events {
 
     const noteId = await this.localDatabase.getNoteIdByPath(oldPath);
     if (noteId) {
-      // Update mapping
-      await this.unmapPath(oldPath);
-      await this.mapPathToNote(newPath, noteId);
+      // Update mapping atomically (transfers version data)
+      await this.localDatabase.updatePathMapping(oldPath, newPath, noteId);
 
       // Update note title with embedded nonce
       const newTitle = this.extractTitle(newPath);
