@@ -9,6 +9,10 @@ export class EncryptionManager {
     private masterKey: CryptoKey | null = null;
     private baseURL: string;
     private tokenRefresh: TokenRefreshService | null = null;
+    
+    // New storage properties (v2 format)
+    private encryptedMasterKeyBlob: string | null = null;
+    private keySalt: Uint8Array | null = null;
 
     constructor(baseURL = 'http://localhost:8080/api/v1') {
         this.baseURL = baseURL;
@@ -123,48 +127,134 @@ export class EncryptionManager {
     }
 
     /**
-     * Save encrypted master key to local storage
-     * This allows the app to restore encryption after restart without asking for password
+     * Save encryption parameters to localStorage (v2 format)
+     * Stores the encrypted master key blob and salt (NOT dependent on access token)
      */
-    async saveToStorage(accessToken: string): Promise<void> {
-        if (!this.masterKey) {
-            throw new Error('Master key not initialized');
+    async saveToStorage(): Promise<void> {
+        if (!this.encryptedMasterKeyBlob || !this.keySalt) {
+            throw new Error('Encryption not initialized - call setupEncryption first');
         }
 
-        console.log('[EncryptionManager] Saving encrypted key to storage...');
+        console.log('[EncryptionManager] Saving encryption params to storage...');
 
         try {
-            // Export master key
-            const exported = await crypto.subtle.exportKey('raw', this.masterKey);
+            const storageData = {
+                encryptedKeyBlob: this.encryptedMasterKeyBlob,
+                salt: this.arrayBufferToBase64(this.keySalt),
+                version: 2, // Mark as new storage format
+            };
 
-            // Derive session key from token
-            const sessionKey = await this.deriveSessionKey(accessToken);
-
-            // Encrypt master key
-            const nonce = this.generateNonce();
-            const encrypted = await crypto.subtle.encrypt(
-                { name: 'AES-GCM', iv: nonce },
-                sessionKey,
-                exported,
-            );
-
-            // Concatenate nonce + encrypted data
-            const blob = new Uint8Array(nonce.length + encrypted.byteLength);
-            blob.set(nonce, 0);
-            blob.set(new Uint8Array(encrypted), nonce.length);
-
-            // Store in localStorage
-            localStorage.setItem('inkdown-encrypted-master-key', this.arrayBufferToBase64(blob));
-
-            console.log('[EncryptionManager] Key saved successfully');
+            localStorage.setItem('inkdown-encryption-params', JSON.stringify(storageData));
+            console.log('[EncryptionManager] Encryption params saved');
         } catch (error: any) {
-            console.error('[EncryptionManager] Failed to save key:', error);
+            console.error('[EncryptionManager] Failed to save params:', error);
             throw error;
         }
     }
 
     /**
-     * Try to restore master key from local storage
+     * Save master key encrypted with session token for auto-restore on app restart
+     * This allows the app to restore encryption without asking for password every time
+     */
+    async saveForAutoRestore(accessToken: string): Promise<void> {
+        if (!this.masterKey) {
+            throw new Error('Master key not initialized');
+        }
+
+        console.log('[EncryptionManager] Saving for auto-restore...');
+
+        try {
+            // Export master key
+            const exportedKey = await crypto.subtle.exportKey('raw', this.masterKey);
+
+            // Derive session key from token
+            const sessionKey = await this.deriveSessionKey(accessToken);
+
+            // Generate nonce and encrypt
+            const nonce = this.generateNonce();
+            const encryptedKeyBuffer = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv: nonce },
+                sessionKey,
+                exportedKey,
+            );
+
+            // Concatenate nonce + encrypted data
+            const encryptedWithNonce = new Uint8Array(nonce.length + encryptedKeyBuffer.byteLength);
+            encryptedWithNonce.set(nonce, 0);
+            encryptedWithNonce.set(new Uint8Array(encryptedKeyBuffer), nonce.length);
+
+            // Save to localStorage
+            localStorage.setItem('inkdown-encrypted-master-key', this.arrayBufferToBase64(encryptedWithNonce));
+            console.log('[EncryptionManager] Auto-restore data saved');
+        } catch (error: any) {
+            console.error('[EncryptionManager] Failed to save auto-restore data:', error);
+            // Don't throw - this is optional convenience feature
+        }
+    }
+
+    /**
+     * Restore encryption from localStorage using password (v2 format)
+     * Returns true if successful, false otherwise
+     */
+    async restoreFromPassword(password: string): Promise<boolean> {
+        const storedData = localStorage.getItem('inkdown-encryption-params');
+        if (!storedData) {
+            console.log('[EncryptionManager] No stored encryption params found');
+            return false;
+        }
+
+        console.log('[EncryptionManager] Attempting to restore from password...');
+
+        try {
+            const parsed = JSON.parse(storedData);
+
+            // Check version
+            if (parsed.version !== 2) {
+                console.log('[EncryptionManager] Old storage format, needs migration');
+                localStorage.removeItem('inkdown-encryption-params');
+                return false;
+            }
+
+            this.keySalt = this.base64ToArrayBuffer(parsed.salt);
+            this.encryptedMasterKeyBlob = parsed.encryptedKeyBlob;
+
+            // Derive key from password
+            const derivedKey = await this.deriveKey(password, this.keySalt);
+
+            // Decrypt the master key blob
+            if (!this.encryptedMasterKeyBlob) {
+                throw new Error('No encrypted master key blob available');
+            }
+            const blob = this.base64ToArrayBuffer(this.encryptedMasterKeyBlob);
+            const nonce = blob.slice(0, 12);
+            const encrypted = blob.slice(12);
+
+            const decrypted = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv: nonce },
+                derivedKey,
+                encrypted,
+            );
+
+            // Import master key
+            this.masterKey = await crypto.subtle.importKey(
+                'raw',
+                decrypted,
+                { name: 'AES-GCM', length: 256 },
+                true,
+                ['encrypt', 'decrypt'],
+            );
+
+            console.log('[EncryptionManager] Restored successfully');
+            return true;
+        } catch (error: any) {
+            console.error('[EncryptionManager] Failed to restore:', error);
+            // Don't clear - maybe they'll try correct password
+            return false;
+        }
+    }
+
+    /**
+     * Try to restore master key from local storage (DEPRECATED - use restoreFromPassword)
      * Returns true if successful, false otherwise
      */
     async restoreFromStorage(accessToken: string): Promise<boolean> {
@@ -214,6 +304,8 @@ export class EncryptionManager {
      * Clear key from storage (e.g., on logout)
      */
     clearStorage(): void {
+        localStorage.removeItem('inkdown-encryption-params');
+        // Also remove old format for migration
         localStorage.removeItem('inkdown-encrypted-master-key');
         console.log('[EncryptionManager] Storage cleared');
     }
@@ -231,6 +323,7 @@ export class EncryptionManager {
 
         // Generate salt and derive master key
         const salt = this.generateSalt();
+        this.keySalt = salt;
         this.masterKey = await this.deriveKey(password, salt);
 
         // Export master key to encrypt it
@@ -249,10 +342,12 @@ export class EncryptionManager {
         const encryptedWithNonce = new Uint8Array(nonce.length + encryptedKeyBuffer.byteLength);
         encryptedWithNonce.set(nonce, 0);
         encryptedWithNonce.set(new Uint8Array(encryptedKeyBuffer), nonce.length);
+        
+        this.encryptedMasterKeyBlob = this.arrayBufferToBase64(encryptedWithNonce);
 
         // Prepare payload for server
         const payload: EncryptionKeys = {
-            encrypted_key: this.arrayBufferToBase64(encryptedWithNonce),
+            encrypted_key: this.encryptedMasterKeyBlob,
             key_salt: this.arrayBufferToBase64(salt),
             kdf_params: JSON.stringify({
                 algorithm: 'PBKDF2', // In production: Argon2id
@@ -277,9 +372,14 @@ export class EncryptionManager {
                 const error = await response.text();
                 throw new Error(`Failed to setup encryption keys: ${error}`);
             }
+        });
 
-            // Save to local storage for persistence
-            await this.saveToStorage(token);
+        // Save to local storage (password-based backup)
+        await this.saveToStorage();
+
+        // Also save for auto-restore (token-based, for seamless app restart)
+        await this.tokenRefresh.withAuth(async (token) => {
+            await this.saveForAutoRestore(token);
         });
 
         console.log('[EncryptionManager] Encryption setup complete');
@@ -319,10 +419,7 @@ export class EncryptionManager {
 
         console.log('[EncryptionManager] Syncing encryption keys...');
 
-        let accessToken = '';
-
         const keys = await this.tokenRefresh.withAuth(async (token) => {
-            accessToken = token;
             const response = await fetch(`${this.baseURL}/security/keys/sync`, {
                 method: 'GET',
                 headers: {
@@ -339,9 +436,12 @@ export class EncryptionManager {
             return result.data;
         });
 
+        // Store the encrypted blob and salt
+        this.encryptedMasterKeyBlob = keys.encrypted_key;
+        this.keySalt = this.base64ToArrayBuffer(keys.key_salt);
+
         // Derive key from password and salt
-        const salt = this.base64ToArrayBuffer(keys.key_salt);
-        const derivedKey = await this.deriveKey(password, salt);
+        const derivedKey = await this.deriveKey(password, this.keySalt);
 
         // Extract nonce and encrypted key from the blob
         // Format: [12 bytes nonce][encrypted data]
@@ -370,10 +470,13 @@ export class EncryptionManager {
                 ['encrypt', 'decrypt'],
             );
 
-            // Save to local storage for persistence
-            if (accessToken) {
-                await this.saveToStorage(accessToken);
-            }
+            // Save to local storage (password-based backup)
+            await this.saveToStorage();
+
+            // Also save for auto-restore (token-based, for seamless app restart)
+            await this.tokenRefresh.withAuth(async (token) => {
+                await this.saveForAutoRestore(token);
+            });
 
             console.log('[EncryptionManager] Keys synced successfully');
         } catch (error: any) {

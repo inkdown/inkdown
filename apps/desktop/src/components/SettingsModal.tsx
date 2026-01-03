@@ -257,6 +257,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const [ignoredPatterns, setIgnoredPatterns] = useState<string[]>([]);
     const [newPattern, setNewPattern] = useState('');
     const [showWorkspaceDialog, setShowWorkspaceDialog] = useState(false);
+    const [showWorkspaceSelectionAfterPassword, setShowWorkspaceSelectionAfterPassword] = useState(false);
     const [linkedWorkspace, setLinkedWorkspace] = useState<WorkspaceLinkWorkspace | null>(null);
 
     // Editor Settings State
@@ -367,42 +368,71 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const [isSyncing, setIsSyncing] = useState(false);
 
     // Load local DB name and ignore patterns
-    useEffect(() => {
-        const loadSyncData = async () => {
-            try {
-                const syncConfig = await app.configManager.loadConfig<any>('sync');
-                if (syncConfig?.localDbName) {
-                    setLocalDbName(syncConfig.localDbName);
-                }
-
-                // Load ignore patterns
-                const patterns = app.syncManager.selectiveSync.getIgnorePatterns();
-                setIgnoredPatterns(patterns);
-
-                // Load linked workspace
-                const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
-                if (currentWorkspaceId) {
-                    try {
-                        const allWorkspaces = await app.syncManager.listWorkspaces();
-                        const linked = allWorkspaces.find((w) => w.id === currentWorkspaceId);
-                        if (linked) {
-                            setLinkedWorkspace(linked);
-                        }
-                    } catch (err) {
-                        console.error('Failed to load linked workspace:', err);
-                    }
-                }
-            } catch (error: any) {
-                console.error('Failed to load sync data:', error);
+    const loadSyncData = useCallback(async () => {
+        try {
+            const syncConfig = await app.configManager.loadConfig<any>('sync');
+            if (syncConfig?.localDbName) {
+                setLocalDbName(syncConfig.localDbName);
             }
-        };
-        loadSyncData();
+
+            // Load ignore patterns
+            const patterns = app.syncManager.selectiveSync.getIgnorePatterns();
+            setIgnoredPatterns(patterns);
+
+            // Load linked workspace
+            const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
+            if (currentWorkspaceId) {
+                try {
+                    const allWorkspaces = await app.syncManager.listWorkspaces();
+                    const linked = allWorkspaces.find((w) => w.id === currentWorkspaceId);
+                    if (linked) {
+                        setLinkedWorkspace(linked);
+                    } else {
+                        setLinkedWorkspace(null);
+                    }
+                } catch (err) {
+                    console.error('Failed to load linked workspace:', err);
+                    setLinkedWorkspace(null);
+                }
+            } else {
+                setLinkedWorkspace(null);
+            }
+            
+            // Update sync enabled state
+            setIsSyncEnabled(app.syncManager.isEnabled());
+        } catch (error: any) {
+            console.error('Failed to load sync data:', error);
+        }
     }, [app]);
 
-    // Memoize sync state to prevent unnecessary re-renders
-    const isLoggedIn = useMemo(() => app.syncManager.isLoggedIn(), [app.syncManager]);
+    // Initial load of sync data
+    useEffect(() => {
+        loadSyncData();
+    }, [loadSyncData]);
 
-    const isSyncEnabled = useMemo(() => app.syncManager.isEnabled(), [app.syncManager]);
+    // Listen for sync state changes (workspace switch, etc.)
+    useEffect(() => {
+        const handleSyncStateChanged = () => {
+            loadSyncData();
+        };
+
+        const ref = app.workspace.on('sync-state-changed', handleSyncStateChanged);
+
+        return () => {
+            ref.unload();
+        };
+    }, [app, loadSyncData]);
+
+    // Sync state - use useState instead of useMemo for reactivity
+    const isLoggedIn = useMemo(() => app.syncManager.isLoggedIn(), [app.syncManager]);
+    
+    const [isSyncEnabled, setIsSyncEnabled] = useState(() => app.syncManager.isEnabled());
+    
+    // Keep isSyncEnabled in sync with actual manager state
+    // biome-ignore lint/correctness/useExhaustiveDependencies: _forceUpdateValue intentionally triggers recalculation
+    useEffect(() => {
+        setIsSyncEnabled(app.syncManager.isEnabled());
+    }, [app, _forceUpdateValue]);
 
     // Subscribe to plugin changes to update sidebar
     useEffect(() => {
@@ -433,47 +463,62 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         async (enabled: boolean) => {
             if (!enabled) {
                 await app.syncManager.disable();
+                setIsSyncEnabled(false);
                 forceUpdate((v) => v + 1);
                 return;
             }
 
-            // If enabling, check if we need encryption setup
-            if (isLoggedIn) {
-                try {
-                    // Check if keys exist on server to decide setup vs unlock
-                    const hasKeys = await app.syncManager.hasKeysOnServer();
+            // VALIDATION 1: Must be logged in
+            if (!isLoggedIn) {
+                await app.dialog.alert({
+                    title: 'Login Required',
+                    message: 'Please log in first to enable sync. Go to the Sync section and click "Login".',
+                });
+                return;
+            }
 
-                    if (hasKeys) {
-                        setEncryptionMode('unlock');
-                    } else {
-                        setEncryptionMode('setup');
-                    }
+            // VALIDATION 2: Must have workspace linked
+            const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
+            if (!currentWorkspaceId) {
+                await app.dialog.alert({
+                    title: 'Workspace Required',
+                    message: 'Please link a workspace first before enabling sync. Click "Link Workspace" below.',
+                });
+                return;
+            }
 
-                    setShowEncryptionModal(true);
-                } catch (error: any) {
-                    console.error('Failed to prepare sync enablement:', error);
-                    // Fallback to unlock if check fails
+            // If enabling and logged in with workspace, check if we need encryption setup
+            try {
+                const hasKeys = await app.syncManager.hasKeysOnServer();
+                if (hasKeys) {
                     setEncryptionMode('unlock');
-                    setShowEncryptionModal(true);
+                } else {
+                    setEncryptionMode('setup');
                 }
-            } else {
-                // Not logged in, just enable (will prompt login later or show login link)
-                await app.syncManager.enable();
-                forceUpdate((v) => v + 1);
+                setShowEncryptionModal(true);
+            } catch (error: any) {
+                console.error('Failed to prepare sync enablement:', error);
+                setEncryptionMode('unlock');
+                setShowEncryptionModal(true);
             }
         },
-        [app.syncManager, isLoggedIn],
+        [app.syncManager, app.dialog, isLoggedIn],
     );
 
     const handleEncryptionConfirm = useCallback(
         async (password: string) => {
             try {
+                // Check if workspace is already linked BEFORE setting up encryption
+                const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
+                const needsWorkspaceSelection = !currentWorkspaceId;
+                
                 if (encryptionMode === 'setup') {
-                    await app.syncManager.setupEncryption(password);
+                    // Don't auto-enable if we need workspace selection first
+                    await app.syncManager.setupEncryption(password, !needsWorkspaceSelection);
                 } else {
                     // Try to unlock
                     try {
-                        await app.syncManager.unlockEncryption(password);
+                        await app.syncManager.unlockEncryption(password, !needsWorkspaceSelection);
                     } catch (error: any) {
                         // If unlock fails because keys not found (404), maybe we need setup?
                         if (
@@ -483,14 +528,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         ) {
                             // HACK: If unlock fails with 404, we assume it's a new user and try setup
                             console.log('Unlock failed, trying setup...', error);
-                            await app.syncManager.setupEncryption(password);
+                            await app.syncManager.setupEncryption(password, !needsWorkspaceSelection);
                         } else {
                             throw error;
                         }
                     }
                 }
+                
+                // Close password modal
                 setShowEncryptionModal(false);
-                forceUpdate((v) => v + 1);
+                
+                if (needsWorkspaceSelection) {
+                    // No workspace linked - show workspace selection dialog
+                    // Sync will be enabled AFTER workspace is selected
+                    setShowWorkspaceSelectionAfterPassword(true);
+                    setShowWorkspaceDialog(true);
+                } else {
+                    // Workspace already linked - sync was auto-enabled
+                    forceUpdate((v) => v + 1);
+                }
             } catch (error: any) {
                 console.error('Encryption setup/unlock failed:', error);
                 throw error; // Modal will display error
@@ -511,17 +567,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     };
 
     const handleClearLocalData = async () => {
-        if (
-            window.confirm(
-                'Are you sure you want to clear all local sync data? This will remove cached notes and metadata. Your local files will NOT be deleted.',
-            )
-        ) {
+        const confirmed = await app.dialog.confirm({
+            title: 'Clear Local Sync Data',
+            message: 'Are you sure you want to clear all local sync data? This will remove cached notes and metadata. Your local files will NOT be deleted.',
+            okLabel: 'Clear',
+            cancelLabel: 'Cancel',
+        });
+        
+        if (confirmed) {
             try {
                 await app.syncManager.localDatabase.clear();
-                alert('Local sync data cleared.');
+                await app.dialog.alert({
+                    title: 'Success',
+                    message: 'Local sync data cleared.',
+                });
             } catch (error: any) {
                 console.error('Failed to clear local data:', error);
-                alert('Failed to clear local data.');
+                await app.dialog.alert({
+                    title: 'Error',
+                    message: 'Failed to clear local data.',
+                });
             }
         }
     };
@@ -547,6 +612,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             if (linked) {
                 setLinkedWorkspace(linked);
             }
+            
+            // If this was triggered after password confirmation, enable sync now
+            if (showWorkspaceSelectionAfterPassword) {
+                setShowWorkspaceSelectionAfterPassword(false);
+                await app.syncManager.enable();
+                setIsSyncEnabled(true); // Update local state immediately
+            }
+            
+            // Refresh file tree to show newly synced files
+            await app.workspace.refreshFileTree();
+            
             // Force re-render of sync status
             forceUpdate((v) => v + 1);
         } catch (error: any) {
@@ -561,6 +637,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             const newWorkspace = await app.syncManager.createWorkspace(name);
             await app.syncManager.linkWorkspace(config.workspace, newWorkspace.id);
             setLinkedWorkspace(newWorkspace);
+            
+            // If this was triggered after password confirmation, enable sync now
+            if (showWorkspaceSelectionAfterPassword) {
+                setShowWorkspaceSelectionAfterPassword(false);
+                await app.syncManager.enable();
+                setIsSyncEnabled(true); // Update local state immediately
+            }
+            
+            // Refresh file tree to show newly synced files
+            await app.workspace.refreshFileTree();
+            
             // Force re-render of sync status
             forceUpdate((v) => v + 1);
         } catch (error: any) {
@@ -571,11 +658,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
     const handleUnlinkWorkspace = async () => {
         if (!config?.workspace) return;
-        if (
-            window.confirm(
-                'Are you sure you want to unlink this folder from the remote workspace? Local files will not be deleted.',
-            )
-        ) {
+        
+        const confirmed = await app.dialog.confirm({
+            title: 'Unlink Workspace',
+            message: 'Are you sure you want to unlink this folder from the remote workspace? Local files will not be deleted.',
+            okLabel: 'Unlink',
+            cancelLabel: 'Cancel',
+        });
+        
+        if (confirmed) {
             try {
                 await app.syncManager.unlinkWorkspace(config.workspace);
                 setLinkedWorkspace(null);
@@ -583,7 +674,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 forceUpdate((v) => v + 1);
             } catch (error: any) {
                 console.error('Failed to unlink workspace:', error);
-                alert('Failed to unlink workspace.');
+                await app.dialog.alert({
+                    title: 'Error',
+                    message: 'Failed to unlink workspace.',
+                });
             }
         }
     };
@@ -613,9 +707,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     };
 
     const handleCustomTitleBarChange = async (useCustom: boolean) => {
-        const confirmed = window.confirm(
-            'Changing the window style requires restarting the app. The app will close and you need to open it again. Continue?',
-        );
+        const confirmed = await app.dialog.confirm({
+            title: 'Restart Required',
+            message: 'Changing the window style requires restarting the app. The app will close and you need to open it again. Continue?',
+            okLabel: 'Restart',
+            cancelLabel: 'Cancel',
+        });
 
         if (!confirmed) return;
 
@@ -640,9 +737,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
      * This will reset all settings and tabs to defaults
      */
     const handleClearCache = async () => {
-        const confirmed = window.confirm(
-            'This will clear all cached data including tabs, settings, and editor state. The app will reload. Continue?',
-        );
+        const confirmed = await app.dialog.confirm({
+            title: 'Clear Cache',
+            message: 'This will clear all cached data including tabs, settings, and editor state. The app will reload. Continue?',
+            okLabel: 'Clear',
+            cancelLabel: 'Cancel',
+        });
 
         if (!confirmed) return;
 
@@ -832,13 +932,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             variant="danger"
                                             size="small"
                                             onClick={async () => {
-                                                if (
-                                                    !window.confirm(
-                                                        '⚠️ FACTORY RESET ⚠️\n\nThis will:\n• Delete ALL localStorage data\n• Delete ALL IndexedDB databases\n• Clear sync tokens and encryption keys\n• Return to onboarding\n\nYour local markdown files will NOT be deleted.\n\nContinue?',
-                                                    )
-                                                ) {
-                                                    return;
-                                                }
+                                                const confirmed = await app.dialog.confirm({
+                                                    title: '⚠️ FACTORY RESET',
+                                                    message: 'This will:\n• Delete ALL localStorage data\n• Delete ALL IndexedDB databases\n• Clear sync tokens and encryption keys\n• Return to onboarding\n\nYour local markdown files will NOT be deleted.\n\nContinue?',
+                                                    okLabel: 'Reset',
+                                                    cancelLabel: 'Cancel',
+                                                });
+                                                
+                                                if (!confirmed) return;
 
                                                 try {
                                                     // 1. Clear ALL localStorage
@@ -869,7 +970,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                     window.location.reload();
                                                 } catch (error: any) {
                                                     console.error('[FactoryReset] Failed:', error);
-                                                    alert('Factory reset failed. Check console.');
+                                                    await app.dialog.alert({
+                                                        title: 'Error',
+                                                        message: 'Factory reset failed. Check console.',
+                                                    });
                                                 }
                                             }}
                                         >
@@ -1171,62 +1275,65 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 </Button>
                                             </Setting>
 
-                                            <Setting
-                                                name="Workspace Link"
-                                                description={
-                                                    linkedWorkspace
-                                                        ? `Linked to workspace: ${linkedWorkspace.name}`
-                                                        : 'Link this folder to a remote workspace to sync notes'
-                                                }
-                                            >
-                                                {linkedWorkspace ? (
-                                                    <div
-                                                        className="workspace-link-actions"
-                                                        style={{
-                                                            display: 'flex',
-                                                            gap: 8,
-                                                            alignItems: 'center',
-                                                        }}
-                                                    >
-                                                        <span
-                                                            className="workspace-badge"
+                                            {/* Show workspace link section when logged in (needed to link before enabling sync) */}
+                                            {isLoggedIn && (
+                                                <Setting
+                                                    name="Workspace Link"
+                                                    description={
+                                                        linkedWorkspace
+                                                            ? `Syncing to workspace: ${linkedWorkspace.name}`
+                                                            : 'No workspace linked - sync will not work until a workspace is selected'
+                                                    }
+                                                >
+                                                    {linkedWorkspace ? (
+                                                        <div
+                                                            className="workspace-link-actions"
                                                             style={{
-                                                                fontSize: 12,
-                                                                padding: '2px 8px',
-                                                                background: 'var(--accent-bg)',
-                                                                color: 'var(--accent-color)',
-                                                                borderRadius: 4,
+                                                                display: 'flex',
+                                                                gap: 8,
+                                                                alignItems: 'center',
                                                             }}
                                                         >
-                                                            {linkedWorkspace.name}
-                                                        </span>
+                                                            <span
+                                                                className="workspace-badge"
+                                                                style={{
+                                                                    fontSize: 12,
+                                                                    padding: '2px 8px',
+                                                                    background: 'var(--accent-bg)',
+                                                                    color: 'var(--accent-color)',
+                                                                    borderRadius: 4,
+                                                                }}
+                                                            >
+                                                                {linkedWorkspace.name}
+                                                            </span>
+                                                            <Button
+                                                                variant="secondary"
+                                                                size="small"
+                                                                onClick={handleUnlinkWorkspace}
+                                                                title="Unlink workspace"
+                                                            >
+                                                                <Unlink
+                                                                    size={14}
+                                                                    style={{ marginRight: 4 }}
+                                                                />
+                                                                Unlink
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
                                                         <Button
-                                                            variant="secondary"
+                                                            variant="primary"
                                                             size="small"
-                                                            onClick={handleUnlinkWorkspace}
-                                                            title="Unlink workspace"
+                                                            onClick={() => setShowWorkspaceDialog(true)}
                                                         >
-                                                            <Unlink
+                                                            <Link
                                                                 size={14}
-                                                                style={{ marginRight: 4 }}
+                                                                style={{ marginRight: 6 }}
                                                             />
-                                                            Unlink
+                                                            Link Workspace
                                                         </Button>
-                                                    </div>
-                                                ) : (
-                                                    <Button
-                                                        variant="primary"
-                                                        size="small"
-                                                        onClick={() => setShowWorkspaceDialog(true)}
-                                                    >
-                                                        <Link
-                                                            size={14}
-                                                            style={{ marginRight: 6 }}
-                                                        />
-                                                        Link Workspace
-                                                    </Button>
-                                                )}
-                                            </Setting>
+                                                    )}
+                                                </Setting>
+                                            )}
 
                                             {isSyncEnabled && (
                                                 <Setting
@@ -1393,7 +1500,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {/* Workspace Link Dialog */}
             <WorkspaceLinkDialog
                 isOpen={showWorkspaceDialog}
-                onClose={() => setShowWorkspaceDialog(false)}
+                onClose={() => {
+                    setShowWorkspaceDialog(false);
+                    // If user cancels workspace selection after password, don't enable sync
+                    if (showWorkspaceSelectionAfterPassword) {
+                        setShowWorkspaceSelectionAfterPassword(false);
+                        // Don't enable sync if no workspace selected
+                        forceUpdate((v) => v + 1);
+                    }
+                }}
                 onLink={handleLinkWorkspace}
                 onCreateAndLink={handleCreateAndLinkWorkspace}
                 listWorkspaces={() => app.syncManager.listWorkspaces()}

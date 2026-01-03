@@ -6,6 +6,7 @@ import type { EncryptionManager } from './EncryptionManager';
 import { FileWatcherService } from './FileWatcherService';
 import type { LocalDatabase } from './LocalDatabase';
 import { NoteSyncService } from './NoteSyncService';
+import { PathManager } from './PathManager';
 import { SelectiveSyncManager } from './SelectiveSyncManager';
 import { getSyncLogger } from './SyncLogger';
 import type { FileChangeEvent, LocalNoteInfo, NoteResponse, SyncVerificationResult } from './types';
@@ -13,1360 +14,1772 @@ import { UploadQueue } from './UploadQueue';
 import { WebSocketService } from './WebSocketService';
 
 export class SyncEngine extends Events {
-    private app: App;
-    private fileWatcher: FileWatcherService;
-    private noteSyncService: NoteSyncService;
-    private webSocketService: WebSocketService;
-    private conflictResolver: ConflictResolver;
-    private selectiveSync: SelectiveSyncManager;
-    private encryptionManager: EncryptionManager;
-    private localDatabase: LocalDatabase;
-    private logger = loggers.sync || loggers.app;
-    private syncLogger = getSyncLogger();
+  private app: App;
+  private fileWatcher: FileWatcherService;
+  private noteSyncService: NoteSyncService;
+  private webSocketService: WebSocketService;
+  private conflictResolver: ConflictResolver;
+  private selectiveSync: SelectiveSyncManager;
+  private encryptionManager: EncryptionManager;
+  private localDatabase: LocalDatabase;
+  private pathManager: PathManager;
+  private logger = loggers.sync || loggers.app;
+  private syncLogger = getSyncLogger();
 
-    // State
-    private uploadQueue: UploadQueue;
-    private isRunning = false;
-    private isSyncingActive = false;
-    private workspaceId: string | undefined;
+  // State
+  private uploadQueue: UploadQueue;
+  private isRunning = false;
+  private isSyncingActive = false;
+  private workspaceId: string | undefined;
+  private pendingSyncRequest = false;
 
-    constructor(
-        app: App,
-        baseURL: string,
-        wsURL: string,
-        encryptionManager: EncryptionManager,
-        localDatabase: LocalDatabase,
-    ) {
-        super();
-        this.app = app;
-        this.encryptionManager = encryptionManager;
-        this.localDatabase = localDatabase;
+  constructor(
+    app: App,
+    baseURL: string,
+    wsURL: string,
+    encryptionManager: EncryptionManager,
+    localDatabase: LocalDatabase,
+  ) {
+    super();
+    this.app = app;
+    this.encryptionManager = encryptionManager;
+    this.localDatabase = localDatabase;
 
-        // Initialize components
-        this.selectiveSync = new SelectiveSyncManager(app);
-        this.fileWatcher = new FileWatcherService(app, this.selectiveSync);
-        this.noteSyncService = new NoteSyncService(
-            baseURL,
-            app.syncManager.tokenManager,
-            app.syncManager.deviceManager,
-        );
-        this.webSocketService = new WebSocketService({ url: wsURL }, app.syncManager.tokenManager);
-        this.conflictResolver = new ConflictResolver(app);
+    // Initialize path manager with workspace root
+    const workspaceRoot = app.workspace.getRoot() || '';
+    this.pathManager = new PathManager(app, workspaceRoot);
 
-        // Initialize upload queue with retry logic
-        this.uploadQueue = new UploadQueue();
-        this.uploadQueue.on('upload', this.handleUploadRequest.bind(this));
-        this.uploadQueue.on('upload-success', (path: string) => {
-            this.logger.info(`Upload successful: ${path}`);
-        });
-        this.uploadQueue.on('upload-retry', (data: any) => {
-            this.logger.warn(`Retrying upload: ${data.path} (${data.attempts} attempts)`);
-        });
-        this.uploadQueue.on('upload-permanent-failure', (data: any) => {
-            this.logger.error(`Upload failed permanently: ${data.path}`, data.error);
-            // TODO: Notify user UI about permanent failure
-            this.trigger('upload-failed', data);
-        });
-        this.uploadQueue.on('queue-change', (size: number) => {
-            this.trigger('sync-count-change', size);
-            // Emit sync-complete when queue becomes empty
-            if (size === 0 && this.isSyncingActive) {
-                this.isSyncingActive = false;
-                this.trigger('sync-complete');
-            }
-        });
+    // Initialize components
+    this.selectiveSync = new SelectiveSyncManager(app);
+    this.fileWatcher = new FileWatcherService(app, this.selectiveSync);
+    this.noteSyncService = new NoteSyncService(
+      baseURL,
+      app.syncManager.tokenManager,
+      app.syncManager.deviceManager,
+    );
+    this.webSocketService = new WebSocketService({ url: wsURL }, app.syncManager.tokenManager);
+    this.conflictResolver = new ConflictResolver(app);
+
+    // Initialize upload queue with retry logic
+    this.uploadQueue = new UploadQueue();
+    this.uploadQueue.on('upload', this.handleUploadRequest.bind(this));
+    this.uploadQueue.on('upload-success', (path: string) => {
+      this.logger.info(`Upload successful: ${path}`);
+    });
+    this.uploadQueue.on('upload-retry', (data: any) => {
+      this.logger.warn(`Retrying upload: ${data.path} (${data.attempts} attempts)`);
+    });
+    this.uploadQueue.on('upload-permanent-failure', (data: any) => {
+      this.logger.error(`Upload failed permanently: ${data.path}`, data.error);
+      // TODO: Notify user UI about permanent failure
+      this.trigger('upload-failed', data);
+    });
+    this.uploadQueue.on('queue-change', (size: number) => {
+      this.trigger('sync-count-change', size);
+      // Emit sync-complete when queue becomes empty
+      if (size === 0 && this.isSyncingActive) {
+        this.isSyncingActive = false;
+        this.trigger('sync-complete');
+      }
+    });
+  }
+
+  /**
+   * Get WebSocketService instance (for injecting dependencies)
+   */
+  getWebSocketService(): WebSocketService {
+    return this.webSocketService;
+  }
+
+  /**
+   * Set the workspace ID for sync operations
+   */
+  setWorkspaceId(workspaceId: string | undefined): void {
+    this.workspaceId = workspaceId;
+    this.logger.info(`Workspace ID set to: ${workspaceId || 'none'}`);
+  }
+
+  /**
+   * Get the current workspace ID
+   */
+  getWorkspaceId(): string | undefined {
+    return this.workspaceId;
+  }
+
+  /**
+   * Trigger a full sync/reconciliation
+   * Used when workspace changes or manual sync is requested
+   */
+  async triggerSync(): Promise<void> {
+    if (!this.isRunning) {
+      this.logger.warn('Cannot trigger sync - engine not running');
+      return;
     }
 
-    /**
-     * Get WebSocketService instance (for injecting dependencies)
-     */
-    getWebSocketService(): WebSocketService {
-        return this.webSocketService;
+    // If sync is already in progress, queue another sync for after completion
+    if (this.isSyncingActive) {
+      this.logger.info('Sync already in progress, will trigger after completion');
+      this.pendingSyncRequest = true;
+      return;
     }
 
-    /**
-     * Set the workspace ID for sync operations
-     */
-    setWorkspaceId(workspaceId: string | undefined): void {
-        this.workspaceId = workspaceId;
-        this.logger.info(`Workspace ID set to: ${workspaceId || 'none'}`);
+    this.logger.info('Triggering full sync...');
+    await this.performInitialSync();
+  }
+
+  async start(): Promise<void> {
+    if (this.isRunning) {
+      this.logger.info('SyncEngine already running');
+      return;
     }
 
-    /**
-     * Get the current workspace ID
-     */
-    getWorkspaceId(): string | undefined {
-        return this.workspaceId;
-    }
+    this.logger.info('Starting SyncEngine...');
+    this.isRunning = true;
 
-    async start(): Promise<void> {
-        if (this.isRunning) {
-            this.logger.info('SyncEngine already running');
-            return;
-        }
-
-        this.logger.info('Starting SyncEngine...');
-        this.isRunning = true;
-
-        try {
-            // 0. Ensure authentication and encryption
-            if (!this.app.syncManager.tokenRefresh.isAuthenticated()) {
-                this.logger.info('Not authenticated, skipping sync start');
-                this.isRunning = false;
-                return;
-            }
-
-            // Try to restore encryption key from storage
-            if (!this.encryptionManager.isInitialized()) {
-                const token = await this.app.syncManager.tokenRefresh.ensureValidToken();
-                const restored = await this.encryptionManager.restoreFromStorage(token);
-
-                if (!restored) {
-                    this.logger.warn(
-                        'Encryption key not found in storage. User needs to enter password.',
-                    );
-                    // We can't proceed without encryption key
-                    // The UI should prompt the user
-                    this.isRunning = false;
-                    return;
-                }
-                this.logger.info('Encryption key restored successfully.');
-            }
-
-            // 1. Initialize selective sync
-            this.logger.info('Initializing selective sync...');
-            await this.selectiveSync.init();
-
-            // 2. Perform initial sync (download from server)
-            this.logger.info('Calling performInitialSync...');
-            await this.performInitialSync();
-            this.logger.info('performInitialSync returned');
-
-            // 3. Start file watcher for local changes
-            this.logger.info('Starting file watcher...');
-            await this.fileWatcher.start();
-            this.fileWatcher.on('change', this.handleLocalChange.bind(this));
-            this.logger.info('File watcher started.');
-
-            // 4. Connect WebSocket for real-time updates
-            this.logger.info('Connecting WebSocket...');
-            await this.webSocketService.connect();
-            this.webSocketService.on('note_update', this.handleRemoteUpdate.bind(this));
-            this.webSocketService.on('note_delete', this.handleRemoteDelete.bind(this));
-            this.webSocketService.on('conflict', this.handleConflict.bind(this));
-            this.logger.info('WebSocket connected.');
-
-            // 5. Start periodic scan for undetected changes
-            this.startPeriodicScan();
-
-            this.logger.info('SyncEngine started successfully');
-        } catch (error: any) {
-            this.logger.error('Failed to start SyncEngine:', error);
-            this.isRunning = false;
-            throw error;
-        }
-    }
-
-    async stop(): Promise<void> {
-        if (!this.isRunning) return;
-
-        this.logger.info('Stopping SyncEngine...');
+    try {
+      // 0. Ensure authentication and encryption
+      if (!this.app.syncManager.tokenRefresh.isAuthenticated()) {
+        this.logger.info('Not authenticated, skipping sync start');
         this.isRunning = false;
+        return;
+      }
 
-        this.fileWatcher.stop();
-        this.webSocketService.disconnect();
-        this.stopPeriodicScan();
+      // Try to restore encryption key from storage
+      if (!this.encryptionManager.isInitialized()) {
+        // Try to restore from last-used password in memory first
+        const lastPassword = this.app.syncManager.getLastPassword();
 
-        // Clear upload queue
-        this.uploadQueue.clear();
+        if (lastPassword) {
+          const restored = await this.encryptionManager.restoreFromPassword(lastPassword);
 
-        this.logger.info('SyncEngine stopped');
-    }
-
-    private async performInitialSync(): Promise<void> {
-        this.logger.info('Performing initial sync with full reconciliation...');
-        this.isSyncingActive = true;
-        this.trigger('sync-start');
-
-        try {
-            // Use full reconciliation for robust sync
-            await this.performFullReconciliation();
-
-            await this.saveLastSyncTime(new Date());
-            this.logger.info('Initial sync complete');
-
-            // ALWAYS emit sync-count-change with actual queue size to reset UI state
-            const queueSize = this.uploadQueue.size();
-            this.trigger('sync-count-change', queueSize);
-
-            if (queueSize === 0) {
-                this.isSyncingActive = false;
-                this.trigger('sync-complete');
-            }
-            // If queue has items, sync-complete will be emitted when queue empties
-        } catch (error: any) {
-            this.logger.error('Initial sync failed:', error);
-            this.isSyncingActive = false;
-            // Reset count on error too
-            this.trigger('sync-count-change', 0);
-            this.trigger('sync-error', error);
-            this.trigger('sync-complete');
-            throw error;
-        }
-    }
-
-    /**
-     * Perform full reconciliation between local and server state
-     * This is the core of reliable sync - compares everything
-     */
-    private async performFullReconciliation(): Promise<void> {
-        this.logger.info('Starting full reconciliation...');
-        this.syncLogger.info('Starting full reconciliation', undefined, 'Sync');
-
-        // 1. Get manifest from server (compact list of all notes)
-        const manifest = await this.noteSyncService.getManifest(this.workspaceId);
-        const manifestNotes = manifest?.notes || [];
-        this.logger.info(`Server manifest: ${manifestNotes.length} notes`);
-        this.syncLogger.info(`Server has ${manifestNotes.length} notes`, undefined, 'Sync');
-
-        // 2. Get all local markdown files
-        const localFiles = await this.app.workspace.getFiles(['md']);
-        this.logger.info(`Local files: ${localFiles.length} markdown files`);
-
-        // 3. Build server map for quick lookup
-        const serverNoteIds = new Set(manifestNotes.map((n) => n.id));
-        const serverMap = new Map(manifestNotes.map((n) => [n.id, n]));
-
-        // 4. Build local state for batch diff
-        const localNotes: LocalNoteInfo[] = [];
-        const unmappedFiles: string[] = [];
-        const orphanedFiles: string[] = []; // Files with IDs that don't exist on server
-        const localFileMap = new Map<string, { path: string; hash: string }>();
-
-        for (const file of localFiles) {
-            // Skip ignored files
-            if (this.selectiveSync.shouldIgnore(file.path)) {
-                continue;
-            }
-
-            const content = await this.app.fileManager.read(file);
-            const localHash = await this.calculateHash(content);
-            localFileMap.set(file.path, { path: file.path, hash: localHash });
-
-            const noteId = await this.localDatabase.getNoteIdByPath(file.path);
-            if (noteId) {
-                // Check if this ID actually exists on the server
-                if (serverNoteIds.has(noteId)) {
-                    // Valid mapping - include in batch diff
-                    const storedVersion = (await this.localDatabase.getNoteVersion(file.path)) || 0;
-                    localNotes.push({
-                        id: noteId,
-                        content_hash: localHash,
-                        version: storedVersion,
-                    });
-                } else {
-                    // Orphaned mapping - ID doesn't exist on server anymore
-                    // This can happen after account change, server reset, etc.
-                    this.logger.warn(
-                        `Orphaned mapping detected: ${file.path} -> ${noteId} (not on server)`,
-                    );
-                    orphanedFiles.push(file.path);
-                    // Clear the invalid mapping
-                    await this.localDatabase.deletePathMapping(file.path);
-                }
-            } else {
-                unmappedFiles.push(file.path);
-            }
-        }
-
-        this.logger.info(
-            `Mapped files: ${localNotes.length}, Unmapped files: ${unmappedFiles.length}, Orphaned files: ${orphanedFiles.length}`,
-        );
-        this.syncLogger.info(
-            `Local: ${localNotes.length} mapped, ${unmappedFiles.length} new, ${orphanedFiles.length} orphaned`,
-            undefined,
-            'Sync',
-        );
-
-        // 5. Use batch diff for efficient comparison
-        if (localNotes.length > 0 && this.workspaceId) {
-            const diff = await this.noteSyncService.batchDiff(this.workspaceId, localNotes);
-
-            this.logger.info(
-                `Batch diff result: ${diff.to_download.length} to download, ${diff.to_upload.length} to upload, ${diff.to_delete.length} to delete, ${diff.conflicts.length} conflicts`,
-            );
-            this.syncLogger.info(
-                `Diff: ${diff.to_download.length} download, ${diff.to_upload.length} upload, ${diff.conflicts.length} conflicts`,
-                undefined,
-                'Sync',
-            );
-
-            // Process downloads (server has newer version)
-            for (const note of diff.to_download) {
-                await this.applyRemoteUpdate(note);
-            }
-
-            // Process uploads (local has newer version)
-            for (const noteId of diff.to_upload) {
-                const path = await this.localDatabase.getPathByNoteId(noteId);
-                if (path) {
-                    const fileData = localFileMap.get(path);
-                    if (fileData) {
-                        this.uploadQueue.enqueue({
-                            type: 'modify',
-                            path: path,
-                            contentHash: fileData.hash,
-                            timestamp: new Date(),
-                        });
-                    }
-                }
-            }
-
-            // Process deletes (deleted on server)
-            for (const noteId of diff.to_delete) {
-                await this.applyRemoteDelete(noteId);
-            }
-
-            // Handle conflicts
-            for (const conflict of diff.conflicts) {
-                await this.handleSyncConflict(conflict);
-            }
-        }
-
-        // 6. Check for notes on server that we don't have locally
-        // This handles cases where batchDiff might not return missing notes (e.g. empty local state)
-        const mappedNoteIds = new Set(localNotes.map((n) => n.id));
-        for (const [noteId, entry] of serverMap) {
-            // If note is not mapped locally AND not deleted on server
-            if (!mappedNoteIds.has(noteId) && !entry.is_deleted) {
-                // We don't have this note locally - download it
-                this.logger.info(`Downloading missing note: ${noteId}`);
-                const note = await this.noteSyncService.getNote(noteId);
-                await this.applyRemoteUpdate(note);
-            }
-        }
-
-        // 7. Upload unmapped local files (new files not yet on server)
-        const filesToUpload = [...unmappedFiles, ...orphanedFiles];
-
-        if (filesToUpload.length > 0) {
-            // CRITICAL: Pause queue BEFORE enqueueing to prevent timer-based processing
-            // from starting. This prevents the race condition where both processUploadQueue()
-            // and handleUploadRequest() try to upload the same file concurrently.
-            this.uploadQueue.pause();
-
-            for (const path of filesToUpload) {
-                const fileData = localFileMap.get(path);
-                if (fileData) {
-                    this.logger.info(`Uploading new local file: ${path}`);
-                    this.uploadQueue.enqueue({
-                        type: 'create',
-                        path: path,
-                        contentHash: fileData.hash,
-                        timestamp: new Date(),
-                    });
-                }
-            }
-
-            // 8. Process upload queue immediately during initial sync
-            this.logger.info(`Processing ${filesToUpload.length} files for upload...`);
-            await this.processUploadQueue();
-            // Note: processUploadQueue() resumes the queue when done
-        }
-
-        // 9. Update local content hashes for accurate future comparisons
-        for (const [path, data] of localFileMap) {
-            await this.localDatabase.updateContentHash(path, data.hash);
-        }
-
-        // 10. Cleanup orphaned mappings (files that were deleted locally but still have mappings)
-        const allMappings = await this.localDatabase.getAllPathMappings();
-        let orphanedCount = 0;
-        for (const { path, noteId } of allMappings) {
-            // Check if file is in local map OR exists on disk (localFileMap might be stale after downloads)
-            if (!localFileMap.has(path)) {
-                const exists = await this.app.fileSystemManager.exists(path);
-                if (!exists) {
-                    this.logger.info(`Found orphaned mapping: ${path} -> ${noteId}. Removing...`);
-                    await this.unmapPath(path);
-                    orphanedCount++;
-                }
-            }
-        }
-        if (orphanedCount > 0) {
-            this.logger.info(`Cleaned up ${orphanedCount} orphaned mappings`);
-        }
-
-        this.logger.info('Full reconciliation complete');
-    }
-
-    /**
-     * Handle a sync conflict detected during reconciliation
-     */
-    private async handleSyncConflict(conflict: {
-        note_id: string;
-        local_hash: string;
-        server_hash: string;
-        local_version: number;
-        server_version: number;
-    }): Promise<void> {
-        this.logger.warn(`Handling conflict for note ${conflict.note_id}`);
-
-        const path = await this.localDatabase.getPathByNoteId(conflict.note_id);
-        if (!path) {
-            this.logger.error(`Cannot resolve conflict: no path mapping for ${conflict.note_id}`);
+          if (restored) {
+            this.logger.info('Encryption key restored from password');
+          } else {
+            this.logger.warn('Failed to restore - password may have changed');
+            this.isRunning = false;
+            this.trigger('encryption-required');
             return;
-        }
-
-        // Fetch server version
-        const serverNote = await this.noteSyncService.getNote(conflict.note_id);
-
-        // Get local content
-        const file = this.app.workspace.getAbstractFileByPath(path) as any;
-        if (!file) {
-            this.logger.error(`Cannot resolve conflict: file not found ${path}`);
-            return;
-        }
-
-        const localContent = await this.app.fileManager.read(file);
-
-        // Decrypt server content using embedded nonce format with legacy fallback
-        const serverContent = serverNote.encrypted_content
-            ? await this.decryptWithFallback(serverNote.encrypted_content, serverNote.nonce)
-            : '';
-
-        // Resolve conflict
-        const resolved = await this.conflictResolver.resolve(
-            path,
-            localContent,
-            serverContent,
-            serverNote,
-        );
-
-        // Update local file with resolved content (pause watcher to avoid re-triggering)
-        this.fileWatcher.pause();
-        try {
-            await this.app.fileManager.modify(file, resolved);
-        } finally {
-            this.fileWatcher.resume();
-        }
-
-        // Queue upload of resolved version
-        const resolvedHash = await this.calculateHash(resolved);
-        this.uploadQueue.enqueue({
-            type: 'modify',
-            path: path,
-            contentHash: resolvedHash,
-            timestamp: new Date(),
-        });
-    }
-
-    // private async scanAndUploadLocalFiles(): Promise<void> {
-    //     this.logger.info('Scanning for local files to upload...');
-
-    //     try {
-    //         const files = await this.app.workspace.getFiles(['md']);
-    //         this.logger.info(`Found ${files.length} markdown files in workspace`);
-
-    //         let uploadCount = 0;
-    //         let modifiedCount = 0;
-
-    //         for (const file of files) {
-    //             this.logger.debug(`Checking file: ${file.path}`);
-
-    //             // Check if already mapped
-    //             const noteId = await this.localDatabase.getNoteIdByPath(file.path);
-    //             if (noteId) {
-    //                 // File is mapped, check if content has changed
-    //                 const content = await this.app.fileManager.read(file);
-    //                 const localHash = await this.calculateHash(content);
-    //                 const storedHash = await this.localDatabase.getContentHash(file.path);
-
-    //                 if (storedHash && localHash !== storedHash) {
-    //                     // Content has changed since last sync
-    //                     this.logger.info(
-    //                         `Found modified local file: ${file.path}, queuing for update`,
-    //                     );
-
-    //                     this.uploadQueue.enqueue({
-    //                         type: 'modify',
-    //                         path: file.path,
-    //                         contentHash: localHash,
-    //                         timestamp: new Date(),
-    //                     });
-    //                     modifiedCount++;
-    //                 } else {
-    //                     this.logger.debug(`File unchanged: ${file.path}`);
-    //                 }
-    //             } else {
-    //                 // Not mapped, queue for upload as new file
-    //                 this.logger.info(`Found unmapped local file: ${file.path}, queuing for upload`);
-
-    //                 const content = await this.app.fileManager.read(file);
-    //                 const contentHash = await this.calculateHash(content);
-
-    //                 this.uploadQueue.enqueue({
-    //                     type: 'create',
-    //                     path: file.path,
-    //                     contentHash: contentHash,
-    //                     timestamp: new Date(),
-    //                 });
-    //                 uploadCount++;
-    //             }
-    //         }
-
-    //         this.logger.info(
-    //             `Queued ${uploadCount} new files, ${modifiedCount} modified files for upload`,
-    //         );
-    //         this.logger.info(`Upload queue size: ${this.uploadQueue.size()}`);
-    //     } catch (error: any) {
-    //         this.logger.error('Error scanning local files:', error);
-    //         throw error;
-    //     }
-    // }
-
-    private async handleLocalChange(event: FileChangeEvent): Promise<void> {
-        console.log('[SyncEngine] Local change detected:', event.type, event.path);
-
-        // Add to upload queue with retry logic
-        this.uploadQueue.enqueue(event);
-    }
-
-    /**
-     * Process all items in the upload queue synchronously
-     * Used during initial sync to ensure files are uploaded before completing
-     *
-     * IMPORTANT: We pause the queue's internal processing to prevent race conditions
-     * where both processUploadQueue and handleUploadRequest try to process the same item
-     */
-    private async processUploadQueue(): Promise<void> {
-        const items = this.uploadQueue.getPending();
-        if (items.length === 0) return;
-
-        // Note: Queue should already be paused by caller (performFullReconciliation)
-        // This ensures no timer-based processing interferes
-
-        this.logger.info(`Processing upload queue: ${items.length} items`);
-        this.syncLogger.info(`Uploading ${items.length} files...`, undefined, 'Upload');
-
-        for (const item of items) {
-            try {
-                await this.uploadChange(item);
-                this.uploadQueue.markSuccess(item.path);
-                this.logger.info(`Uploaded: ${item.path}`);
-                this.syncLogger.info(
-                    `Uploaded: ${item.path.split('/').pop()}`,
-                    item.path,
-                    'Upload',
-                );
-            } catch (error: any) {
-                this.logger.error(`Failed to upload ${item.path}:`, error);
-                this.syncLogger.error(
-                    `Failed: ${item.path.split('/').pop()}`,
-                    (error as any)?.message || 'Unknown error',
-                    'Upload',
-                );
-                this.uploadQueue.markFailure(item.path, error as Error);
-            }
-        }
-
-        // RESUME queue processing for subsequent file changes
-        this.uploadQueue.resume();
-
-        // FORCE emit sync-count-change with actual queue size to ensure UI updates
-        const finalQueueSize = this.uploadQueue.size();
-        this.trigger('sync-count-change', finalQueueSize);
-
-        // Clear localStorage if queue is empty to prevent stale items on next startup
-        if (finalQueueSize === 0) {
-            this.uploadQueue.clearStorage();
-        }
-
-        this.logger.info(`Upload queue processing complete. Remaining: ${finalQueueSize}`);
-        this.syncLogger.info('Upload queue complete', undefined, 'Upload');
-    }
-
-    /**
-     * Handle upload request from queue
-     * Called by UploadQueue when an item is ready to be uploaded
-     */
-    private async handleUploadRequest(event: FileChangeEvent): Promise<void> {
-        // Only emit sync-start once when we start processing
-        if (!this.isSyncingActive) {
-            this.isSyncingActive = true;
-            this.trigger('sync-start');
-        }
-
-        try {
-            await this.uploadChange(event);
-            // Mark as successful in queue
-            this.uploadQueue.markSuccess(event.path);
-        } catch (error: any) {
-            console.error('[SyncEngine] Upload failed:', error);
-            // Mark as failed - queue will handle retry logic
-            this.uploadQueue.markFailure(event.path, error as Error);
-        }
-        // Note: sync-complete is emitted by queue-change handler when queue becomes empty
-    }
-
-    private async uploadChange(event: FileChangeEvent): Promise<void> {
-        const { type, path, contentHash } = event;
-
-        if (type === 'delete') {
-            await this.handleLocalDelete(path);
-            return;
-        }
-
-        if (type === 'rename') {
-            await this.handleLocalRename(event.oldPath!, path);
-            return;
-        }
-
-        // Handle create/modify
-        const file = this.app.workspace.getAbstractFileByPath(path) as any; // Cast to any to avoid TFile import issues for now
-        if (!file) {
-            console.warn(`[SyncEngine] File not found for upload: ${path}`);
-            return;
-        }
-
-        const content = await this.app.fileManager.read(file);
-        const title = this.extractTitle(path);
-
-        // Encrypt content with embedded nonce (self-contained blobs)
-        const encryptedTitle = await this.encryptionManager.encryptBlob(title);
-        const encryptedContent = await this.encryptionManager.encryptBlob(content);
-
-        // Check if note exists
-        const existingNoteId = await this.localDatabase.getNoteIdByPath(path);
-
-        if (existingNoteId) {
-            // Update existing note with version check
-            const currentVersion = (await this.localDatabase.getNoteVersion(path)) || 0;
-
-            try {
-                const updatedNote = await this.noteSyncService.updateNote(existingNoteId, {
-                    encrypted_title: encryptedTitle,
-                    encrypted_content: encryptedContent,
-                    nonce: 'embedded', // Nonce is now embedded in each field
-                    encryption_algo: 'AES-256-GCM',
-                    content_hash: contentHash,
-                    expected_version: currentVersion,
-                });
-
-                await this.localDatabase.saveNoteVersion(
-                    path,
-                    updatedNote.version,
-                    existingNoteId,
-                    contentHash,
-                );
-                this.syncLogger.info(`Updated note: ${path} → v${updatedNote.version}`);
-            } catch (error: any) {
-                // Check if it's a version conflict (409 Conflict)
-                if (
-                    (error as any)?.message?.includes('409') ||
-                    (error as any)?.message?.includes('conflict') ||
-                    (error as any)?.message?.includes('version')
-                ) {
-                    this.syncLogger.warn(`Version conflict for ${path}, resolving...`);
-
-                    // Fetch the latest version from server
-                    const remoteNote = await this.noteSyncService.getNote(existingNoteId);
-
-                    // Apply remote update (this will trigger conflict resolution)
-                    await this.applyRemoteUpdate(remoteNote);
-
-                    // After conflict resolution, retry the upload
-                    // The conflict resolver should have updated the local file
-                    const updatedContent = await this.app.fileManager.read(file);
-                    const updatedEncrypted =
-                        await this.encryptionManager.encryptBlob(updatedContent);
-                    const updatedTitleEncrypted = await this.encryptionManager.encryptBlob(title);
-
-                    const retriedNote = await this.noteSyncService.updateNote(existingNoteId, {
-                        encrypted_title: updatedTitleEncrypted,
-                        encrypted_content: updatedEncrypted,
-                        nonce: 'embedded',
-                        encryption_algo: 'AES-256-GCM',
-                        content_hash: await this.calculateHash(updatedContent),
-                        expected_version: remoteNote.version, // Use remote version now
-                    });
-
-                    const retriedHash = await this.calculateHash(updatedContent);
-                    await this.localDatabase.saveNoteVersion(
-                        path,
-                        retriedNote.version,
-                        existingNoteId,
-                        retriedHash,
-                    );
-                    this.syncLogger.info(`Conflict resolved: ${path} → v${retriedNote.version}`);
-                } else {
-                    // Not a version conflict, rethrow
-                    throw error;
-                }
-            }
+          }
         } else {
-            // DEDUPLICATION GUARD: Re-check if note was mapped by concurrent upload
-            // This can happen if two uploads for same path race concurrently
-            const recheckNoteId = await this.localDatabase.getNoteIdByPath(path);
-            if (recheckNoteId) {
-                // Another upload already created/mapped this note - upgrade to update
-                this.logger.info(
-                    `[uploadChange] Path was mapped concurrently, upgrading to update: ${path}`,
-                );
-                const currentVersion = (await this.localDatabase.getNoteVersion(path)) || 0;
-                const updatedNote = await this.noteSyncService.updateNote(recheckNoteId, {
-                    encrypted_title: encryptedTitle,
-                    encrypted_content: encryptedContent,
-                    nonce: 'embedded',
-                    encryption_algo: 'AES-256-GCM',
-                    content_hash: contentHash,
-                    expected_version: currentVersion,
-                });
-                await this.localDatabase.saveNoteVersion(
-                    path,
-                    updatedNote.version,
-                    recheckNoteId,
-                    contentHash,
-                );
-                this.syncLogger.info(`Updated note (dedup): ${path} → v${updatedNote.version}`);
-                return;
-            }
-
-            // Create new note
-            if (!this.workspaceId) {
-                throw new Error('Cannot create note: no workspace ID set');
-            }
-
-            this.logger.info(`Creating note with workspace_id: ${this.workspaceId}`);
-
-            const newNote = await this.noteSyncService.createNote({
-                workspace_id: this.workspaceId,
-                type: 'file',
-                encrypted_title: encryptedTitle,
-                encrypted_content: encryptedContent,
-                nonce: 'embedded', // Nonce is now embedded in each field
-                encryption_algo: 'AES-256-GCM',
-                content_hash: contentHash,
-            });
-
-            await this.mapPathToNote(path, newNote.id);
-            await this.localDatabase.saveNoteVersion(
-                path,
-                newNote.version,
-                newNote.id,
-                contentHash,
-            );
-            this.syncLogger.info(`Created note: ${path} (${newNote.id})`);
+          this.logger.warn('No password available - user needs to enter password');
+          this.isRunning = false;
+          this.trigger('encryption-required');
+          return;
         }
-    }
+      }
 
-    private async handleLocalDelete(path: string): Promise<void> {
-        const noteId = await this.localDatabase.getNoteIdByPath(path);
-        if (noteId) {
-            await this.noteSyncService.deleteNote(noteId);
-            await this.unmapPath(path);
-            this.syncLogger.info(`Deleted note: ${path}`);
+      // 1. Initialize selective sync
+      this.logger.info('Initializing selective sync...');
+      await this.selectiveSync.init();
+
+      // 2. Perform initial sync (download from server)
+      this.logger.info('Calling performInitialSync...');
+      await this.performInitialSync();
+      this.logger.info('performInitialSync returned');
+
+      // 3. Start file watcher for local changes
+      this.logger.info('Starting file watcher...');
+      await this.fileWatcher.start();
+      this.fileWatcher.on('change', this.handleLocalChange.bind(this));
+      this.logger.info('File watcher started.');
+
+      // 4. Connect WebSocket for real-time updates
+      this.logger.info('Connecting WebSocket...');
+      await this.webSocketService.connect();
+      this.webSocketService.on('note_update', this.handleRemoteUpdate.bind(this));
+      this.webSocketService.on('note_delete', this.handleRemoteDelete.bind(this));
+      this.webSocketService.on('conflict', this.handleConflict.bind(this));
+      this.logger.info('WebSocket connected.');
+
+      // 5. Periodic scan is disabled - file watcher handles changes in real-time
+      // If needed for debugging, uncomment the next line:
+      // this.startPeriodicScan();
+
+      this.logger.info('SyncEngine started successfully');
+    } catch (error: any) {
+      this.logger.error('Failed to start SyncEngine:', error);
+      this.isRunning = false;
+      throw error;
+    }
+  }
+
+  async stop(): Promise<void> {
+    if (!this.isRunning) return;
+
+    this.logger.info('Stopping SyncEngine...');
+    this.isRunning = false;
+
+    this.fileWatcher.stop();
+    this.webSocketService.disconnect();
+    this.stopPeriodicScan();
+
+    // Clear upload queue
+    this.uploadQueue.clear();
+
+    this.logger.info('SyncEngine stopped');
+  }
+
+  private async performInitialSync(): Promise<void> {
+    this.logger.info('Performing initial sync with full reconciliation...');
+    this.isSyncingActive = true;
+    this.trigger('sync-start');
+
+    try {
+      // Use full reconciliation for robust sync
+      await this.performFullReconciliation();
+
+      await this.saveLastSyncTime(new Date());
+      this.logger.info('Initial sync complete');
+
+      // ALWAYS emit sync-count-change with actual queue size to reset UI state
+      const queueSize = this.uploadQueue.size();
+      this.trigger('sync-count-change', queueSize);
+
+      if (queueSize === 0) {
+        this.isSyncingActive = false;
+        this.trigger('sync-complete');
+
+        // Check if there's a pending sync request (e.g., workspace changed during sync)
+        if (this.pendingSyncRequest) {
+          this.pendingSyncRequest = false;
+          this.logger.info('Processing pending sync request...');
+          // Use setTimeout to avoid stack overflow
+          setTimeout(() => this.triggerSync(), 100);
         }
+      }
+      // If queue has items, sync-complete will be emitted when queue empties
+    } catch (error: any) {
+      this.logger.error('Initial sync failed:', error);
+      this.isSyncingActive = false;
+      this.pendingSyncRequest = false;  // Clear pending request on error
+      // Reset count on error too
+      this.trigger('sync-count-change', 0);
+      this.trigger('sync-error', error);
+      this.trigger('sync-complete');
+      throw error;
     }
+  }
 
-    private async handleLocalRename(oldPath: string, newPath: string): Promise<void> {
-        this.logger.info(`[handleLocalRename] Processing rename: ${oldPath} → ${newPath}`);
+  /**
+   * Perform full reconciliation between local and server state
+   * This is the core of reliable sync - compares everything
+   */
+  private async performFullReconciliation(): Promise<void> {
+    this.logger.info('Starting full reconciliation...');
+    this.syncLogger.info('Starting full reconciliation', undefined, 'Sync');
 
-        const noteId = await this.localDatabase.getNoteIdByPath(oldPath);
-        if (noteId) {
-            // Update mapping
-            await this.unmapPath(oldPath);
-            await this.mapPathToNote(newPath, noteId);
+    // 1. Get manifest from server (compact list of all notes)
+    const manifest = await this.noteSyncService.getManifest(this.workspaceId);
+    const manifestNotes = manifest?.notes || [];
+    const activeNotes = manifestNotes.filter(n => !n.is_deleted);
+    const deletedNotes = manifestNotes.filter(n => n.is_deleted);
+    this.logger.info(`Server manifest: ${activeNotes.length} active notes, ${deletedNotes.length} deleted notes`);
+    this.syncLogger.info(`Server has ${activeNotes.length} notes`, undefined, 'Sync');
 
-            // Update note title with embedded nonce
-            const newTitle = this.extractTitle(newPath);
-            const encryptedTitle = await this.encryptionManager.encryptBlob(newTitle);
+    // 2. Get all local markdown files
+    const localFiles = await this.app.workspace.getFiles(['md']);
+    this.logger.info(`Local files: ${localFiles.length} markdown files`);
 
-            await this.noteSyncService.updateNote(noteId, {
-                encrypted_title: encryptedTitle,
-                nonce: 'embedded',
-            });
+    // 3. Build server map for quick lookup
+    const serverMap = new Map(manifestNotes.map((n) => [n.id, n]));
 
-            this.syncLogger.info(`Renamed: ${oldPath} → ${newPath}`);
+    // 4. Build local state for batch diff
+    const localNotes: LocalNoteInfo[] = [];
+    const unmappedFiles: string[] = [];
+    const orphanedFiles: string[] = []; // Files with IDs that don't exist on server
+    const localFileMap = new Map<string, { path: string; hash: string }>();
+
+    for (const file of localFiles) {
+      // Skip ignored files
+      if (this.selectiveSync.shouldIgnore(file.path)) {
+        continue;
+      }
+
+      const content = await this.app.fileManager.read(file);
+      const localHash = await this.calculateHash(content);
+      localFileMap.set(file.path, { path: file.path, hash: localHash });
+
+      const noteId = await this.localDatabase.getNoteIdByPath(file.path);
+      if (noteId) {
+        // Check if this ID actually exists on the server
+        const serverNote = serverMap.get(noteId);
+        if (serverNote) {
+          // Check if the note is deleted on server
+          if (serverNote.is_deleted) {
+            // Server note is deleted - remove local file
+            this.logger.info(`Deleting local file (note deleted on server): ${file.path}`);
+            this.fileWatcher.pause();
+            try {
+              await this.app.fileManager.trashFile(file);
+              await this.localDatabase.deletePathMapping(file.path);
+              this.syncLogger.info(`Deleted: ${file.path}`);
+            } catch (error) {
+              this.logger.warn(`Failed to delete ${file.path}: ${error}`);
+            } finally {
+              this.fileWatcher.resume();
+            }
+            continue; // Skip this file
+          }
+          
+          // Valid mapping - include in batch diff
+          const storedVersion = (await this.localDatabase.getNoteVersion(file.path)) || 0;
+          localNotes.push({
+            id: noteId,
+            content_hash: localHash,
+            version: storedVersion,
+          });
         } else {
-            // No mapping found for oldPath - this might mean it's a new file or mapping is broken
-            this.logger.warn(`[handleLocalRename] No note mapping found for oldPath: ${oldPath}`);
-            // Treat as a new file creation
-            const file = this.app.workspace.getAbstractFileByPath(newPath) as any;
-            if (file) {
-                const content = await this.app.fileManager.read(file);
-                const contentHash = await this.calculateHash(content);
-                // Enqueue as create since we have no mapping
-                this.uploadQueue.enqueue({
-                    type: 'create',
-                    path: newPath,
-                    contentHash,
-                    timestamp: new Date(),
-                });
-                this.syncLogger.info(`Renamed file has no mapping, creating as new: ${newPath}`);
-            }
+          // Orphaned mapping - ID doesn't exist on server anymore
+          // This can happen after account change, server reset, etc.
+          this.logger.warn(
+            `Orphaned mapping detected: ${file.path} -> ${noteId} (not on server)`,
+          );
+          orphanedFiles.push(file.path);
+          // Clear the invalid mapping
+          await this.localDatabase.deletePathMapping(file.path);
         }
+      } else {
+        unmappedFiles.push(file.path);
+      }
     }
 
-    private async handleRemoteUpdate(payload: any): Promise<void> {
-        // Skip if this update came from current device
-        const deviceId = this.app.syncManager.deviceManager.getDeviceId();
-        console.log(
-            '[SyncEngine] handleRemoteUpdate - payload.device_id:',
-            payload.device_id,
-            'local deviceId:',
-            deviceId,
-        );
-        if (payload.device_id === deviceId) {
-            this.syncLogger.debug(`Ignoring own update: ${payload.note_id}`);
-            return;
-        }
+    this.logger.info(
+      `Mapped files: ${localNotes.length}, Unmapped files: ${unmappedFiles.length}, Orphaned files: ${orphanedFiles.length}`,
+    );
+    this.syncLogger.info(
+      `Local: ${localNotes.length} mapped, ${unmappedFiles.length} new, ${orphanedFiles.length} orphaned`,
+      undefined,
+      'Sync',
+    );
 
-        this.syncLogger.info(`Remote update received: ${payload.note_id}`);
+    // 5. Use batch diff for efficient comparison
+    if (localNotes.length > 0 && this.workspaceId) {
+      const diff = await this.noteSyncService.batchDiff(this.workspaceId, localNotes);
 
-        // Fetch full note
-        const note = await this.noteSyncService.getNote(payload.note_id);
+      this.logger.info(
+        `Batch diff result: ${diff.to_download.length} to download, ${diff.to_upload.length} to upload, ${diff.to_delete.length} to delete, ${diff.conflicts.length} conflicts`,
+      );
+      this.syncLogger.info(
+        `Diff: ${diff.to_download.length} download, ${diff.to_upload.length} upload, ${diff.conflicts.length} conflicts`,
+        undefined,
+        'Sync',
+      );
+
+      // Process downloads (server has newer version)
+      for (const note of diff.to_download) {
         await this.applyRemoteUpdate(note);
-    }
+      }
 
-    /**
-     * Try to decrypt with embedded nonce format, fall back to legacy format if it fails
-     */
-    private async decryptWithFallback(
-        encryptedData: string,
-        legacyNonce?: string,
-    ): Promise<string> {
-        try {
-            // Try new format (nonce embedded in blob)
-            return await this.encryptionManager.decryptBlob(encryptedData);
-        } catch (error: any) {
-            this.syncLogger.debug(`decryptBlob failed, trying legacy format. Error: ${error}`);
-            // Fall back to legacy format (separate nonce)
-            if (legacyNonce && legacyNonce !== 'embedded') {
-                this.syncLogger.debug(
-                    `Using legacy decryption with nonce: ${legacyNonce.substring(0, 10)}...`,
-                );
-                return await this.encryptionManager.decrypt({
-                    encrypted_content: encryptedData,
-                    nonce: legacyNonce,
-                    encryption_algo: 'AES-256-GCM',
-                });
-            }
-            this.syncLogger.error(
-                `Decryption failed - no valid legacy nonce. legacyNonce=${legacyNonce}`,
-            );
-            throw error;
-        }
-    }
-
-    private async applyRemoteUpdate(note: NoteResponse): Promise<void> {
-        this.syncLogger.debug(`applyRemoteUpdate called for note ${note.id}`);
-        try {
-            // Decrypt using embedded nonce format with legacy fallback
-            this.syncLogger.debug(`Decrypting title for note ${note.id}...`);
-            const title = await this.decryptWithFallback(note.encrypted_title, note.nonce);
-            this.syncLogger.debug(`Title decrypted: ${title}`);
-
-            const content = note.encrypted_content
-                ? await this.decryptWithFallback(note.encrypted_content, note.nonce)
-                : '';
-            this.syncLogger.debug(`Content decrypted (${content.length} chars)`);
-
-            // Determine path
-            const existingPath = await this.localDatabase.getPathByNoteId(note.id);
-            const path = existingPath || this.sanitizePath(title);
-            this.syncLogger.debug(`Path determined: ${path} (existing: ${existingPath || 'none'})`);
-
-            // Check for local conflict
-            const localExists = await this.app.fileSystemManager.exists(path);
-            this.syncLogger.debug(`Local file exists: ${localExists}`);
-            if (localExists) {
-                const file = this.app.workspace.getAbstractFileByPath(path) as any;
-                if (!file) return;
-
-                const localContent = await this.app.fileManager.read(file);
-                const localHash = await this.calculateHash(localContent);
-
-                if (localHash !== note.content_hash) {
-                    // CONFLICT!
-                    this.syncLogger.warn(`Conflict detected: ${path}`);
-
-                    // Register conflict in logger for UI
-                    this.syncLogger.addConflict({
-                        noteId: note.id,
-                        path,
-                        localVersion: (await this.localDatabase.getNoteVersion(path)) || 0,
-                        serverVersion: note.version,
-                        localContent,
-                        serverContent: content,
-                        localHash,
-                        serverHash: note.content_hash,
-                    });
-
-                    const resolved = await this.conflictResolver.resolve(
-                        path,
-                        localContent,
-                        content,
-                        note,
-                    );
-                    // Pause watcher to avoid re-triggering sync
-                    this.fileWatcher.pause();
-                    try {
-                        await this.app.fileManager.modify(file, resolved);
-                    } finally {
-                        this.fileWatcher.resume();
-                    }
-                    this.syncLogger.info(`Conflict resolved for ${path}`);
-                } else {
-                    // Same content - just update the version tracking to stay in sync
-                    await this.localDatabase.saveNoteVersion(
-                        path,
-                        note.version,
-                        note.id,
-                        note.content_hash,
-                    );
-                    this.syncLogger.debug(`Synced (same content): ${path} v${note.version}`);
-                    return;
-                }
-            } else {
-                // New file, create locally
-                this.syncLogger.info(`Creating new local file: ${path}`);
-                // Pause file watcher to prevent detecting our own changes
-                this.fileWatcher.pause();
-                try {
-                    await this.app.fileManager.createFile(path, content);
-                    this.syncLogger.info(`Created local file: ${path}`);
-                } catch (createError) {
-                    this.syncLogger.error(`Failed to create file ${path}: ${createError}`);
-                    throw createError;
-                } finally {
-                    this.fileWatcher.resume();
-                }
-            }
-
-            // Update tracking
-            await this.mapPathToNote(path, note.id);
-            await this.localDatabase.saveNoteVersion(
-                path,
-                note.version,
-                note.id,
-                note.content_hash,
-            );
-            this.syncLogger.info(`Applied remote update: ${path} v${note.version}`);
-            this.trigger('sync-remote-update', path);
-        } catch (error: any) {
-            this.syncLogger.error(`Failed to apply remote update for note ${note.id}: ${error}`);
-            console.error('[SyncEngine] Failed to apply remote update:', error);
-            this.trigger('sync-error', error);
-        }
-    }
-
-    private async handleRemoteDelete(payload: any): Promise<void> {
-        await this.applyRemoteDelete(payload.note_id);
-    }
-
-    private async applyRemoteDelete(noteId: string): Promise<void> {
+      // Process uploads (local has newer version)
+      for (const noteId of diff.to_upload) {
         const path = await this.localDatabase.getPathByNoteId(noteId);
         if (path) {
-            const exists = await this.app.fileSystemManager.exists(path);
-            if (exists) {
-                const file = this.app.workspace.getAbstractFileByPath(path);
-                if (file) {
-                    await this.app.fileManager.trashFile(file);
-                }
-            }
-            await this.unmapPath(path);
-            console.log(`[SyncEngine] Applied remote delete: ${path}`);
+          const fileData = localFileMap.get(path);
+          if (fileData) {
+            this.uploadQueue.enqueue({
+              type: 'modify',
+              path: path,
+              contentHash: fileData.hash,
+              timestamp: new Date(),
+            });
+          }
         }
+      }
+
+      // Process deletes (deleted on server)
+      for (const noteId of diff.to_delete) {
+        await this.applyRemoteDelete(noteId);
+      }
+
+      // Handle conflicts
+      for (const conflict of diff.conflicts) {
+        await this.handleSyncConflict(conflict);
+      }
     }
 
-    private async handleConflict(payload: any): Promise<void> {
-        console.warn('[SyncEngine] Conflict notification from server:', payload);
-        // Server detected conflict, fetch and resolve
-        const note = await this.noteSyncService.getNote(payload.note_id);
+    // 6. Check for notes on server that we don't have locally
+    // This handles cases where batchDiff might not return missing notes (e.g. empty local state)
+    const mappedNoteIds = new Set(localNotes.map((n) => n.id));
+    for (const [noteId, entry] of serverMap) {
+      // If note is not mapped locally AND not deleted on server
+      if (!mappedNoteIds.has(noteId) && !entry.is_deleted) {
+        // We don't have this note locally - download it
+        this.logger.info(`Downloading missing note: ${noteId}`);
+        const note = await this.noteSyncService.getNote(noteId);
         await this.applyRemoteUpdate(note);
+      }
     }
 
-    // Helper methods
-    private extractTitle(path: string): string {
-        return (path.split('/').pop() || '').replace(/\.md$/, '');
-    }
+    // 7. Upload unmapped local files (new files not yet on server)
+    // DEDUPLICATION: Check if server already has a note with same content hash
+    // This prevents duplicates when the same workspace is synced from multiple local folders
+    const filesToUpload: string[] = [];
 
-    private sanitizePath(title: string): string {
-        const sanitizedName = `${title.replace(/[/\\?%*:|"<>]/g, '-')}.md`;
-        const workspaceRoot = this.app.workspace.getRoot();
-        if (workspaceRoot) {
-            // Join workspace root with sanitized filename
-            return `${workspaceRoot}/${sanitizedName}`;
-        }
-        return sanitizedName;
-    }
+    for (const path of [...unmappedFiles, ...orphanedFiles]) {
+      const fileData = localFileMap.get(path);
+      if (!fileData) continue;
 
-    private async calculateHash(content: string): Promise<string> {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(content);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        return this.arrayBufferToBase64(hashBuffer); // Use helper instead of manual map
-    }
+      // Skip hash-based matching for empty files
+      // Empty files all have the same hash (SHA-256 of empty string), causing false positive matches
+      const EMPTY_FILE_HASH = '47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=';
+      if (fileData.hash === EMPTY_FILE_HASH) {
+        this.logger.info(`Skipping hash-based deduplication for empty file: ${path}`);
+        filesToUpload.push(path);
+        continue;
+      }
 
-    private arrayBufferToBase64(buffer: ArrayBuffer): string {
-        let binary = '';
-        const bytes = new Uint8Array(buffer);
-        for (let i = 0; i < bytes.byteLength; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-        return btoa(binary);
-    }
+      // FIRST: Check if server already has an ACTIVE note with this exact content hash
+      // This prevents duplicates when the same workspace is synced from multiple local folders
+      const serverMatch = manifestNotes.find(
+        (n) => !n.is_deleted && n.content_hash === fileData.hash
+      );
 
-    private async mapPathToNote(path: string, noteId: string): Promise<void> {
-        await this.localDatabase.savePathMapping(path, noteId);
-    }
+      if (serverMatch) {
+        // Content might exist on server - verify with full note (manifest could be stale)
+        this.logger.info(`Found potential matching server note for ${path} (manifest hash match), verifying...`);
 
-    private async unmapPath(path: string): Promise<void> {
-        await this.localDatabase.deletePathMapping(path);
-        await this.localDatabase.deleteNoteVersion(path);
-    }
-
-    // private async getLastSyncTime(): Promise<Date> {
-    //     const config = await this.app.configManager.loadConfig<any>('sync');
-    //     return config?.lastSyncTime ? new Date(config.lastSyncTime) : new Date(0);
-    // }
-
-    private async saveLastSyncTime(time: Date): Promise<void> {
-        const config = (await this.app.configManager.loadConfig<any>('sync')) || {};
-        await this.app.configManager.saveConfig('sync', {
-            ...config,
-            lastSyncTime: time.toISOString(),
-        });
-    }
-
-    // Public API
-    getSelectiveSyncManager(): SelectiveSyncManager {
-        return this.selectiveSync;
-    }
-
-    isActive(): boolean {
-        return this.isRunning;
-    }
-
-    async sync(): Promise<void> {
-        if (!this.isRunning) return;
-
-        console.log('[SyncEngine] Manual sync triggered');
-
+        // Fetch full note to get the title AND verify content hash
+        let serverTitle: string | null = null;
+        let fullNote: any = null;
         try {
-            // Pull changes (performInitialSync handles sync-start/complete)
-            await this.performInitialSync();
+          fullNote = await this.noteSyncService.getNote(serverMatch.id);
+          
+          // CRITICAL: Verify content hash from full note, not manifest (which could be stale)
+          if (fullNote.content_hash !== fileData.hash) {
+            this.logger.info(`Content hash mismatch (manifest stale): manifest=${serverMatch.content_hash}, actual=${fullNote.content_hash}, local=${fileData.hash}`);
+            this.logger.info(`Skipping deduplication for ${path}, will be handled by batch diff or applyRemoteUpdate`);
+            continue; // Not a real match, skip deduplication
+          }
+          
+          serverTitle = await this.decryptWithFallback(fullNote.encrypted_title, fullNote.nonce);
+          this.logger.info(`Confirmed matching server note for ${path} (full note hash match)`);
+        } catch (e) {
+          this.logger.warn(`Failed to get/decrypt note for ${serverMatch.id}, skipping: ${e}`);
+          continue;
+        }
 
-            // Push pending changes - process immediately
-            const pending = this.uploadQueue.getPending();
-            if (pending.length > 0) {
-                this.logger.info(`Processing ${pending.length} pending uploads...`);
-                for (const event of pending) {
-                    await this.handleUploadRequest(event);
+        let finalPath = path;
+        let renameSucceeded = true;
+        
+        if (serverTitle) {
+          const expectedPath = this.sanitizePath(serverTitle);
+
+          // If local path differs from server title, rename the local file
+          if (path !== expectedPath) {
+            // Check if expected path already exists
+            const expectedExists = await this.app.fileSystemManager.exists(expectedPath);
+            if (expectedExists) {
+              // Can't rename - destination already exists
+              // This might be a duplicate or the correct file is already there
+              // Don't match to this server note - let the file be checked against deleted notes
+              this.logger.warn(`Cannot rename ${path} to ${expectedPath}: destination already exists. Will check if it matches a deleted note.`);
+              renameSucceeded = false;
+            } else {
+              this.logger.info(`Renaming local file to match server: ${path} → ${expectedPath}`);
+              const file = this.app.workspace.getAbstractFileByPath(path);
+              if (file) {
+                this.fileWatcher.pause();
+                try {
+                  // NOTE: Can't use renameLocalFile() here because no mapping exists yet
+                  // This is content-hash matching during deduplication
+                  await this.app.fileManager.renameFile(file, expectedPath);
+                  finalPath = expectedPath;
+                  this.syncLogger.info(`Renamed: ${path} → ${expectedPath}`);
+                } catch (renameError) {
+                  this.logger.warn(`Failed to rename ${path}: ${renameError}`);
+                  renameSucceeded = false;
+                } finally {
+                  this.fileWatcher.resume();
                 }
+              } else {
+                renameSucceeded = false;
+              }
             }
-
-            // Ensure sync-complete is emitted if nothing was pending
-            if (this.uploadQueue.size() === 0 && this.isSyncingActive) {
-                this.isSyncingActive = false;
-                this.trigger('sync-complete');
-            }
-        } catch (error: any) {
-            console.error('[SyncEngine] Manual sync failed:', error);
-            this.isSyncingActive = false;
-            this.trigger('sync-error', error);
-            throw error;
+          }
         }
-    }
-
-    getPendingChanges(): number {
-        return this.uploadQueue.size();
-    }
-
-    isSyncing(): boolean {
-        return this.isSyncingActive;
-    }
-
-    /**
-     * Force upload a local file, ignoring version conflicts
-     * Used for conflict resolution when user chooses local version
-     */
-    async forceUpload(path: string): Promise<void> {
-        this.syncLogger.info(`Force uploading: ${path}`);
-
-        const file = this.app.workspace.getAbstractFileByPath(path) as any;
-        if (!file) {
-            throw new Error(`File not found: ${path}`);
+        
+        // Only create mapping if rename succeeded (or wasn't needed)
+        if (renameSucceeded) {
+          // Create mapping for the final path (after potential rename)
+          await this.mapPathToNote(finalPath, serverMatch.id);
+          await this.localDatabase.saveNoteVersion(
+            finalPath,
+            serverMatch.version,
+            serverMatch.id,
+            serverMatch.content_hash
+          );
+          this.syncLogger.info(`Mapped existing: ${finalPath} → ${serverMatch.id}`);
+          // Don't add to upload queue - already on server
+          continue; // Skip to next file
         }
+        
+        // If rename failed, don't match to this note - fall through to check deleted notes
+        // or upload as new
+      }
 
+      // SECOND: Check if server has a DELETED note with this exact content hash
+      // This prevents re-uploading files that were deleted in another workspace
+      const deletedMatch = manifestNotes.find(
+        (n) => n.is_deleted && n.content_hash === fileData.hash
+      );
+
+      if (deletedMatch) {
+        // File matches a deleted note - delete local file instead of uploading
+        this.logger.info(`Found deleted note matching ${path} (hash=${fileData.hash}), deleting local file`);
+        const file = this.app.workspace.getAbstractFileByPath(path);
+        if (file) {
+          this.fileWatcher.pause();
+          try {
+            await this.app.fileManager.trashFile(file);
+            this.syncLogger.info(`Deleted (matched deleted note): ${path}`);
+          } catch (error) {
+            this.logger.warn(`Failed to delete ${path}: ${error}`);
+          } finally {
+            this.fileWatcher.resume();
+          }
+        }
+        continue; // Skip this file, don't upload
+      }
+
+      // THIRD: No match found - truly new content, queue for upload
+      filesToUpload.push(path);
+    }
+
+    if (filesToUpload.length > 0) {
+      // CRITICAL: Pause queue BEFORE enqueueing to prevent timer-based processing
+      // from starting. This prevents the race condition where both processUploadQueue()
+      // and handleUploadRequest() try to upload the same file concurrently.
+      this.uploadQueue.pause();
+
+      for (const path of filesToUpload) {
+        const fileData = localFileMap.get(path);
+        if (fileData) {
+          this.logger.info(`Uploading new local file: ${path}`);
+          this.uploadQueue.enqueue({
+            type: 'create',
+            path: path,
+            contentHash: fileData.hash,
+            timestamp: new Date(),
+          });
+        }
+      }
+
+      // 8. Process upload queue immediately during initial sync
+      this.logger.info(`Processing ${filesToUpload.length} files for upload...`);
+      await this.processUploadQueue();
+      // Note: processUploadQueue() resumes the queue when done
+    }
+
+    // 9. Update local content hashes for accurate future comparisons
+    for (const [path, data] of localFileMap) {
+      await this.localDatabase.updateContentHash(path, data.hash);
+    }
+
+    // 10. Cleanup orphaned mappings (files that were deleted locally but still have mappings)
+    const allMappings = await this.localDatabase.getAllPathMappings();
+    let orphanedCount = 0;
+    for (const { path, noteId } of allMappings) {
+      // Check if file is in local map OR exists on disk (localFileMap might be stale after downloads)
+      if (!localFileMap.has(path)) {
+        const exists = await this.app.fileSystemManager.exists(path);
+        if (!exists) {
+          this.logger.info(`Found orphaned mapping: ${path} -> ${noteId}. Removing...`);
+          await this.unmapPath(path);
+          orphanedCount++;
+        }
+      }
+    }
+    if (orphanedCount > 0) {
+      this.logger.info(`Cleaned up ${orphanedCount} orphaned mappings`);
+    }
+
+    this.logger.info('Full reconciliation complete');
+    
+    // Trigger workspace refresh to update file explorer UI
+    this.app.workspace.triggerSyncComplete();
+  }
+
+  /**
+   * Handle a sync conflict detected during reconciliation
+   */
+  private async handleSyncConflict(conflict: {
+    note_id: string;
+    local_hash: string;
+    server_hash: string;
+    local_version: number;
+    server_version: number;
+  }): Promise<void> {
+    this.logger.warn(`Handling conflict for note ${conflict.note_id}`);
+
+    const path = await this.localDatabase.getPathByNoteId(conflict.note_id);
+    if (!path) {
+      this.logger.error(`Cannot resolve conflict: no path mapping for ${conflict.note_id}`);
+      return;
+    }
+
+    // Fetch server version
+    const serverNote = await this.noteSyncService.getNote(conflict.note_id);
+
+    // Get local content
+    const file = this.app.workspace.getAbstractFileByPath(path) as any;
+    if (!file) {
+      this.logger.error(`Cannot resolve conflict: file not found ${path}`);
+      return;
+    }
+
+    const localContent = await this.app.fileManager.read(file);
+
+    // Decrypt server content using embedded nonce format with legacy fallback
+    const serverContent = serverNote.encrypted_content
+      ? await this.decryptWithFallback(serverNote.encrypted_content, serverNote.nonce)
+      : '';
+
+    // Register conflict in logger for UI
+    this.syncLogger.addConflict({
+      noteId: conflict.note_id,
+      path,
+      localVersion: conflict.local_version,
+      serverVersion: conflict.server_version,
+      localContent,
+      serverContent,
+      localHash: conflict.local_hash,
+      serverHash: conflict.server_hash,
+    });
+
+    // Attempt to resolve conflict
+    const resolution = await this.conflictResolver.resolve(
+      path,
+      localContent,
+      serverContent,
+      serverNote,
+    );
+
+    if (resolution.type === 'needs-user-decision') {
+      // Hard conflict - leave for user to resolve in SyncModal
+      this.syncLogger.warn(
+        `Hard conflict for ${path} - user must resolve manually`,
+        'Check Sync Status for conflict resolution options',
+      );
+      return;
+    }
+
+    // Auto-merge succeeded - update local file with resolved content
+    this.fileWatcher.pause();
+    try {
+      await this.app.fileManager.modify(file, resolution.content);
+    } finally {
+      this.fileWatcher.resume();
+    }
+
+    // Mark conflict as resolved
+    const addedConflict = this.syncLogger.getConflicts().find(c => c.path === path && !c.resolved);
+    if (addedConflict) {
+      this.syncLogger.resolveConflict(addedConflict.id, 'merged');
+    }
+
+    // Queue upload of resolved version
+    const resolvedHash = await this.calculateHash(resolution.content);
+    this.uploadQueue.enqueue({
+      type: 'modify',
+      path: path,
+      contentHash: resolvedHash,
+      timestamp: new Date(),
+    });
+
+    this.syncLogger.info(`Conflict auto-resolved for ${path} using ${resolution.strategy}`);
+  }
+
+  private async handleLocalChange(event: FileChangeEvent): Promise<void> {
+    console.log('[SyncEngine] Local change detected:', event.type, event.path);
+
+    // Add to upload queue with retry logic
+    this.uploadQueue.enqueue(event);
+  }
+
+  /**
+   * Process all items in the upload queue synchronously
+   * Used during initial sync to ensure files are uploaded before completing
+   *
+   * IMPORTANT: We pause the queue's internal processing to prevent race conditions
+   * where both processUploadQueue and handleUploadRequest try to process the same item
+   */
+  private async processUploadQueue(): Promise<void> {
+    const items = this.uploadQueue.getPending();
+    if (items.length === 0) return;
+
+    // Note: Queue should already be paused by caller (performFullReconciliation)
+    // This ensures no timer-based processing interferes
+
+    this.logger.info(`Processing upload queue: ${items.length} items`);
+    this.syncLogger.info(`Uploading ${items.length} files...`, undefined, 'Upload');
+
+    for (const item of items) {
+      try {
+        await this.uploadChange(item);
+        this.uploadQueue.markSuccess(item.path);
+        this.logger.info(`Uploaded: ${item.path}`);
+        this.syncLogger.info(
+          `Uploaded: ${item.path.split('/').pop()}`,
+          item.path,
+          'Upload',
+        );
+      } catch (error: any) {
+        this.logger.error(`Failed to upload ${item.path}:`, error);
+        this.syncLogger.error(
+          `Failed: ${item.path.split('/').pop()}`,
+          (error as any)?.message || 'Unknown error',
+          'Upload',
+        );
+        this.uploadQueue.markFailure(item.path, error as Error);
+      }
+    }
+
+    // RESUME queue processing for subsequent file changes
+    this.uploadQueue.resume();
+
+    // FORCE emit sync-count-change with actual queue size to ensure UI updates
+    const finalQueueSize = this.uploadQueue.size();
+    this.trigger('sync-count-change', finalQueueSize);
+
+    // Clear localStorage if queue is empty to prevent stale items on next startup
+    if (finalQueueSize === 0) {
+      this.uploadQueue.clearStorage();
+    }
+
+    this.logger.info(`Upload queue processing complete. Remaining: ${finalQueueSize}`);
+    this.syncLogger.info('Upload queue complete', undefined, 'Upload');
+  }
+
+  /**
+   * Handle upload request from queue
+   * Called by UploadQueue when an item is ready to be uploaded
+   */
+  private async handleUploadRequest(event: FileChangeEvent): Promise<void> {
+    // Only emit sync-start once when we start processing
+    if (!this.isSyncingActive) {
+      this.isSyncingActive = true;
+      this.trigger('sync-start');
+    }
+
+    try {
+      await this.uploadChange(event);
+      // Mark as successful in queue
+      this.uploadQueue.markSuccess(event.path);
+    } catch (error: any) {
+      console.error('[SyncEngine] Upload failed:', error);
+      // Mark as failed - queue will handle retry logic
+      this.uploadQueue.markFailure(event.path, error as Error);
+    }
+    // Note: sync-complete is emitted by queue-change handler when queue becomes empty
+  }
+
+  private async uploadChange(event: FileChangeEvent): Promise<void> {
+    const { type, path } = event;
+
+    if (type === 'delete') {
+      await this.handleLocalDelete(path);
+      return;
+    }
+
+    if (type === 'rename') {
+      await this.handleLocalRename(event.oldPath!, path);
+      return;
+    }
+
+    // Handle create/modify
+    const file = this.app.workspace.getAbstractFileByPath(path) as any; // Cast to any to avoid TFile import issues for now
+    if (!file) {
+      console.warn(`[SyncEngine] File not found for upload: ${path}`);
+      return;
+    }
+
+    const content = await this.app.fileManager.read(file);
+    const title = this.extractTitle(path);
+
+    // CRITICAL: Calculate hash from actual content being uploaded
+    // Don't use event.contentHash as it may be stale
+    const contentHash = await this.calculateHash(content);
+
+    // Encrypt content with embedded nonce (self-contained blobs)
+    const encryptedTitle = await this.encryptionManager.encryptBlob(title);
+    const encryptedContent = await this.encryptionManager.encryptBlob(content);
+
+    // Check if note exists
+    const existingNoteId = await this.localDatabase.getNoteIdByPath(path);
+
+    if (existingNoteId) {
+      // Update existing note with version check
+      const currentVersion = (await this.localDatabase.getNoteVersion(path)) || 0;
+
+      this.logger.info(`[UPLOAD DEBUG] Updating note ${existingNoteId}: content_length=${content.length}, content_hash=${contentHash}`);
+
+      try {
+        const updatedNote = await this.noteSyncService.updateNote(existingNoteId, {
+          encrypted_title: encryptedTitle,
+          encrypted_content: encryptedContent,
+          nonce: 'embedded', // Nonce is now embedded in each field
+          encryption_algo: 'AES-256-GCM',
+          content_hash: contentHash,
+          expected_version: currentVersion,
+        });
+
+        await this.localDatabase.saveNoteVersion(
+          path,
+          updatedNote.version,
+          existingNoteId,
+          contentHash,
+        );
+        this.syncLogger.info(`Updated note: ${path} → v${updatedNote.version}`);
+      } catch (error: any) {
+        // Check if it's a version conflict (409 Conflict)
+        if (
+          (error as any)?.message?.includes('409') ||
+          (error as any)?.message?.includes('conflict') ||
+          (error as any)?.message?.includes('version')
+        ) {
+          this.syncLogger.warn(`Version conflict for ${path}, resolving...`);
+
+          // Fetch the latest version from server
+          const remoteNote = await this.noteSyncService.getNote(existingNoteId);
+
+          // Apply remote update (this will trigger conflict resolution)
+          await this.applyRemoteUpdate(remoteNote);
+
+          // After conflict resolution, retry the upload
+          // The conflict resolver should have updated the local file
+          const updatedContent = await this.app.fileManager.read(file);
+          const updatedEncrypted =
+            await this.encryptionManager.encryptBlob(updatedContent);
+          const updatedTitleEncrypted = await this.encryptionManager.encryptBlob(title);
+
+          const retriedNote = await this.noteSyncService.updateNote(existingNoteId, {
+            encrypted_title: updatedTitleEncrypted,
+            encrypted_content: updatedEncrypted,
+            nonce: 'embedded',
+            encryption_algo: 'AES-256-GCM',
+            content_hash: await this.calculateHash(updatedContent),
+            expected_version: remoteNote.version, // Use remote version now
+          });
+
+          const retriedHash = await this.calculateHash(updatedContent);
+          await this.localDatabase.saveNoteVersion(
+            path,
+            retriedNote.version,
+            existingNoteId,
+            retriedHash,
+          );
+          this.syncLogger.info(`Conflict resolved: ${path} → v${retriedNote.version}`);
+        } else {
+          // Not a version conflict, rethrow
+          throw error;
+        }
+      }
+    } else {
+      // DEDUPLICATION GUARD: Re-check if note was mapped by concurrent upload
+      // This can happen if two uploads for same path race concurrently
+      const recheckNoteId = await this.localDatabase.getNoteIdByPath(path);
+      if (recheckNoteId) {
+        // Another upload already created/mapped this note - upgrade to update
+        this.logger.info(
+          `[uploadChange] Path was mapped concurrently, upgrading to update: ${path}`,
+        );
+        const currentVersion = (await this.localDatabase.getNoteVersion(path)) || 0;
+        const updatedNote = await this.noteSyncService.updateNote(recheckNoteId, {
+          encrypted_title: encryptedTitle,
+          encrypted_content: encryptedContent,
+          nonce: 'embedded',
+          encryption_algo: 'AES-256-GCM',
+          content_hash: contentHash,
+          expected_version: currentVersion,
+        });
+        await this.localDatabase.saveNoteVersion(
+          path,
+          updatedNote.version,
+          recheckNoteId,
+          contentHash,
+        );
+        this.syncLogger.info(`Updated note (dedup): ${path} → v${updatedNote.version}`);
+        return;
+      }
+
+      // Create new note
+      if (!this.workspaceId) {
+        throw new Error('Cannot create note: no workspace ID set');
+      }
+
+      this.logger.info(`Creating note with workspace_id: ${this.workspaceId}`);
+
+      const newNote = await this.noteSyncService.createNote({
+        workspace_id: this.workspaceId,
+        type: 'file',
+        encrypted_title: encryptedTitle,
+        encrypted_content: encryptedContent,
+        nonce: 'embedded', // Nonce is now embedded in each field
+        encryption_algo: 'AES-256-GCM',
+        content_hash: contentHash,
+      });
+
+      await this.mapPathToNote(path, newNote.id);
+      await this.localDatabase.saveNoteVersion(
+        path,
+        newNote.version,
+        newNote.id,
+        contentHash,
+      );
+      this.syncLogger.info(`Created note: ${path} (${newNote.id})`);
+    }
+  }
+
+  private async handleLocalDelete(path: string): Promise<void> {
+    // Check if this is a file with a mapping
+    const noteId = await this.localDatabase.getNoteIdByPath(path);
+    if (noteId) {
+      await this.noteSyncService.deleteNote(noteId);
+      await this.unmapPath(path);
+      this.syncLogger.info(`Deleted note: ${path}`);
+      return;
+    }
+
+    // If no direct mapping, this might be a directory deletion
+    // Check for any mapped files that are children of this path
+    const allMappings = await this.localDatabase.getAllPathMappings();
+    const childrenToDelete = allMappings.filter(mapping => 
+      this.pathManager.isChildOf(mapping.path, path)
+    );
+
+    if (childrenToDelete.length > 0) {
+      this.syncLogger.info(`Directory deleted: ${path}, deleting ${childrenToDelete.length} child notes`);
+      
+      for (const { path: childPath, noteId: childNoteId } of childrenToDelete) {
+        try {
+          await this.noteSyncService.deleteNote(childNoteId);
+          await this.unmapPath(childPath);
+          this.syncLogger.info(`Deleted child note: ${childPath}`);
+        } catch (error) {
+          this.syncLogger.error(`Failed to delete child note ${childPath}: ${error}`);
+        }
+      }
+    }
+  }
+
+  private async handleLocalRename(oldPath: string, newPath: string): Promise<void> {
+    this.logger.info(`[handleLocalRename] Processing rename: ${oldPath} → ${newPath}`);
+
+    const noteId = await this.localDatabase.getNoteIdByPath(oldPath);
+    if (noteId) {
+      // Single file rename - update mapping atomically (transfers version data)
+      await this.localDatabase.updatePathMapping(oldPath, newPath, noteId);
+
+      // Update note title with embedded nonce
+      const newTitle = this.extractTitle(newPath);
+      const encryptedTitle = await this.encryptionManager.encryptBlob(newTitle);
+
+      await this.noteSyncService.updateNote(noteId, {
+        encrypted_title: encryptedTitle,
+        nonce: 'embedded',
+      });
+
+      this.syncLogger.info(`Renamed: ${oldPath} → ${newPath}`);
+    } else {
+      // No direct mapping - might be directory rename or unmapped file
+      
+      // Check for directory rename (children need path updates)
+      const allMappings = await this.localDatabase.getAllPathMappings();
+      const childrenToRename = allMappings.filter(mapping => 
+        this.pathManager.isChildOf(mapping.path, oldPath)
+      );
+
+      if (childrenToRename.length > 0) {
+        // Directory rename - update all child file paths and titles
+        this.syncLogger.info(`Directory renamed: ${oldPath} → ${newPath}, updating ${childrenToRename.length} child notes`);
+        
+        for (const { path: childOldPath, noteId: childNoteId } of childrenToRename) {
+          try {
+            // Calculate new path by replacing old directory prefix with new
+            const relativePart = childOldPath.substring(oldPath.length);
+            const childNewPath = `${newPath}${relativePart}`;
+            
+            // Update mapping
+            await this.localDatabase.updatePathMapping(childOldPath, childNewPath, childNoteId);
+            
+            // Update note title on server
+            const newTitle = this.extractTitle(childNewPath);
+            const encryptedTitle = await this.encryptionManager.encryptBlob(newTitle);
+            
+            await this.noteSyncService.updateNote(childNoteId, {
+              encrypted_title: encryptedTitle,
+              nonce: 'embedded',
+            });
+            
+            this.syncLogger.info(`Renamed child: ${childOldPath} → ${childNewPath}`);
+          } catch (error) {
+            this.syncLogger.error(`Failed to rename child ${childOldPath}: ${error}`);
+          }
+        }
+        return;
+      }
+
+      // Not a directory, check if it's an unmapped file with matching content
+      this.logger.warn(`[handleLocalRename] No note mapping found for oldPath: ${oldPath}`);
+
+      const file = this.app.workspace.getAbstractFileByPath(newPath) as any;
+      if (file) {
         const content = await this.app.fileManager.read(file);
-        const title = this.extractTitle(path);
         const contentHash = await this.calculateHash(content);
 
-        const encryptedTitle = await this.encryptionManager.encryptBlob(title);
-        const encryptedContent = await this.encryptionManager.encryptBlob(content);
+        // Check server manifest for matching content hash
+        const manifest = await this.noteSyncService.getManifest(this.workspaceId);
+        const serverMatch = manifest?.notes?.find(
+          (n) => !n.is_deleted && n.content_hash === contentHash
+        );
 
-        const noteId = await this.localDatabase.getNoteIdByPath(path);
+        if (serverMatch) {
+          // Found matching note on server - update its title instead of creating new
+          this.logger.info(`Found matching server note by content hash: ${serverMatch.id}`);
 
-        if (noteId) {
-            // Get current server version to use as expected_version
-            const serverNote = await this.noteSyncService.getNote(noteId);
+          const newTitle = this.extractTitle(newPath);
+          const encryptedTitle = await this.encryptionManager.encryptBlob(newTitle);
 
-            const updatedNote = await this.noteSyncService.updateNote(noteId, {
-                encrypted_title: encryptedTitle,
-                encrypted_content: encryptedContent,
-                nonce: 'embedded',
-                encryption_algo: 'AES-256-GCM',
-                content_hash: contentHash,
-                expected_version: serverNote.version,
-            });
+          await this.noteSyncService.updateNote(serverMatch.id, {
+            encrypted_title: encryptedTitle,
+            nonce: 'embedded',
+          });
 
-            await this.localDatabase.saveNoteVersion(
-                path,
-                updatedNote.version,
-                noteId,
-                contentHash,
-            );
-            this.syncLogger.info(`Force uploaded: ${path} → v${updatedNote.version}`);
+          // Create local mapping
+          await this.mapPathToNote(newPath, serverMatch.id);
+          await this.localDatabase.saveNoteVersion(
+            newPath,
+            serverMatch.version + 1, // Version will be incremented by server
+            serverMatch.id,
+            contentHash
+          );
+
+          this.syncLogger.info(`Renamed (by content match): ${oldPath} → ${newPath} (note: ${serverMatch.id})`);
         } else {
-            // Create new note if no mapping exists
-            if (!this.workspaceId) {
-                throw new Error('Cannot create note: no workspace ID set');
-            }
-            const newNote = await this.noteSyncService.createNote({
-                workspace_id: this.workspaceId,
-                type: 'file',
-                encrypted_title: encryptedTitle,
-                encrypted_content: encryptedContent,
-                nonce: 'embedded',
-                encryption_algo: 'AES-256-GCM',
-                content_hash: contentHash,
-            });
-
-            await this.mapPathToNote(path, newNote.id);
-            await this.localDatabase.saveNoteVersion(
-                path,
-                newNote.version,
-                newNote.id,
-                contentHash,
-            );
-            this.syncLogger.info(`Force created: ${path} → v${newNote.version}`);
+          // Truly new file - create on server
+          this.uploadQueue.enqueue({
+            type: 'create',
+            path: newPath,
+            contentHash,
+            timestamp: new Date(),
+          });
+          this.syncLogger.info(`Renamed file has no mapping or match, creating as new: ${newPath}`);
         }
+      }
+    }
+  }
+
+  private async handleRemoteUpdate(payload: any): Promise<void> {
+    // Skip if this update came from current device
+    const deviceId = this.app.syncManager.deviceManager.getDeviceId();
+    console.log(
+      '[SyncEngine] handleRemoteUpdate - payload.device_id:',
+      payload.device_id,
+      'local deviceId:',
+      deviceId,
+    );
+    if (payload.device_id === deviceId) {
+      this.syncLogger.debug(`Ignoring own update: ${payload.note_id}`);
+      return;
     }
 
-    /**
-     * Force download a server note, overwriting local file
-     * Used for conflict resolution when user chooses server version
-     */
-    async forceDownload(noteId: string, path: string): Promise<void> {
-        this.syncLogger.info(`Force downloading to: ${path}`);
+    this.syncLogger.info(`Remote update received: ${payload.note_id}`);
 
-        const note = await this.noteSyncService.getNote(noteId);
+    // Fetch full note
+    const note = await this.noteSyncService.getNote(payload.note_id);
+    await this.applyRemoteUpdate(note);
+  }
 
-        // Decrypt content
+  /**
+   * Try to decrypt with embedded nonce format, fall back to legacy format if it fails
+   */
+  private async decryptWithFallback(
+    encryptedData: string,
+    legacyNonce?: string,
+  ): Promise<string> {
+    try {
+      // Try new format (nonce embedded in blob)
+      return await this.encryptionManager.decryptBlob(encryptedData);
+    } catch (error: any) {
+      this.syncLogger.debug(`decryptBlob failed, trying legacy format. Error: ${error}`);
+      // Fall back to legacy format (separate nonce)
+      if (legacyNonce && legacyNonce !== 'embedded') {
+        this.syncLogger.debug(
+          `Using legacy decryption with nonce: ${legacyNonce.substring(0, 10)}...`,
+        );
+        return await this.encryptionManager.decrypt({
+          encrypted_content: encryptedData,
+          nonce: legacyNonce,
+          encryption_algo: 'AES-256-GCM',
+        });
+      }
+      this.syncLogger.error(
+        `Decryption failed - no valid legacy nonce. legacyNonce=${legacyNonce}`,
+      );
+      throw error;
+    }
+  }
 
-        const content = note.encrypted_content
-            ? await this.decryptWithFallback(note.encrypted_content, note.nonce)
-            : '';
+  private async applyRemoteUpdate(note: NoteResponse): Promise<void> {
+    this.syncLogger.debug(`applyRemoteUpdate called for note ${note.id}`);
+    
+    // Handle deleted notes
+    if (note.is_deleted) {
+      const existingPath = await this.localDatabase.getPathByNoteId(note.id);
+      if (existingPath) {
+        this.logger.info(`Deleting local file (note deleted on server): ${existingPath}`);
+        const file = this.app.workspace.getAbstractFileByPath(existingPath);
+        if (file) {
+          this.fileWatcher.pause();
+          try {
+            await this.app.fileManager.trashFile(file);
+            await this.localDatabase.deletePathMapping(existingPath);
+            this.syncLogger.info(`Deleted: ${existingPath}`);
+          } catch (error) {
+            this.logger.warn(`Failed to delete ${existingPath}: ${error}`);
+          } finally {
+            this.fileWatcher.resume();
+          }
+        } else {
+          // File doesn't exist locally, just clean up mapping
+          await this.localDatabase.deletePathMapping(existingPath);
+        }
+      }
+      return; // Don't process deleted notes further
+    }
+    
+    try {
+      // Decrypt using embedded nonce format with legacy fallback
+      this.syncLogger.debug(`Decrypting title for note ${note.id}...`);
+      const title = await this.decryptWithFallback(note.encrypted_title, note.nonce);
+      this.syncLogger.debug(`Title decrypted: ${title}`);
 
-        // Write to local file (pause watcher to avoid re-triggering)
+      const content = note.encrypted_content
+        ? await this.decryptWithFallback(note.encrypted_content, note.nonce)
+        : '';
+      this.syncLogger.debug(`Content decrypted (${content.length} chars)`);
+
+      // Determine path - check existing mapping first
+      let existingPath = await this.localDatabase.getPathByNoteId(note.id);
+
+      // If no mapping exists, check if we have a local file with matching content hash
+      // This handles the case where the same file exists locally with a different name (e.g., after rename on another device)
+      let matchedLocalFile: any = null;
+      if (!existingPath && note.content_hash) {
+        const localFiles = await this.app.workspace.getFiles(['md']);
+        for (const file of localFiles) {
+          if (this.selectiveSync.shouldIgnore(file.path)) continue;
+
+          // Check if this file is already mapped to another note
+          const mappedNoteId = await this.localDatabase.getNoteIdByPath(file.path);
+          if (mappedNoteId) continue; // Already mapped
+
+          const fileContent = await this.app.fileManager.read(file);
+          const fileHash = await this.calculateHash(fileContent);
+
+          this.logger.debug(`Comparing hashes for ${file.path}: local=${fileHash}, server=${note.content_hash}, match=${fileHash === note.content_hash}`);
+
+          if (fileHash === note.content_hash) {
+            // Found a local file with matching content - use this path
+            this.syncLogger.info(`Found local file with matching content: ${file.path} → ${note.id} (hash=${fileHash})`);
+            existingPath = file.path;
+            matchedLocalFile = file;
+            break;
+          }
+        }
+      }
+
+      // Determine the target path based on server title
+      const serverPath = this.sanitizePath(title);
+      const path = existingPath || serverPath;
+      this.syncLogger.debug(`Path determined: ${path} (existing: ${existingPath || 'none'}, server title path: ${serverPath})`);
+
+      // If we found a matching local file but its name differs from server title, rename it
+      let finalPath = existingPath || serverPath;
+      
+      if (matchedLocalFile && existingPath && existingPath !== serverPath) {
+        this.syncLogger.info(`Renaming local file to match server title: ${existingPath} → ${serverPath}`);
         this.fileWatcher.pause();
         try {
-            const file = this.app.workspace.getAbstractFileByPath(path) as any;
-            if (file) {
-                await this.app.fileManager.modify(file, content);
-            } else {
-                await this.app.fileManager.createFile(path, content);
-            }
+          // Ensure target directory exists
+          await this.pathManager.ensureDirectoryExists(serverPath);
+          
+          // Rename the file
+          await this.app.fileManager.renameFile(matchedLocalFile, serverPath);
+          finalPath = serverPath;
+          
+          // If there's an existing mapping, update it (atomic operation)
+          const existingNoteId = await this.localDatabase.getNoteIdByPath(existingPath);
+          if (existingNoteId) {
+            await this.localDatabase.updatePathMapping(existingPath, serverPath, existingNoteId);
+          }
+        } catch (renameError) {
+          this.syncLogger.warn(`Failed to rename file: ${renameError}, keeping original path`);
+          // finalPath remains as existingPath on error
         } finally {
+          this.fileWatcher.resume();
+        }
+      }
+
+      // Check for local conflict
+      const localExists = await this.app.fileSystemManager.exists(finalPath);
+      this.syncLogger.debug(`Local file exists: ${localExists}`);
+      if (localExists) {
+        const file = this.app.workspace.getAbstractFileByPath(finalPath) as any;
+        if (!file) return;
+
+        const localContent = await this.app.fileManager.read(file);
+        const localHash = await this.calculateHash(localContent);
+
+        // Get the hash we had at last sync (what we uploaded/downloaded)
+        const lastSyncedHash = await this.localDatabase.getContentHash(finalPath);
+
+        // Determine what changed since last sync
+        const localChanged = lastSyncedHash && localHash !== lastSyncedHash;
+        const serverChanged = lastSyncedHash && note.content_hash !== lastSyncedHash;
+
+        if (localHash === note.content_hash) {
+          // Same content - just update version tracking
+          await this.localDatabase.saveNoteVersion(
+            finalPath,
+            note.version,
+            note.id,
+            note.content_hash,
+          );
+          this.syncLogger.debug(`Synced (same content): ${finalPath} v${note.version}`);
+          return;
+        }
+
+        if (localChanged && serverChanged) {
+          // TRUE CONFLICT: Both sides changed since last sync
+          this.syncLogger.warn(`True conflict detected: ${finalPath} (both sides changed since last sync)`);
+
+          // Register conflict in logger for UI
+          this.syncLogger.addConflict({
+            noteId: note.id,
+            path: finalPath,
+            localVersion: (await this.localDatabase.getNoteVersion(finalPath)) || 0,
+            serverVersion: note.version,
+            localContent: localContent,
+            serverContent: content,
+            localHash,
+            serverHash: note.content_hash,
+          });
+
+          const resolution = await this.conflictResolver.resolve(
+            finalPath,
+            localContent,
+            content,
+            note,
+          );
+
+          if (resolution.type === 'needs-user-decision') {
+            // Hard conflict - leave for user to resolve in SyncModal
+            // Don't modify the file, don't mark conflict as resolved
+            this.syncLogger.warn(
+              `Hard conflict for ${finalPath} - user must resolve manually`,
+              'Check Sync Status for conflict resolution options',
+            );
+            // Keep the conflict in the list (don't resolve it)
+            // Don't update tracking - user needs to decide first
+            return;
+          }
+
+          // Auto-merge succeeded - apply the merged content
+          this.fileWatcher.pause();
+          try {
+            await this.app.fileManager.modify(file, resolution.content);
+          } finally {
             this.fileWatcher.resume();
+          }
+
+          // Mark conflict as resolved since auto-merge worked
+          const addedConflict = this.syncLogger.getConflicts().find(c => c.path === path && !c.resolved);
+          if (addedConflict) {
+            this.syncLogger.resolveConflict(addedConflict.id, 'merged');
+          }
+
+          this.syncLogger.info(`Conflict auto-resolved for ${path} using ${resolution.strategy}`);
+        } else if (serverChanged && !localChanged) {
+          // Only server changed - accept server version (normal pull)
+          this.syncLogger.info(`Server updated: ${path}, applying remote changes`);
+          this.fileWatcher.pause();
+          try {
+            await this.app.fileManager.modify(file, content);
+          } finally {
+            this.fileWatcher.resume();
+          }
+        } else if (localChanged && !serverChanged) {
+          // Only local changed - this is a normal edit, will be uploaded by file watcher
+          this.syncLogger.debug(`Local edit detected: ${path}, skipping server version (local is newer)`);
+          // Don't overwrite local - it will be uploaded by file watcher or next sync
+          return;
+        } else {
+          // No lastSyncedHash - first sync of this file after mapping, use server version
+          this.syncLogger.info(`First sync for ${path}, using server version`);
+          this.fileWatcher.pause();
+          try {
+            await this.app.fileManager.modify(file, content);
+          } finally {
+            this.fileWatcher.resume();
+          }
         }
-
-        // Update local tracking
-        await this.mapPathToNote(path, noteId);
-        await this.localDatabase.saveNoteVersion(path, note.version, noteId, note.content_hash);
-
-        this.syncLogger.info(`Force downloaded: ${path} ← v${note.version}`);
-    }
-
-    // ============================================
-    // Periodic Scan & Verification
-    // ============================================
-
-    private scanInterval: NodeJS.Timeout | null = null;
-    private readonly SCAN_INTERVAL_MS = 60000; // 1 minute
-
-    /**
-     * Start periodic background scan for undetected changes
-     * This catches changes that FileWatcher might have missed
-     */
-    startPeriodicScan(): void {
-        if (this.scanInterval) return;
-
-        this.syncLogger.debug(`Starting periodic scan (interval: ${this.SCAN_INTERVAL_MS}ms)`);
-        this.scanInterval = setInterval(async () => {
-            try {
-                await this.scanForUndetectedChanges();
-            } catch (error: any) {
-                this.syncLogger.error('Periodic scan failed', error as any);
-            }
-        }, this.SCAN_INTERVAL_MS);
-    }
-
-    /**
-     * Stop periodic background scan
-     */
-    stopPeriodicScan(): void {
-        if (this.scanInterval) {
-            clearInterval(this.scanInterval);
-            this.scanInterval = null;
-            this.logger.info('Periodic scan stopped');
-        }
-    }
-
-    /**
-     * Scan for changes that FileWatcher might have missed
-     * This is a lighter-weight check than full reconciliation
-     */
-    async scanForUndetectedChanges(): Promise<number> {
-        this.logger.debug('Scanning for undetected changes...');
-        let changesFound = 0;
-
+      } else {
+        // New file, create locally
+        this.syncLogger.info(`Creating new local file: ${finalPath}`);
+        // Pause file watcher to prevent detecting our own changes
+        this.fileWatcher.pause();
         try {
-            const files = await this.app.workspace.getFiles(['md']);
+          // Ensure parent directories exist before creating file
+          await this.pathManager.ensureDirectoryExists(finalPath);
+          await this.app.fileManager.createFile(finalPath, content);
+          this.syncLogger.info(`Created local file: ${finalPath}`);
+        } catch (createError) {
+          this.syncLogger.error(`Failed to create file ${finalPath}: ${createError}`);
+          throw createError;
+        } finally {
+          this.fileWatcher.resume();
+        }
+      }
 
-            for (const file of files) {
-                if (this.selectiveSync.shouldIgnore(file.path)) continue;
+      // Update tracking
+      // Note: If file was renamed, mapping already updated by renameLocalFile()
+      // Only create mapping if this is a new file or no rename occurred
+      const existingNoteId = await this.localDatabase.getNoteIdByPath(finalPath);
+      if (!existingNoteId) {
+        await this.mapPathToNote(finalPath, note.id);
+      }
+      
+      await this.localDatabase.saveNoteVersion(
+        finalPath,
+        note.version,
+        note.id,
+        note.content_hash,
+      );
+      this.syncLogger.info(`Applied remote update: ${finalPath} v${note.version}`);
+      this.trigger('sync-remote-update', finalPath);
+    } catch (error: any) {
+      this.syncLogger.error(`Failed to apply remote update for note ${note.id}: ${error}`);
+      console.error('[SyncEngine] Failed to apply remote update:', error);
+      this.trigger('sync-error', error);
+    }
+  }
 
-                const content = await this.app.fileManager.read(file);
-                const currentHash = await this.calculateHash(content);
-                const storedHash = await this.localDatabase.getContentHash(file.path);
+  private async handleRemoteDelete(payload: any): Promise<void> {
+    await this.applyRemoteDelete(payload.note_id);
+  }
 
-                if (storedHash && currentHash !== storedHash) {
-                    this.logger.info(`Detected untracked change: ${file.path}`);
+  private async applyRemoteDelete(noteId: string): Promise<void> {
+    const path = await this.localDatabase.getPathByNoteId(noteId);
+    if (path) {
+      const exists = await this.app.fileSystemManager.exists(path);
+      if (exists) {
+        const file = this.app.workspace.getAbstractFileByPath(path);
+        if (file) {
+          await this.app.fileManager.trashFile(file);
+        }
+      }
+      await this.unmapPath(path);
+      console.log(`[SyncEngine] Applied remote delete: ${path}`);
+    }
+  }
 
-                    // Queue for upload
-                    this.uploadQueue.enqueue({
-                        type: 'modify',
-                        path: file.path,
-                        contentHash: currentHash,
-                        timestamp: new Date(),
-                    });
-                    changesFound++;
-                } else if (!storedHash) {
-                    // File exists but has no stored hash - might be new
-                    const noteId = await this.localDatabase.getNoteIdByPath(file.path);
-                    if (!noteId) {
-                        this.logger.info(`Found new unmapped file: ${file.path}`);
-                        this.uploadQueue.enqueue({
-                            type: 'create',
-                            path: file.path,
-                            contentHash: currentHash,
-                            timestamp: new Date(),
-                        });
-                        changesFound++;
-                    }
-                }
-            }
+  private async handleConflict(payload: any): Promise<void> {
+    console.warn('[SyncEngine] Conflict notification from server:', payload);
+    // Server detected conflict, fetch and resolve
+    const note = await this.noteSyncService.getNote(payload.note_id);
+    await this.applyRemoteUpdate(note);
+  }
 
-            if (changesFound > 0) {
-                this.logger.info(`Scan found ${changesFound} undetected changes`);
+  // Helper methods
+  private extractTitle(path: string): string {
+    return this.pathManager.extractTitle(path);
+  }
+
+  private sanitizePath(title: string): string {
+    return this.pathManager.sanitizePath(title);
+  }
+
+  private async calculateHash(content: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(content);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return this.arrayBufferToBase64(hashBuffer); // Use helper instead of manual map
+  }
+
+  private arrayBufferToBase64(buffer: ArrayBuffer): string {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  }
+
+  private async mapPathToNote(path: string, noteId: string): Promise<void> {
+    await this.localDatabase.savePathMapping(path, noteId);
+  }
+
+  private async unmapPath(path: string): Promise<void> {
+    await this.localDatabase.deletePathMapping(path);
+    await this.localDatabase.deleteNoteVersion(path);
+  }
+
+
+  // private async getLastSyncTime(): Promise<Date> {
+  //     const config = await this.app.configManager.loadConfig<any>('sync');
+  //     return config?.lastSyncTime ? new Date(config.lastSyncTime) : new Date(0);
+  // }
+
+  private async saveLastSyncTime(time: Date): Promise<void> {
+    const config = (await this.app.configManager.loadConfig<any>('sync')) || {};
+    await this.app.configManager.saveConfig('sync', {
+      ...config,
+      lastSyncTime: time.toISOString(),
+    });
+  }
+
+  // Public API
+  getSelectiveSyncManager(): SelectiveSyncManager {
+    return this.selectiveSync;
+  }
+
+  isActive(): boolean {
+    return this.isRunning;
+  }
+
+  async sync(): Promise<void> {
+    if (!this.isRunning) return;
+
+    console.log('[SyncEngine] Manual sync triggered');
+
+    try {
+      // Pull changes (performInitialSync handles sync-start/complete)
+      await this.performInitialSync();
+
+      // Push pending changes - process immediately
+      const pending = this.uploadQueue.getPending();
+      if (pending.length > 0) {
+        this.logger.info(`Processing ${pending.length} pending uploads...`);
+        for (const event of pending) {
+          await this.handleUploadRequest(event);
+        }
+      }
+
+      // Ensure sync-complete is emitted if nothing was pending
+      if (this.uploadQueue.size() === 0 && this.isSyncingActive) {
+        this.isSyncingActive = false;
+        this.trigger('sync-complete');
+      }
+    } catch (error: any) {
+      console.error('[SyncEngine] Manual sync failed:', error);
+      this.isSyncingActive = false;
+      this.trigger('sync-error', error);
+      throw error;
+    }
+  }
+
+  getPendingChanges(): number {
+    return this.uploadQueue.size();
+  }
+
+  isSyncing(): boolean {
+    return this.isSyncingActive;
+  }
+
+  /**
+   * Force upload a local file, ignoring version conflicts
+   * Used for conflict resolution when user chooses local version
+   */
+  async forceUpload(path: string): Promise<void> {
+    this.syncLogger.info(`Force uploading: ${path}`);
+
+    const file = this.app.workspace.getAbstractFileByPath(path) as any;
+    if (!file) {
+      throw new Error(`File not found: ${path}`);
+    }
+
+    const content = await this.app.fileManager.read(file);
+    const title = this.extractTitle(path);
+    const contentHash = await this.calculateHash(content);
+
+    const encryptedTitle = await this.encryptionManager.encryptBlob(title);
+    const encryptedContent = await this.encryptionManager.encryptBlob(content);
+
+    const noteId = await this.localDatabase.getNoteIdByPath(path);
+
+    if (noteId) {
+      // Get current server version to use as expected_version
+      const serverNote = await this.noteSyncService.getNote(noteId);
+
+      const updatedNote = await this.noteSyncService.updateNote(noteId, {
+        encrypted_title: encryptedTitle,
+        encrypted_content: encryptedContent,
+        nonce: 'embedded',
+        encryption_algo: 'AES-256-GCM',
+        content_hash: contentHash,
+        expected_version: serverNote.version,
+      });
+
+      await this.localDatabase.saveNoteVersion(
+        path,
+        updatedNote.version,
+        noteId,
+        contentHash,
+      );
+      this.syncLogger.info(`Force uploaded: ${path} → v${updatedNote.version}`);
+    } else {
+      // Create new note if no mapping exists
+      if (!this.workspaceId) {
+        throw new Error('Cannot create note: no workspace ID set');
+      }
+      const newNote = await this.noteSyncService.createNote({
+        workspace_id: this.workspaceId,
+        type: 'file',
+        encrypted_title: encryptedTitle,
+        encrypted_content: encryptedContent,
+        nonce: 'embedded',
+        encryption_algo: 'AES-256-GCM',
+        content_hash: contentHash,
+      });
+
+      await this.mapPathToNote(path, newNote.id);
+      await this.localDatabase.saveNoteVersion(
+        path,
+        newNote.version,
+        newNote.id,
+        contentHash,
+      );
+      this.syncLogger.info(`Force created: ${path} → v${newNote.version}`);
+    }
+  }
+
+  /**
+   * Force download a server note, overwriting local file
+   * Used for conflict resolution when user chooses server version
+   */
+  async forceDownload(noteId: string, path: string): Promise<void> {
+    this.syncLogger.info(`Force downloading to: ${path}`);
+
+    const note = await this.noteSyncService.getNote(noteId);
+
+    // Decrypt content
+
+    const content = note.encrypted_content
+      ? await this.decryptWithFallback(note.encrypted_content, note.nonce)
+      : '';
+
+    // Write to local file (pause watcher to avoid re-triggering)
+    this.fileWatcher.pause();
+    try {
+      const file = this.app.workspace.getAbstractFileByPath(path) as any;
+      if (file) {
+        await this.app.fileManager.modify(file, content);
+      } else {
+        await this.app.fileManager.createFile(path, content);
+      }
+    } finally {
+      this.fileWatcher.resume();
+    }
+
+    // Update local tracking
+    await this.mapPathToNote(path, noteId);
+    await this.localDatabase.saveNoteVersion(path, note.version, noteId, note.content_hash);
+
+    this.syncLogger.info(`Force downloaded: ${path} ← v${note.version}`);
+  }
+
+  // ============================================
+  // Periodic Scan & Verification
+  // ============================================
+
+  private scanInterval: NodeJS.Timeout | null = null;
+  private readonly SCAN_INTERVAL_MS = 60000; // 1 minute
+
+  /**
+   * Start periodic background scan for undetected changes
+   * This catches changes that FileWatcher might have missed
+   */
+  startPeriodicScan(): void {
+    if (this.scanInterval) return;
+
+    this.syncLogger.debug(`Starting periodic scan (interval: ${this.SCAN_INTERVAL_MS}ms)`);
+    this.scanInterval = setInterval(async () => {
+      try {
+        await this.scanForUndetectedChanges();
+      } catch (error: any) {
+        this.syncLogger.error('Periodic scan failed', error as any);
+      }
+    }, this.SCAN_INTERVAL_MS);
+  }
+
+  /**
+   * Stop periodic background scan
+   */
+  stopPeriodicScan(): void {
+    if (this.scanInterval) {
+      clearInterval(this.scanInterval);
+      this.scanInterval = null;
+      this.logger.info('Periodic scan stopped');
+    }
+  }
+
+  /**
+   * Scan for changes that FileWatcher might have missed
+   * This is a lighter-weight check than full reconciliation
+   */
+  async scanForUndetectedChanges(): Promise<number> {
+    this.logger.debug('Scanning for undetected changes...');
+    let changesFound = 0;
+
+    try {
+      const files = await this.app.workspace.getFiles(['md']);
+
+      for (const file of files) {
+        if (this.selectiveSync.shouldIgnore(file.path)) continue;
+
+        const content = await this.app.fileManager.read(file);
+        const currentHash = await this.calculateHash(content);
+        const storedHash = await this.localDatabase.getContentHash(file.path);
+
+        if (storedHash && currentHash !== storedHash) {
+          this.logger.info(`Detected untracked change: ${file.path}`);
+
+          // Queue for upload
+          this.uploadQueue.enqueue({
+            type: 'modify',
+            path: file.path,
+            contentHash: currentHash,
+            timestamp: new Date(),
+          });
+          changesFound++;
+        } else if (!storedHash) {
+          // File exists but has no stored hash - might be new
+          const noteId = await this.localDatabase.getNoteIdByPath(file.path);
+          if (!noteId) {
+            this.logger.info(`Found new unmapped file: ${file.path}`);
+            this.uploadQueue.enqueue({
+              type: 'create',
+              path: file.path,
+              contentHash: currentHash,
+              timestamp: new Date(),
+            });
+            changesFound++;
+          }
+        }
+      }
+
+      if (changesFound > 0) {
+        this.logger.info(`Scan found ${changesFound} undetected changes`);
+      } else {
+        this.logger.debug('No undetected changes found');
+      }
+    } catch (error: any) {
+      this.logger.error('Error scanning for changes:', error);
+    }
+
+    return changesFound;
+  }
+
+  /**
+   * Verify current sync status by comparing local state with server manifest
+   * Returns detailed sync status including synced, pending, and conflict counts
+   */
+  async verifySyncStatus(): Promise<SyncVerificationResult> {
+    this.logger.info('Verifying sync status...');
+
+    let synced = 0;
+    let pending = 0;
+    let conflicts = 0;
+    let total = 0;
+
+    try {
+      // Get server manifest
+      const manifest = await this.noteSyncService.getManifest();
+      const manifestNotes = manifest?.notes || [];
+      const serverMap = new Map(manifestNotes.map((n) => [n.id, n]));
+
+      // Get local files
+      const localFiles = await this.app.workspace.getFiles(['md']);
+
+      for (const file of localFiles) {
+        if (this.selectiveSync.shouldIgnore(file.path)) continue;
+        total++;
+
+        const content = await this.app.fileManager.read(file);
+        const localHash = await this.calculateHash(content);
+        const noteId = await this.localDatabase.getNoteIdByPath(file.path);
+
+        if (noteId) {
+          const serverEntry = serverMap.get(noteId);
+          if (!serverEntry) {
+            // Deleted on server
+            pending++;
+          } else if (localHash === serverEntry.content_hash) {
+            // Perfectly synced - current local content matches server
+            synced++;
+          } else {
+            // Content differs between local and server
+            const storedVersion =
+              (await this.localDatabase.getNoteVersion(file.path)) || 0;
+            const storedHash = await this.localDatabase.getContentHash(file.path);
+
+            // Determine what changed
+            const localChanged = storedHash && localHash !== storedHash;
+            const serverChanged = storedVersion < serverEntry.version;
+
+            if (localChanged && serverChanged) {
+              // True conflict: both local and server changed since last sync
+              conflicts++;
+            } else if (serverChanged) {
+              // Only server changed - needs download
+              pending++;
+            } else if (localChanged) {
+              // Only local changed - needs upload
+              pending++;
             } else {
-                this.logger.debug('No undetected changes found');
+              // Stored hash matches local, stored version matches server
+              // but hashes don't match - likely a hash calculation issue
+              // Treat as synced since our last known state matches server version
+              synced++;
             }
-        } catch (error: any) {
-            this.logger.error('Error scanning for changes:', error);
+          }
+        } else {
+          // Not yet uploaded
+          pending++;
         }
+      }
 
-        return changesFound;
+      // Check for server notes not present locally
+      const localNoteIds = new Set<string>();
+      for (const file of localFiles) {
+        const noteId = await this.localDatabase.getNoteIdByPath(file.path);
+        if (noteId) localNoteIds.add(noteId);
+      }
+
+      for (const [noteId, entry] of serverMap) {
+        if (!localNoteIds.has(noteId) && !entry.is_deleted) {
+          pending++;
+          total++;
+        }
+      }
+    } catch (error: any) {
+      this.logger.error('Error verifying sync status:', error);
     }
 
-    /**
-     * Verify current sync status by comparing local state with server manifest
-     * Returns detailed sync status including synced, pending, and conflict counts
-     */
-    async verifySyncStatus(): Promise<SyncVerificationResult> {
-        this.logger.info('Verifying sync status...');
+    const result: SyncVerificationResult = {
+      synced,
+      pending,
+      conflicts,
+      total,
+      lastCheck: new Date(),
+    };
 
-        let synced = 0;
-        let pending = 0;
-        let conflicts = 0;
-        let total = 0;
+    this.logger.info(
+      `Sync status: ${synced}/${total} synced, ${pending} pending, ${conflicts} conflicts`,
+    );
+    this.trigger('sync-status-verified', result);
 
-        try {
-            // Get server manifest
-            const manifest = await this.noteSyncService.getManifest();
-            const manifestNotes = manifest?.notes || [];
-            const serverMap = new Map(manifestNotes.map((n) => [n.id, n]));
-
-            // Get local files
-            const localFiles = await this.app.workspace.getFiles(['md']);
-
-            for (const file of localFiles) {
-                if (this.selectiveSync.shouldIgnore(file.path)) continue;
-                total++;
-
-                const content = await this.app.fileManager.read(file);
-                const localHash = await this.calculateHash(content);
-                const noteId = await this.localDatabase.getNoteIdByPath(file.path);
-
-                if (noteId) {
-                    const serverEntry = serverMap.get(noteId);
-                    if (!serverEntry) {
-                        // Deleted on server
-                        pending++;
-                    } else if (localHash === serverEntry.content_hash) {
-                        // Perfectly synced
-                        synced++;
-                    } else {
-                        // Content differs
-                        const storedVersion =
-                            (await this.localDatabase.getNoteVersion(file.path)) || 0;
-                        if (storedVersion === serverEntry.version) {
-                            // Same version but different hash = conflict
-                            conflicts++;
-                        } else {
-                            // Different version = needs sync
-                            pending++;
-                        }
-                    }
-                } else {
-                    // Not yet uploaded
-                    pending++;
-                }
-            }
-
-            // Check for server notes not present locally
-            const localNoteIds = new Set<string>();
-            for (const file of localFiles) {
-                const noteId = await this.localDatabase.getNoteIdByPath(file.path);
-                if (noteId) localNoteIds.add(noteId);
-            }
-
-            for (const [noteId, entry] of serverMap) {
-                if (!localNoteIds.has(noteId) && !entry.is_deleted) {
-                    pending++;
-                    total++;
-                }
-            }
-        } catch (error: any) {
-            this.logger.error('Error verifying sync status:', error);
-        }
-
-        const result: SyncVerificationResult = {
-            synced,
-            pending,
-            conflicts,
-            total,
-            lastCheck: new Date(),
-        };
-
-        this.logger.info(
-            `Sync status: ${synced}/${total} synced, ${pending} pending, ${conflicts} conflicts`,
-        );
-        this.trigger('sync-status-verified', result);
-
-        return result;
-    }
+    return result;
+  }
 }

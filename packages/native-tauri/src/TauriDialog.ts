@@ -14,6 +14,7 @@ import type {
     SaveDialogOptions,
 } from '@inkdown/core/native';
 import { invoke } from '@tauri-apps/api/core';
+import { ask, message } from '@tauri-apps/plugin-dialog';
 
 interface TauriDialogOptions {
     title?: string;
@@ -60,17 +61,23 @@ export class TauriDialog implements IDialog {
     }
 
     async alert(options: AlertOptions): Promise<void> {
-        // Use browser alert as fallback, or implement via Tauri dialog plugin
-        window.alert(`${options.title}\n\n${options.message}`);
+        await message(options.message, {
+            title: options.title,
+            kind: 'info',
+        });
     }
 
     async confirm(options: ConfirmOptions): Promise<boolean> {
-        // Use browser confirm as fallback
-        return window.confirm(`${options.title}\n\n${options.message}`);
+        return await ask(options.message, {
+            title: options.title,
+            kind: 'warning',
+            okLabel: options.okLabel || 'OK',
+            cancelLabel: options.cancelLabel || 'Cancel',
+        });
     }
 
     async prompt(options: PromptOptions): Promise<string | null> {
-        // Use browser prompt as fallback
+        // Tauri doesn't have a built-in prompt dialog, use browser fallback
         return window.prompt(`${options.title}\n\n${options.message}`, options.defaultValue);
     }
 }

@@ -5,19 +5,24 @@ import pino from 'pino';
  * Provides structured logging with levels and context
  */
 
-// Create base logger
-const baseLogger = pino({
-    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-    browser: {
-        asObject: true,
-        serialize: true,
-    },
-    formatters: {
-        level: (label) => {
-            return { level: label };
-        },
-    },
-});
+// Only enable logging in development mode for performance
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+// Create base logger - completely disabled in production
+const baseLogger = isDevelopment
+    ? pino({
+          level: 'debug',
+          browser: {
+              asObject: true,
+              serialize: true,
+          },
+          formatters: {
+              level: (label) => {
+                  return { level: label };
+              },
+          },
+      })
+    : pino({ level: 'silent' }); // Silent in production for performance
 
 /**
  * Logger interface for different modules

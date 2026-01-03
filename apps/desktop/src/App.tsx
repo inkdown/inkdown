@@ -223,6 +223,34 @@ const AppContent: React.FC = () => {
         }
     }, [app, loading]);
 
+    // Check workspace setup on app startup (only after workspace is loaded)
+    useEffect(() => {
+        const checkWorkspaceSetup = async () => {
+            // Only check if workspace is loaded and we're not loading
+            if (!rootPath || loading) return;
+            
+            try {
+                const syncConfig = await app.configManager.loadConfig<SyncConfig>('sync');
+                const isLoggedIn = app.syncManager.isLoggedIn();
+                const hasEncryption = app.syncManager.encryptionManager.isInitialized();
+                const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
+                
+                // If sync enabled, logged in, has encryption, but no workspace
+                if (syncConfig?.enabled && isLoggedIn && hasEncryption && !currentWorkspaceId) {
+                    console.log('[App] Sync enabled but no workspace linked - prompting user');
+                    // Show workspace selection dialog
+                    setShowWorkspaceLinkDialog(true);
+                }
+            } catch (error: any) {
+                console.error('Failed to check workspace setup:', error);
+            }
+        };
+        
+        // Delay check slightly to let app fully initialize
+        const timer = setTimeout(checkWorkspaceSetup, 1000);
+        return () => clearTimeout(timer);
+    }, [app, rootPath, loading]);
+
     // Handler to change view mode and save to config
     const handleViewModeChange = useCallback(
         async (mode: ViewMode) => {
@@ -283,6 +311,39 @@ const AppContent: React.FC = () => {
             app.workspaceUI._setActiveFile(null);
         }
     }, [activeTab?.filePath, app]);
+
+    // Handle workspace selection/change
+    const handleWorkspaceSelected = useCallback(
+        async (path: string) => {
+            // Check if this is actually a workspace change
+            const previousPath = rootPath;
+            const isWorkspaceChange = previousPath && previousPath !== path;
+            
+            setRootPath(path);
+
+            // Sync workspace path to core
+            app.fileSystemManager.setWorkspacePath(path);
+            await app.workspace.refreshFileTree();
+
+            // Reset expanded dirs when changing workspace
+            setExpandedDirs([]);
+
+            // Add to recent workspaces and save to config
+            const config = await app.configManager.loadConfig<AppConfig>('app');
+            const updated = WorkspaceHistory.addWorkspace(config.recentWorkspaces || [], path);
+            setRecentWorkspaces(updated);
+            config.recentWorkspaces = updated;
+            config.workspace = path;
+            config.expandedDirs = [];
+            await app.configManager.saveConfig('app', config);
+
+            // If changing to a different workspace, clean up sync state
+            if (isWorkspaceChange) {
+                await app.syncManager.handleLocalWorkspaceChange(path);
+            }
+        },
+        [app, rootPath],
+    );
 
     // Register desktop-specific commands only
     useEffect(() => {
@@ -360,27 +421,8 @@ const AppContent: React.FC = () => {
                     });
 
                     if (selected) {
-                        // Switch to the selected workspace
                         const path = selected as string;
-                        setRootPath(path);
-
-                        // Sync workspace path to core
-                        app.fileSystemManager.setWorkspacePath(path);
-                        await app.workspace.refreshFileTree();
-
-                        // Reset expanded dirs when changing workspace
-                        setExpandedDirs([]);
-
-                        // Add to recent workspaces and save to config
-                        const config = await app.configManager.loadConfig<AppConfig>('app');
-                        const updated = WorkspaceHistory.addWorkspace(
-                            config.recentWorkspaces || [],
-                            path,
-                        );
-                        setRecentWorkspaces(updated);
-                        config.recentWorkspaces = updated;
-                        config.lastWorkspace = path;
-                        await app.configManager.saveConfig('app', config);
+                        await handleWorkspaceSelected(path);
                     }
                 },
             },
@@ -392,38 +434,7 @@ const AppContent: React.FC = () => {
             app.commandManager.unregisterCommand('app:toggle-sidebar');
             app.commandManager.unregisterCommand('app:open-workspace');
         };
-    }, [app]);
-
-    const handleWorkspaceSelected = useCallback(
-        async (path: string) => {
-            setRootPath(path);
-
-            // Sync workspace path to core
-            app.fileSystemManager.setWorkspacePath(path);
-            await app.workspace.refreshFileTree();
-
-            // Reset expanded dirs when changing workspace
-            setExpandedDirs([]);
-
-            // Add to recent workspaces and save to config
-            const config = await app.configManager.loadConfig<AppConfig>('app');
-            const updated = WorkspaceHistory.addWorkspace(config.recentWorkspaces || [], path);
-            setRecentWorkspaces(updated);
-            config.recentWorkspaces = updated;
-            config.workspace = path;
-            config.expandedDirs = [];
-            await app.configManager.saveConfig('app', config);
-
-            // Check if we need to link a remote workspace
-            if (app.syncManager.isEnabled()) {
-                const currentWorkspaceId = app.syncManager.getCurrentWorkspaceId();
-                if (!currentWorkspaceId) {
-                    setShowWorkspaceLinkDialog(true);
-                }
-            }
-        },
-        [app],
-    );
+    }, [app, handleWorkspaceSelected]);
 
     const handleLinkWorkspace = useCallback(
         async (workspaceId: string) => {
@@ -542,6 +553,49 @@ const AppContent: React.FC = () => {
         };
     }, [app, loadFiles]);
 
+    // Listen for file-delete events to close tabs of deleted files
+    useEffect(() => {
+        const handleFileDelete = (file: any) => {
+            // Find and close any tabs with this file path
+            const tabsToClose = tabs.filter((tab) => tab.filePath === file.path);
+            for (const tab of tabsToClose) {
+                closeTab(tab.id);
+            }
+        };
+
+        app.workspace.on('file-delete', handleFileDelete);
+
+        return () => {
+            app.workspace.off('file-delete', handleFileDelete);
+        };
+    }, [app, tabs, closeTab]);
+
+    // Listen for file-rename events to refresh the file tree
+    useEffect(() => {
+        const handleFileRename = () => {
+            loadFiles();
+        };
+
+        app.workspace.on('file-rename', handleFileRename);
+
+        return () => {
+            app.workspace.off('file-rename', handleFileRename);
+        };
+    }, [app, loadFiles]);
+
+    // Listen for sync-complete events to refresh the file tree
+    useEffect(() => {
+        const handleSyncComplete = () => {
+            loadFiles();
+        };
+
+        app.workspace.on('sync-complete', handleSyncComplete);
+
+        return () => {
+            app.workspace.off('sync-complete', handleSyncComplete);
+        };
+    }, [app, loadFiles]);
+
     const handleOpenDialog = useCallback(async (): Promise<string | null> => {
         const selected = await openDialog({
             directory: true,
@@ -560,8 +614,8 @@ const AppContent: React.FC = () => {
     const handleCreateFile = useCallback(
         async (filePath: string) => {
             try {
-                // Create the file with empty content
-                await app.fileSystemManager.writeFile(filePath, '');
+                // Use fileManager to create file and trigger events for sync
+                await app.fileManager.createFile(filePath, '');
                 await loadFiles();
             } catch (error: any) {
                 console.error('Failed to create file:', error);
@@ -588,15 +642,28 @@ const AppContent: React.FC = () => {
                 const parentDir = oldPath.substring(0, oldPath.lastIndexOf('/'));
                 const newPath = `${parentDir}/${newName}`;
 
-                // Check if file exists on disk before trying to rename
-                const exists = await app.fileSystemManager.exists(oldPath);
-                if (!exists) {
-                    // File doesn't exist yet (new unsaved file), create it first
-                    await app.fileSystemManager.writeFile(oldPath, '');
+                // Get the file from workspace cache
+                const file = app.workspace.getAbstractFileByPath(oldPath);
+                
+                if (file) {
+                    // Use fileManager to rename and trigger events for sync
+                    await app.fileManager.renameFile(file, newPath);
+                } else {
+                    // File not in cache - check if it exists on disk
+                    const exists = await app.fileSystemManager.exists(oldPath);
+                    if (!exists) {
+                        // File doesn't exist yet (new unsaved file), create it first
+                        await app.fileManager.createFile(oldPath, '');
+                    }
+                    // Get the file now and rename
+                    const newFile = app.workspace.getAbstractFileByPath(oldPath);
+                    if (newFile) {
+                        await app.fileManager.renameFile(newFile, newPath);
+                    } else {
+                        // Last resort: use fileSystemManager directly
+                        await app.fileSystemManager.rename(oldPath, newPath);
+                    }
                 }
-
-                // Use FileSystemManager directly to avoid cache dependency
-                await app.fileSystemManager.rename(oldPath, newPath);
 
                 // Update the tab if the renamed file is open
                 await app.tabManager.updateTabFilePath(oldPath, newPath);
@@ -612,13 +679,31 @@ const AppContent: React.FC = () => {
     const handleDelete = useCallback(
         async (path: string, _isDirectory: boolean) => {
             try {
-                const file = app.workspace.getAbstractFileByPath(path);
-                if (file) {
-                    await app.fileManager.trashFile(file);
-                } else {
-                    // Fallback if not in cache
-                    await app.fileSystemManager.delete(path);
+                let file = app.workspace.getAbstractFileByPath(path);
+                
+                if (!file) {
+                    // File not in cache - create a minimal file object for the event
+                    file = {
+                        path,
+                        name: path.split('/').pop() || '',
+                        basename: path.split('/').pop()?.replace(/\.md$/, '') || '',
+                        extension: 'md',
+                        stat: {
+                            size: 0,
+                            mtime: Date.now(),
+                            ctime: Date.now(),
+                        },
+                    };
                 }
+                
+                // Delete the file
+                await app.fileSystemManager.delete(path);
+                
+                // Trigger delete event for sync
+                if (file) {
+                    app.workspace._onFileDelete(file);
+                }
+                
                 await loadFiles();
             } catch (error: any) {
                 console.error('Failed to delete:', error);
@@ -633,11 +718,29 @@ const AppContent: React.FC = () => {
                 // Delete in parallel for better performance
                 await Promise.all(
                     paths.map(async (item) => {
-                        const file = app.workspace.getAbstractFileByPath(item.path);
+                        let file = app.workspace.getAbstractFileByPath(item.path);
+                        
+                        if (!file) {
+                            // File not in cache - create a minimal file object for the event
+                            file = {
+                                path: item.path,
+                                name: item.path.split('/').pop() || '',
+                                basename: item.path.split('/').pop()?.replace(/\.md$/, '') || '',
+                                extension: 'md',
+                                stat: {
+                                    size: 0,
+                                    mtime: Date.now(),
+                                    ctime: Date.now(),
+                                },
+                            };
+                        }
+                        
+                        // Delete the file
+                        await app.fileSystemManager.delete(item.path);
+                        
+                        // Trigger delete event for sync
                         if (file) {
-                            await app.fileManager.trashFile(file);
-                        } else {
-                            await app.fileSystemManager.delete(item.path);
+                            app.workspace._onFileDelete(file);
                         }
                     }),
                 );
@@ -652,7 +755,16 @@ const AppContent: React.FC = () => {
     const handleMove = useCallback(
         async (source: string, destination: string) => {
             try {
-                await app.fileSystemManager.move(source, destination);
+                // Get the file and use fileManager.renameFile to trigger sync events
+                const file = app.workspace.getAbstractFileByPath(source);
+                
+                if (file) {
+                    await app.fileManager.renameFile(file, destination);
+                } else {
+                    // Fallback to fileSystemManager
+                    await app.fileSystemManager.move(source, destination);
+                }
+                
                 await loadFiles();
             } catch (error: any) {
                 console.error('Failed to move:', error);
@@ -666,7 +778,15 @@ const AppContent: React.FC = () => {
             try {
                 // Move in sequence to avoid conflicts
                 for (const source of sources) {
-                    await app.fileSystemManager.move(source, destination);
+                    const file = app.workspace.getAbstractFileByPath(source);
+                    const fileName = source.split('/').pop() || '';
+                    const newPath = `${destination}/${fileName}`;
+                    
+                    if (file) {
+                        await app.fileManager.renameFile(file, newPath);
+                    } else {
+                        await app.fileSystemManager.move(source, destination);
+                    }
                 }
                 await loadFiles();
             } catch (error: any) {

@@ -253,9 +253,32 @@ export class FileWatcherService extends Events {
     private handleFileDelete(file: TAbstractFile): void {
         const path = file.path;
 
-        if (!this.shouldProcess(path)) return;
-
         console.log('[FileWatcherService] File delete detected:', path);
+
+        // Directory deletions don't have .md extension, but we still need to process them
+        const isDirectory = !path.endsWith('.md');
+        
+        if (isDirectory) {
+            // Directory deletion - let SyncEngine handle it (will delete all child notes)
+            console.log('[FileWatcherService] Directory delete detected:', path);
+            
+            // Skip normal shouldProcess check for directories
+            if (!this.isActive || this.isPaused) return;
+            if (this.selectiveSync.shouldIgnore(path)) return;
+            
+            const event: FileChangeEvent = {
+                type: 'delete',
+                path,
+                timestamp: new Date(),
+            };
+
+            this.addToBatch(event);
+            this.trigger('change', event);
+            return;
+        }
+
+        // Normal file deletion
+        if (!this.shouldProcess(path)) return;
 
         // Cancel any pending debounce for this path
         const existingTimer = this.debounceTimers.get(path);
@@ -281,9 +304,33 @@ export class FileWatcherService extends Events {
     private handleFileRename(file: TFile, oldPath: string): void {
         const newPath = file.path;
 
-        if (!this.shouldProcess(newPath)) return;
-
         console.log('[FileWatcherService] File rename detected:', oldPath, '->', newPath);
+
+        // Directory renames don't have .md extension, but we still need to process them
+        const isDirectory = !newPath.endsWith('.md') && !oldPath.endsWith('.md');
+        
+        if (isDirectory) {
+            // Directory rename - let SyncEngine handle it (will rename all child notes)
+            console.log('[FileWatcherService] Directory rename detected:', oldPath, '->', newPath);
+            
+            // Skip normal shouldProcess check for directories
+            if (!this.isActive || this.isPaused) return;
+            if (this.selectiveSync.shouldIgnore(newPath)) return;
+            
+            const event: FileChangeEvent = {
+                type: 'rename',
+                path: newPath,
+                oldPath,
+                timestamp: new Date(),
+            };
+
+            this.addToBatch(event);
+            this.trigger('change', event);
+            return;
+        }
+
+        // Normal file rename
+        if (!this.shouldProcess(newPath)) return;
 
         // Cancel any pending debounce for old path
         const existingTimer = this.debounceTimers.get(oldPath);

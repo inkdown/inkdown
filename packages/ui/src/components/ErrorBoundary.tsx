@@ -4,7 +4,7 @@
  * React error boundary for graceful error handling
  */
 
-import React, { Component, type ReactNode, type ErrorInfo } from 'react';
+import { Component, type ReactNode, type ErrorInfo } from 'react';
 import '../styles/ErrorBoundary.css';
 
 interface ErrorBoundaryProps {

@@ -52,13 +52,14 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
     const logsEndRef = useRef<HTMLDivElement>(null);
     const syncLogger = getSyncLogger();
 
-    // Load initial data
+    // Load initial data when modal opens
     useEffect(() => {
         if (isOpen) {
+            // Always refresh from source when opening
             setLogs(syncLogger.getLogs(logLevel));
             setConflicts(syncLogger.getConflicts());
         }
-    }, [isOpen, logLevel, syncLogger.getConflicts, syncLogger.getLogs]);
+    }, [isOpen, logLevel, syncLogger]);
 
     // Subscribe to log events
     useEffect(() => {
@@ -94,7 +95,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
                 ref.unload();
             });
         };
-    }, [isOpen, syncLogger.getConflicts, syncLogger.on]);
+    }, [isOpen, syncLogger]);
 
     // Auto-scroll logs
     useEffect(() => {

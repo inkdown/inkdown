@@ -6,8 +6,18 @@
 
 import { vi, beforeEach, afterEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import 'fake-indexeddb/auto'; // Polyfill IndexedDB for tests
+
+// Import fake-indexedDB and set up globals
+import 'fake-indexeddb/auto';
 import { IDBFactory } from 'fake-indexeddb';
+
+// Force indexedDB to be available in globalThis for Bun compatibility
+const idb = new IDBFactory();
+Object.defineProperty(globalThis, 'indexedDB', {
+    value: idb,
+    writable: true,
+    configurable: true,
+});
 
 // =============================================================================
 // Global Mocks
@@ -185,6 +195,7 @@ vi.stubGlobal('window', {
         removeEventListener: vi.fn(),
     }),
     localStorage: global.localStorage,
+    indexedDB: new IDBFactory(),
 });
 
 // =============================================================================
@@ -294,7 +305,16 @@ beforeEach(() => {
     vi.clearAllMocks();
     
     // Reset IndexedDB for each test
-    global.indexedDB = new IDBFactory();
+    const idb = new IDBFactory();
+    Object.defineProperty(globalThis, 'indexedDB', {
+        value: idb,
+        writable: true,
+        configurable: true,
+    });
+    global.indexedDB = idb;
+    if (typeof window !== 'undefined') {
+        (window as any).indexedDB = idb;
+    }
     
     // Clear config storage
     mockConfigStorage.clear();
@@ -306,10 +326,12 @@ beforeEach(() => {
 afterEach(async () => {
     // Close and delete all IndexedDB databases
     try {
-        const dbs = await indexedDB.databases();
-        for (const dbInfo of dbs) {
-            if (dbInfo.name) {
-                indexedDB.deleteDatabase(dbInfo.name);
+        if (globalThis.indexedDB) {
+            const dbs = await globalThis.indexedDB.databases();
+            for (const dbInfo of dbs) {
+                if (dbInfo.name) {
+                    globalThis.indexedDB.deleteDatabase(dbInfo.name);
+                }
             }
         }
     } catch (_error) {
@@ -317,7 +339,16 @@ afterEach(async () => {
     }
     
     // Reset IndexedDB for next test
-    global.indexedDB = new IDBFactory();
+    const idb = new IDBFactory();
+    Object.defineProperty(globalThis, 'indexedDB', {
+        value: idb,
+        writable: true,
+        configurable: true,
+    });
+    global.indexedDB = idb;
+    if (typeof window !== 'undefined') {
+        (window as any).indexedDB = idb;
+    }
     
     // Clear config storage
     mockConfigStorage.clear();

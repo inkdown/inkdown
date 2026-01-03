@@ -3,6 +3,18 @@ import type { App } from '../App';
 import { loggers } from '../utils/logger';
 import type { NoteResponse } from './types';
 
+/**
+ * Result of conflict resolution attempt
+ */
+export interface ConflictResolution {
+    /** The resolved content (or local content if user decision needed) */
+    content: string;
+    /** Type of resolution */
+    type: 'auto-merged' | 'needs-user-decision';
+    /** Strategy used for resolution */
+    strategy?: string;
+}
+
 export class ConflictResolver {
     private app: App;
     private dmp: DiffMatchPatch;
@@ -13,12 +25,16 @@ export class ConflictResolver {
         this.dmp = new DiffMatchPatch();
     }
 
+    /**
+     * Attempt to resolve a conflict automatically.
+     * Returns resolution type indicating if user intervention is needed.
+     */
     async resolve(
         path: string,
         localContent: string,
         remoteContent: string,
-        remoteNote: NoteResponse,
-    ): Promise<string> {
+        _remoteNote: NoteResponse,
+    ): Promise<ConflictResolution> {
         this.logger.info(`Resolving conflict for: ${path}`);
 
         // Try automatic merge with diff-match-patch
@@ -26,16 +42,25 @@ export class ConflictResolver {
 
         if (merged.success) {
             this.logger.info('Auto-merge successful');
-            return merged.content;
+            return {
+                content: merged.content,
+                type: 'auto-merged',
+                strategy: 'diff-match-patch',
+            };
         }
 
-        // Auto-merge failed, use fallback strategy
-        this.logger.warn('Auto-merge failed, using timestamp strategy');
+        // Auto-merge failed - this is a HARD conflict
+        // Return indicator that user needs to decide
+        this.logger.warn('Auto-merge failed, user decision required');
+        
+        // Notify user about the conflict
+        this.notifyUser(path, 'needs_user_decision');
 
-        // Notify user about the conflict and resolution
-        this.notifyUser(path, 'conflict_detected');
-
-        return this.resolveByTimestamp(path, localContent, remoteContent, remoteNote);
+        return {
+            content: localContent, // Keep local for now, user will decide
+            type: 'needs-user-decision',
+            strategy: 'manual',
+        };
     }
 
     private attemptAutoMerge(
@@ -62,37 +87,6 @@ export class ConflictResolver {
                 success: false,
                 content: localContent,
             };
-        }
-    }
-
-    private async resolveByTimestamp(
-        path: string,
-        localContent: string,
-        remoteContent: string,
-        remoteNote: NoteResponse,
-    ): Promise<string> {
-        // Get local file modification time
-        const localModifiedTime = await this.getLocalModifiedTime(path);
-        const remoteModifiedTime = new Date(remoteNote.updated_at);
-
-        if (localModifiedTime > remoteModifiedTime) {
-            this.logger.info('Keeping local version (newer)');
-            this.notifyUser(path, 'kept_local');
-            return localContent;
-        }
-        this.logger.info('Using remote version (newer)');
-        this.notifyUser(path, 'used_remote');
-        return remoteContent;
-    }
-
-    private async getLocalModifiedTime(path: string): Promise<Date> {
-        try {
-            const file = this.app.workspace.getAbstractFileByPath(path) as any;
-            if (!file) return new Date(0);
-            return new Date(file.stat.mtime);
-        } catch (error: any) {
-            this.logger.error('Failed to get file stats:', error);
-            return new Date(0); // Return epoch if failed
         }
     }
 
