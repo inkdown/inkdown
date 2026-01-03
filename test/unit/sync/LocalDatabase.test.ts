@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { LocalDatabase } from '../../../packages/core/src/sync/LocalDatabase';
 import { IDBFactory } from 'fake-indexeddb';
 
@@ -87,5 +87,27 @@ describe('LocalDatabase - Path Mapping Updates', () => {
     await db.updatePathMapping(oldPath, newPath, noteId);
 
     expect(await db.getNoteIdByPath(newPath)).toBe(noteId);
+  });
+
+  it('should warn when saving mapping for noteId already mapped to different path', async () => {
+    const path1 = '/workspace/first.md';
+    const path2 = '/workspace/second.md';
+    const noteId = 'shared-note-id';
+
+    await db.savePathMapping(path1, noteId);
+    
+    // Spy on logger.warn to detect the warning
+    const warnSpy = vi.spyOn(db['logger'], 'warn');
+
+    // Save same noteId to different path (should warn)
+    await db.savePathMapping(path2, noteId);
+
+    expect(warnSpy).toHaveBeenCalled();
+    const warnMessage = warnSpy.mock.calls[0][0];
+    expect(warnMessage).toContain('already mapped to different path');
+    expect(warnMessage).toContain(path1); // mentions old path
+    expect(warnMessage).toContain(path2); // mentions new path
+
+    warnSpy.mockRestore();
   });
 });

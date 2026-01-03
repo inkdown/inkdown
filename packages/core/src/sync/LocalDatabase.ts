@@ -380,6 +380,17 @@ export class LocalDatabase {
     async savePathMapping(path: string, noteId: string): Promise<void> {
         if (!this.db) throw new Error('Database not initialized');
 
+        // Defensive check: Warn if noteId already mapped to a different path
+        // This indicates improper use - should use updatePathMapping instead
+        const existingPath = this.cache.noteIdToPath.get(noteId);
+        if (existingPath && existingPath !== path) {
+            this.logger.warn(
+                `NoteId ${noteId} already mapped to different path. ` +
+                `Existing: ${existingPath}, New: ${path}. ` +
+                `Consider using updatePathMapping() instead.`
+            );
+        }
+
         return new Promise((resolve, reject) => {
             const transaction = this.db!.transaction(['pathMappings'], 'readwrite');
             const store = transaction.objectStore('pathMappings');
