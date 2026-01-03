@@ -419,23 +419,23 @@ export class SyncEngine extends Events {
           // If local path differs from server title, rename the local file
           if (path !== expectedPath) {
             this.logger.info(`Renaming local file to match server: ${path} → ${expectedPath}`);
-            const file = this.app.workspace.getAbstractFileByPath(path);
-            if (file) {
-              this.fileWatcher.pause();
-              try {
-                await this.app.fileManager.renameFile(file, expectedPath);
-                finalPath = expectedPath;
-                this.syncLogger.info(`Renamed: ${path} → ${expectedPath}`);
-              } catch (renameError) {
-                this.logger.warn(`Failed to rename ${path}: ${renameError}`);
-              } finally {
-                this.fileWatcher.resume();
-              }
+            try {
+              // Use dedicated rename method that handles mapping atomically
+              await this.renameLocalFile(path, expectedPath);
+              finalPath = expectedPath;
+              this.syncLogger.info(`Renamed: ${path} → ${expectedPath}`);
+            } catch (renameError) {
+              this.logger.warn(`Failed to rename ${path}: ${renameError}`);
+              // Keep original path on error
             }
+          } else {
+            // No rename needed, just ensure mapping exists
+            await this.mapPathToNote(finalPath, serverMatch.id);
           }
+        } else {
+          // No server title, use existing path
+          await this.mapPathToNote(finalPath, serverMatch.id);
         }
-
-        await this.mapPathToNote(finalPath, serverMatch.id);
         await this.localDatabase.saveNoteVersion(
           finalPath,
           serverMatch.version,
